@@ -1,0 +1,96 @@
+package com.veterinaria.clinica_veternica.dto.request.usuario;
+
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * DTO de Request para crear/actualizar un Veterinario.
+ * Incluye datos de Personal y específicos de Veterinario.
+ *
+ * @author Clínica Veterinaria Team
+ * @version 1.0
+ * @since 2025-11-03
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class VeterinarioRequestDTO {
+
+    // Datos de Personal
+    /**
+     * Nombres del veterinario.
+     */
+    @NotBlank(message = "Los nombres son obligatorios")
+    @Size(min = 2, max = 100, message = "Los nombres deben tener entre 2 y 100 caracteres")
+    private String nombres;
+
+    /**
+     * Apellidos del veterinario.
+     */
+    @NotBlank(message = "Los apellidos son obligatorios")
+    @Size(min = 2, max = 100, message = "Los apellidos deben tener entre 2 y 100 caracteres")
+    private String apellidos;
+
+    /**
+     * Documento de identidad.
+     */
+    @NotBlank(message = "El documento es obligatorio")
+    @Size(min = 6, max = 20, message = "El documento debe tener entre 6 y 20 caracteres")
+    private String documento;
+
+    /**
+     * Correo electrónico.
+     */
+    @NotBlank(message = "El correo es obligatorio")
+    @Email(message = "El correo debe ser válido")
+    private String correo;
+
+    /**
+     * Teléfono de contacto.
+     */
+    @NotBlank(message = "El teléfono es obligatorio")
+    @Pattern(regexp = "^\\+?[0-9]{10,13}$", message = "El teléfono debe ser válido")
+    private String telefono;
+
+    /**
+     * Dirección de residencia.
+     */
+    @Size(max = 200, message = "La dirección no puede exceder 200 caracteres")
+    private String direccion;
+
+    // Datos específicos de Veterinario
+    /**
+     * Especialidad del veterinario.
+     */
+    @NotBlank(message = "La especialidad es obligatoria")
+    @Size(max = 100, message = "La especialidad no puede exceder 100 caracteres")
+    private String especialidad;
+
+    /**
+     * Número de registro profesional.
+     */
+    @NotBlank(message = "El registro profesional es obligatorio")
+    @Size(max = 50, message = "El registro profesional no puede exceder 50 caracteres")
+    private String registroProfesional;
+
+    /**
+     * Años de experiencia profesional.
+     */
+    @Min(value = 0, message = "Los años de experiencia no pueden ser negativos")
+    private Integer añosExperiencia;
+
+    /**
+     * Estado activo/inactivo.
+     */
+    private Boolean activo;
+
+    // Datos de Usuario (opcional para creación completa)
+    /**
+     * Datos de usuario para acceso al sistema.
+     */
+    private UsuarioRequestDTO usuario;
+}

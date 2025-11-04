@@ -1,0 +1,133 @@
+package com.veterinaria.clinica_veternica.patterns.creational.abstractfactory;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+/**
+ * Factory concreto para notificaciones por EMAIL.
+ *
+ * Crea la familia de objetos relacionados para enviar notificaciones por email.
+ *
+ * @author Clínica Veterinaria Team
+ * @version 1.0
+ * @since 2025-11-04
+ */
+@Slf4j
+@Component
+public class EmailNotificacionFactory implements NotificacionFactory {
+
+    private static final String CANAL = "EMAIL";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+        "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
+
+    @Override
+    public MensajeNotificacion crearMensaje(String destinatario, String asunto, String contenido) {
+        return MensajeNotificacion.builder()
+                .id(UUID.randomUUID().toString())
+                .canal(CANAL)
+                .destinatario(destinatario)
+                .asunto(asunto)
+                .contenido(contenido)
+                .fechaCreacion(LocalDateTime.now())
+                .prioridad("NORMAL")
+                .build();
+    }
+
+    @Override
+    public ValidadorDestinatario crearValidador() {
+        return new ValidadorDestinatario() {
+            private String mensajeError;
+
+            @Override
+            public boolean esValido(String destinatario) {
+                if (destinatario == null || destinatario.isBlank()) {
+                    mensajeError = "El email no puede estar vacío";
+                    return false;
+                }
+                if (!EMAIL_PATTERN.matcher(destinatario).matches()) {
+                    mensajeError = "Formato de email inválido";
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public String normalizar(String destinatario) {
+                return destinatario != null ? destinatario.toLowerCase().trim() : null;
+            }
+
+            @Override
+            public String getMensajeError() {
+                return mensajeError;
+            }
+        };
+    }
+
+    @Override
+    public EnviadorNotificacion crearEnviador() {
+        return new EnviadorNotificacion() {
+            private String estadoEnvio;
+            private String idExterno;
+            private String mensajeError;
+
+            @Override
+            public boolean enviar(MensajeNotificacion mensaje) {
+                try {
+                    log.info("Enviando EMAIL a: {} - Asunto: {}",
+                            mensaje.getDestinatario(), mensaje.getAsunto());
+
+                    // Simulación de envío (en producción, aquí iría la integración con SMTP/SendGrid/etc)
+                    // TODO: Integrar con servicio real de email
+
+                    this.idExterno = "EMAIL-" + UUID.randomUUID().toString();
+                    this.estadoEnvio = "ENVIADO";
+
+                    log.info("EMAIL enviado exitosamente. ID: {}", idExterno);
+                    return true;
+
+                } catch (Exception e) {
+                    log.error("Error al enviar EMAIL: {}", e.getMessage());
+                    this.estadoEnvio = "ERROR";
+                    this.mensajeError = e.getMessage();
+                    return false;
+                }
+            }
+
+            @Override
+            public String getEstadoEnvio() {
+                return estadoEnvio;
+            }
+
+            @Override
+            public String getIdExterno() {
+                return idExterno;
+            }
+
+            @Override
+            public String getMensajeError() {
+                return mensajeError;
+            }
+        };
+    }
+
+    @Override
+    public String getNombreCanal() {
+        return CANAL;
+    }
+
+    @Override
+    public boolean estaDisponible() {
+        // En producción, verificar si el servicio de email está configurado
+        return true;
+    }
+
+    @Override
+    public double getCostoEnvio() {
+        return 50.0; // Costo bajo para emails
+    }
+}

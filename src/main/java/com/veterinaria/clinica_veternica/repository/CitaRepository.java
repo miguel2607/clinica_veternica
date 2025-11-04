@@ -1,0 +1,173 @@
+package com.veterinaria.clinica_veternica.repository;
+
+import com.veterinaria.clinica_veternica.domain.agenda.Cita;
+import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
+import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Repositorio para la entidad Cita.
+ *
+ * Proporciona operaciones CRUD y consultas personalizadas para
+ * la gestión de citas médicas.
+ *
+ * @author Clínica Veterinaria Team
+ * @version 1.0
+ * @since 2025-11-02
+ */
+@Repository
+public interface CitaRepository extends JpaRepository<Cita, Long> {
+
+    // ===================================================================
+    // CONSULTAS DERIVADAS
+    // ===================================================================
+
+    /**
+     * Busca citas por veterinario.
+     *
+     * @param veterinario Veterinario
+     * @return Lista de citas
+     */
+    List<Cita> findByVeterinario(Veterinario veterinario);
+
+    /**
+     * Busca citas por mascota.
+     *
+     * @param mascota Mascota
+     * @return Lista de citas
+     */
+    List<Cita> findByMascota(Mascota mascota);
+
+    /**
+     * Busca citas por estado.
+     *
+     * @param estado Estado de la cita
+     * @return Lista de citas
+     */
+    List<Cita> findByEstado(String estado);
+
+    // ===================================================================
+    // CONSULTAS PERSONALIZADAS CON @Query
+    // ===================================================================
+
+    /**
+     * Busca citas por veterinario y fecha.
+     *
+     * @param veterinario Veterinario
+     * @param inicio Fecha de inicio
+     * @param fin Fecha de fin
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
+           "AND c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+    List<Cita> findCitasPorVeterinarioYFecha(@Param("veterinario") Veterinario veterinario,
+                                              @Param("inicio") LocalDateTime inicio,
+                                              @Param("fin") LocalDateTime fin);
+
+    /**
+     * Busca citas por mascota y ordenadas por fecha.
+     *
+     * @param mascota Mascota
+     * @return Lista de citas ordenada
+     */
+    @Query("SELECT c FROM Cita c WHERE c.mascota = :mascota ORDER BY c.fechaHora DESC")
+    List<Cita> findCitasPorMascotaOrdenadas(@Param("mascota") Mascota mascota);
+
+    /**
+     * Busca citas programadas (pendientes y confirmadas).
+     *
+     * @return Lista de citas programadas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.estado IN ('PROGRAMADA', 'CONFIRMADA') " +
+           "AND c.fechaHora > CURRENT_TIMESTAMP ORDER BY c.fechaHora")
+    List<Cita> findCitasProgramadas();
+
+    /**
+     * Busca citas del día para un veterinario.
+     *
+     * @param veterinario Veterinario
+     * @param inicio Inicio del día
+     * @param fin Fin del día
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
+           "AND c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+    List<Cita> findCitasDelDia(@Param("veterinario") Veterinario veterinario,
+                                @Param("inicio") LocalDateTime inicio,
+                                @Param("fin") LocalDateTime fin);
+
+    /**
+     * Busca citas en un rango de fechas.
+     *
+     * @param inicio Fecha de inicio
+     * @param fin Fecha de fin
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+    List<Cita> findCitasEnRango(@Param("inicio") LocalDateTime inicio,
+                                 @Param("fin") LocalDateTime fin);
+
+    /**
+     * Busca citas confirmadas pendientes de atención.
+     *
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.estado = 'CONFIRMADA' " +
+           "AND c.fechaHora <= CURRENT_TIMESTAMP AND c.fechaHora >= :hace2Horas " +
+           "ORDER BY c.fechaHora")
+    List<Cita> findCitasPendientesAtencion(@Param("hace2Horas") LocalDateTime hace2Horas);
+
+    /**
+     * Cuenta citas por estado.
+     *
+     * @param estado Estado
+     * @return Número de citas
+     */
+    @Query("SELECT COUNT(c) FROM Cita c WHERE c.estado = :estado")
+    long countByEstado(@Param("estado") String estado);
+
+    /**
+     * Busca citas canceladas en un rango de fechas.
+     *
+     * @param inicio Fecha inicio
+     * @param fin Fecha fin
+     * @return Lista de citas canceladas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.estado = 'CANCELADA' " +
+           "AND c.fechaHora BETWEEN :inicio AND :fin")
+    List<Cita> findCitasCanceladasEnRango(@Param("inicio") LocalDateTime inicio,
+                                           @Param("fin") LocalDateTime fin);
+
+    /**
+     * Busca próximas citas para recordatorios (próximas 24 horas).
+     *
+     * @param ahora Fecha y hora actual
+     * @param limite Fecha y hora límite (24 horas después)
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.estado IN ('PROGRAMADA', 'CONFIRMADA') " +
+           "AND c.fechaHora BETWEEN :ahora AND :limite " +
+           "AND c.recordatorioEnviado = false")
+    List<Cita> findCitasParaRecordatorio(@Param("ahora") LocalDateTime ahora,
+                                          @Param("limite") LocalDateTime limite);
+
+    /**
+     * Busca citas atendidas por veterinario en un rango.
+     *
+     * @param veterinario Veterinario
+     * @param inicio Fecha inicio
+     * @param fin Fecha fin
+     * @return Lista de citas
+     */
+    @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
+           "AND c.estado = 'ATENDIDA' AND c.fechaHora BETWEEN :inicio AND :fin")
+    List<Cita> findCitasAtendidasPorVeterinario(@Param("veterinario") Veterinario veterinario,
+                                                  @Param("inicio") LocalDateTime inicio,
+                                                  @Param("fin") LocalDateTime fin);
+}
