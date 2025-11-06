@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,14 +24,14 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
 
     Optional<Inventario> findByInsumo(Insumo insumo);
 
-    @Query("SELECT i FROM Inventario i WHERE i.stockActual <= i.insumo.stockMinimo")
+    @Query("SELECT i FROM Inventario i WHERE i.cantidadActual <= i.insumo.stockMinimo")
     List<Inventario> findInventariosConStockBajo();
 
-    @Query("SELECT i FROM Inventario i WHERE i.stockActual = 0")
+    @Query("SELECT i FROM Inventario i WHERE i.cantidadActual = 0")
     List<Inventario> findInventariosAgotados();
 
-    @Query("SELECT i FROM Inventario i WHERE i.fechaUltimoMovimiento BETWEEN :inicio AND :fin")
-    List<Inventario> findInventariosConMovimientosEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
+    @Query("SELECT i FROM Inventario i WHERE i.fechaActualizacion BETWEEN :inicio AND :fin")
+    List<Inventario> findInventariosConMovimientosEnRango(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query("SELECT i FROM Inventario i ORDER BY i.valorTotal DESC")
     List<Inventario> findInventariosOrdenadosPorValor();

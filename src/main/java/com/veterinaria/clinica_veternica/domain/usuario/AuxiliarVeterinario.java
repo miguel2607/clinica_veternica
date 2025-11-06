@@ -31,6 +31,7 @@ import lombok.experimental.SuperBuilder;
 @DiscriminatorValue("AUXILIAR")
 @Getter
 @Setter
+@NoArgsConstructor
 @SuperBuilder
 @ToString(callSuper = true)
 public class AuxiliarVeterinario extends Personal {

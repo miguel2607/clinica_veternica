@@ -41,6 +41,7 @@ import java.util.List;
 @DiscriminatorValue("VETERINARIO")
 @Getter
 @Setter
+@NoArgsConstructor
 @SuperBuilder
 @ToString(callSuper = true)
 public class Veterinario extends Personal {

@@ -20,41 +20,24 @@ public interface RecepcionistaRepository extends JpaRepository<Recepcionista, Lo
     /**
      * Busca recepcionistas activos.
      *
-     * @param estado Estado del recepcionista
+     * @param activo Estado activo del recepcionista
      * @return Lista de recepcionistas activos
      */
-    List<Recepcionista> findByEstado(Boolean estado);
-
-    /**
-     * Busca recepcionistas por turno.
-     *
-     * @param turno Turno del recepcionista
-     * @return Lista de recepcionistas
-     */
-    List<Recepcionista> findByTurno(String turno);
+    List<Recepcionista> findByActivo(Boolean activo);
 
     /**
      * Busca todos los recepcionistas activos.
      *
      * @return Lista de recepcionistas activos
      */
-    @Query("SELECT r FROM Recepcionista r WHERE r.estado = true")
+    @Query("SELECT r FROM Recepcionista r WHERE r.activo = true")
     List<Recepcionista> findRecepcionistasActivos();
-
-    /**
-     * Busca recepcionistas activos por turno.
-     *
-     * @param turno Turno
-     * @return Lista de recepcionistas
-     */
-    @Query("SELECT r FROM Recepcionista r WHERE r.turno = :turno AND r.estado = true")
-    List<Recepcionista> findRecepcionistasActivosPorTurno(String turno);
 
     /**
      * Cuenta recepcionistas activos.
      *
      * @return Número de recepcionistas activos
      */
-    @Query("SELECT COUNT(r) FROM Recepcionista r WHERE r.estado = true")
+    @Query("SELECT COUNT(r) FROM Recepcionista r WHERE r.activo = true")
     long countRecepcionistasActivos();
 }

@@ -29,10 +29,10 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
     @Query("SELECT i FROM Insumo i WHERE i.activo = true ORDER BY i.nombre")
     List<Insumo> findInsumosActivos();
 
-    @Query("SELECT i FROM Insumo i WHERE i.stockActual <= i.stockMinimo AND i.activo = true")
+    @Query("SELECT i FROM Insumo i WHERE i.cantidadStock <= i.stockMinimo AND i.activo = true")
     List<Insumo> findInsumosConStockBajo();
 
-    @Query("SELECT i FROM Insumo i WHERE i.stockActual = 0 AND i.activo = true")
+    @Query("SELECT i FROM Insumo i WHERE i.cantidadStock = 0 AND i.activo = true")
     List<Insumo> findInsumosAgotados();
 
     @Query("SELECT i FROM Insumo i WHERE i.tipoInsumo = :tipo AND i.activo = true")

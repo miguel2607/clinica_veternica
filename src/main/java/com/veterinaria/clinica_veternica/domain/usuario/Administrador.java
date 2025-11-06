@@ -29,6 +29,7 @@ import lombok.experimental.SuperBuilder;
 @DiscriminatorValue("ADMINISTRADOR")
 @Getter
 @Setter
+@NoArgsConstructor
 @SuperBuilder
 @ToString(callSuper = true)
 public class Administrador extends Personal {

@@ -23,7 +23,7 @@ public interface SupervisorPracticaRepository extends JpaRepository<SupervisorPr
 
     List<SupervisorPractica> findByActivo(Boolean activo);
 
-    @Query("SELECT s FROM SupervisorPractica s WHERE s.activo = true ORDER BY s.veterinario.apellido")
+    @Query("SELECT s FROM SupervisorPractica s WHERE s.activo = true ORDER BY s.veterinario.apellidos")
     List<SupervisorPractica> findSupervisoresActivos();
 
     @Query("SELECT COUNT(s) FROM SupervisorPractica s WHERE s.activo = true")

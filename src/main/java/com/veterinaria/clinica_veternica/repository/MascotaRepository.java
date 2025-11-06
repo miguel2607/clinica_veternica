@@ -99,7 +99,8 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
      * @param idPropietario ID del propietario
      * @return Lista de mascotas
      */
-    List<Mascota> findByPropietarioId(Long idPropietario);
+    @Query("SELECT m FROM Mascota m WHERE m.propietario.idPropietario = :idPropietario")
+    List<Mascota> findByPropietarioId(@Param("idPropietario") Long idPropietario);
 
     /**
      * Busca mascotas por especie ID.
@@ -107,7 +108,8 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
      * @param idEspecie ID de la especie
      * @return Lista de mascotas
      */
-    List<Mascota> findByEspecieId(Long idEspecie);
+    @Query("SELECT m FROM Mascota m WHERE m.especie.idEspecie = :idEspecie")
+    List<Mascota> findByEspecieId(@Param("idEspecie") Long idEspecie);
 
     /**
      * Busca mascotas por raza ID.
@@ -115,7 +117,8 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
      * @param idRaza ID de la raza
      * @return Lista de mascotas
      */
-    List<Mascota> findByRazaId(Long idRaza);
+    @Query("SELECT m FROM Mascota m WHERE m.raza.idRaza = :idRaza")
+    List<Mascota> findByRazaId(@Param("idRaza") Long idRaza);
 
     /**
      * Verifica si existe una mascota con el nombre y propietario dados.
@@ -124,7 +127,8 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
      * @param idPropietario ID del propietario
      * @return true si existe
      */
-    boolean existsByNombreAndPropietarioId(String nombre, Long idPropietario);
+    @Query("SELECT COUNT(m) > 0 FROM Mascota m WHERE m.nombre = :nombre AND m.propietario.idPropietario = :idPropietario")
+    boolean existsByNombreAndPropietarioId(@Param("nombre") String nombre, @Param("idPropietario") Long idPropietario);
 
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
@@ -226,11 +230,11 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
     List<Mascota> findMascotasConAlergias();
 
     /**
-     * Busca mascotas con condiciones médicas registradas.
+     * Busca mascotas con enfermedades crónicas registradas.
      *
-     * @return Lista de mascotas con condiciones médicas
+     * @return Lista de mascotas con enfermedades crónicas
      */
-    @Query("SELECT m FROM Mascota m WHERE m.condicionesMedicas IS NOT NULL AND m.condicionesMedicas <> '' AND m.activo = true")
+    @Query("SELECT m FROM Mascota m WHERE m.enfermedadesCronicas IS NOT NULL AND m.enfermedadesCronicas <> '' AND m.activo = true")
     List<Mascota> findMascotasConCondicionesMedicas();
 
     /**

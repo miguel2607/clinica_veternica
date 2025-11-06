@@ -20,17 +20,17 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
     /**
      * Busca administradores activos.
      *
-     * @param estado Estado del administrador
+     * @param activo Estado activo del administrador
      * @return Lista de administradores activos
      */
-    List<Administrador> findByEstado(Boolean estado);
+    List<Administrador> findByActivo(Boolean activo);
 
     /**
      * Busca todos los administradores activos.
      *
      * @return Lista de administradores activos
      */
-    @Query("SELECT a FROM Administrador a WHERE a.estado = true")
+    @Query("SELECT a FROM Administrador a WHERE a.activo = true")
     List<Administrador> findAdministradoresActivos();
 
     /**
@@ -38,6 +38,6 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
      *
      * @return Número de administradores activos
      */
-    @Query("SELECT COUNT(a) FROM Administrador a WHERE a.estado = true")
+    @Query("SELECT COUNT(a) FROM Administrador a WHERE a.activo = true")
     long countAdministradoresActivos();
 }

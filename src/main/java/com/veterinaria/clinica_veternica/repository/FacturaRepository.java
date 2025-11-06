@@ -26,7 +26,7 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
 
     List<Factura> findByPropietario(Propietario propietario);
 
-    List<Factura> findByEstado(String estado);
+    List<Factura> findByPagada(Boolean pagada);
 
     @Query("SELECT f FROM Factura f WHERE f.propietario = :propietario ORDER BY f.fechaEmision DESC")
     List<Factura> findFacturasPorPropietarioOrdenadas(@Param("propietario") Propietario propietario);
@@ -34,20 +34,20 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     @Query("SELECT f FROM Factura f WHERE f.fechaEmision BETWEEN :inicio AND :fin ORDER BY f.fechaEmision DESC")
     List<Factura> findFacturasEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
-    @Query("SELECT f FROM Factura f WHERE f.estado = 'PENDIENTE' AND f.fechaVencimiento < CURRENT_DATE")
+    @Query("SELECT f FROM Factura f WHERE f.pagada = false AND f.anulada = false AND f.fechaVencimiento < CURRENT_DATE")
     List<Factura> findFacturasVencidas();
 
-    @Query("SELECT f FROM Factura f WHERE f.estado = 'PENDIENTE'")
+    @Query("SELECT f FROM Factura f WHERE f.pagada = false AND f.anulada = false")
     List<Factura> findFacturasPendientes();
 
-    @Query("SELECT f FROM Factura f WHERE f.estado = 'PAGADA' AND f.fechaEmision BETWEEN :inicio AND :fin")
+    @Query("SELECT f FROM Factura f WHERE f.pagada = true AND f.fechaEmision BETWEEN :inicio AND :fin")
     List<Factura> findFacturasPagadasEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
-    @Query("SELECT SUM(f.total) FROM Factura f WHERE f.estado = 'PAGADA' AND f.fechaEmision BETWEEN :inicio AND :fin")
+    @Query("SELECT SUM(f.total) FROM Factura f WHERE f.pagada = true AND f.fechaEmision BETWEEN :inicio AND :fin")
     BigDecimal sumTotalFacturasPagadasEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
-    @Query("SELECT COUNT(f) FROM Factura f WHERE f.estado = :estado")
-    long countByEstado(@Param("estado") String estado);
+    @Query("SELECT COUNT(f) FROM Factura f WHERE f.pagada = :pagada AND f.anulada = false")
+    long countByPagada(@Param("pagada") Boolean pagada);
 
     boolean existsByNumeroFactura(String numeroFactura);
 }

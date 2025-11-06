@@ -68,7 +68,8 @@ public interface RazaRepository extends JpaRepository<Raza, Long> {
      * @param idEspecie ID de la especie
      * @return true si existe
      */
-    boolean existsByNombreAndEspecieId(String nombre, Long idEspecie);
+    @Query("SELECT COUNT(r) > 0 FROM Raza r WHERE r.nombre = :nombre AND r.especie.idEspecie = :idEspecie")
+    boolean existsByNombreAndEspecieId(@Param("nombre") String nombre, @Param("idEspecie") Long idEspecie);
 
     /**
      * Verifica si existe otra raza con el mismo nombre y especie (excluyendo el ID dado).
@@ -78,7 +79,8 @@ public interface RazaRepository extends JpaRepository<Raza, Long> {
      * @param id ID de la raza a excluir
      * @return true si existe otra raza
      */
-    boolean existsByNombreAndEspecieIdAndIdNot(String nombre, Long idEspecie, Long id);
+    @Query("SELECT COUNT(r) > 0 FROM Raza r WHERE r.nombre = :nombre AND r.especie.idEspecie = :idEspecie AND r.idRaza <> :id")
+    boolean existsByNombreAndEspecieIdAndIdNot(@Param("nombre") String nombre, @Param("idEspecie") Long idEspecie, @Param("id") Long id);
 
     /**
      * Busca razas por nombre (búsqueda parcial).
@@ -131,12 +133,13 @@ public interface RazaRepository extends JpaRepository<Raza, Long> {
     List<Raza> findByEspecieId(@Param("idEspecie") Long idEspecie);
 
     /**
-     * Busca razas activas por especie ID (query derivado).
+     * Busca razas activas por especie ID.
      *
      * @param idEspecie ID de la especie
      * @return Lista de razas activas
      */
-    List<Raza> findByEspecieIdAndActivoTrue(Long idEspecie);
+    @Query("SELECT r FROM Raza r WHERE r.especie.idEspecie = :idEspecie AND r.activo = true")
+    List<Raza> findByEspecieIdAndActivoTrue(@Param("idEspecie") Long idEspecie);
 
     /**
      * Cuenta razas por especie.

@@ -22,14 +22,14 @@ public interface HistoriaClinicaRepository extends JpaRepository<HistoriaClinica
 
     Optional<HistoriaClinica> findByMascota(Mascota mascota);
 
-    List<HistoriaClinica> findByActivo(Boolean activo);
+    List<HistoriaClinica> findByActiva(Boolean activa);
 
     @Query("SELECT h FROM HistoriaClinica h WHERE h.mascota.idMascota = :idMascota")
     Optional<HistoriaClinica> findByMascotaId(@Param("idMascota") Long idMascota);
 
-    @Query("SELECT h FROM HistoriaClinica h WHERE h.activo = true")
+    @Query("SELECT h FROM HistoriaClinica h WHERE h.activa = true")
     List<HistoriaClinica> findHistoriasActivas();
 
-    @Query("SELECT COUNT(h) FROM HistoriaClinica h WHERE h.activo = true")
+    @Query("SELECT COUNT(h) FROM HistoriaClinica h WHERE h.activa = true")
     long countHistoriasActivas();
 }

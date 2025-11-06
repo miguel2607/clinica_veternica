@@ -19,20 +19,20 @@ import java.util.Optional;
 @Repository
 public interface EstudianteRepository extends JpaRepository<Estudiante, Long> {
 
-    Optional<Estudiante> findByCodigoEstudiante(String codigoEstudiante);
+    Optional<Estudiante> findByCodigoEstudiantil(String codigoEstudiantil);
 
     List<Estudiante> findByUniversidad(String universidad);
 
     List<Estudiante> findByActivo(Boolean activo);
 
-    @Query("SELECT e FROM Estudiante e WHERE e.activo = true ORDER BY e.apellido, e.nombre")
+    @Query("SELECT e FROM Estudiante e WHERE e.activo = true ORDER BY e.apellidos, e.nombres")
     List<Estudiante> findEstudiantesActivos();
 
     @Query("SELECT e FROM Estudiante e WHERE e.universidad = :universidad AND e.activo = true")
     List<Estudiante> findEstudiantesActivosPorUniversidad(@Param("universidad") String universidad);
 
-    @Query("SELECT e FROM Estudiante e WHERE e.horasPracticaRealizadas >= :horas")
+    @Query("SELECT e FROM Estudiante e WHERE e.horasPracticaCompletadas >= :horas")
     List<Estudiante> findEstudiantesPorHorasMinimas(@Param("horas") Integer horas);
 
-    boolean existsByCodigoEstudiante(String codigoEstudiante);
+    boolean existsByCodigoEstudiantil(String codigoEstudiantil);
 }

@@ -20,17 +20,17 @@ public interface AuxiliarVeterinarioRepository extends JpaRepository<AuxiliarVet
     /**
      * Busca auxiliares veterinarios activos.
      *
-     * @param estado Estado del auxiliar
+     * @param activo Estado activo del auxiliar
      * @return Lista de auxiliares activos
      */
-    List<AuxiliarVeterinario> findByEstado(Boolean estado);
+    List<AuxiliarVeterinario> findByActivo(Boolean activo);
 
     /**
      * Busca todos los auxiliares veterinarios activos.
      *
      * @return Lista de auxiliares activos
      */
-    @Query("SELECT a FROM AuxiliarVeterinario a WHERE a.estado = true")
+    @Query("SELECT a FROM AuxiliarVeterinario a WHERE a.activo = true")
     List<AuxiliarVeterinario> findAuxiliaresActivos();
 
     /**
@@ -38,6 +38,6 @@ public interface AuxiliarVeterinarioRepository extends JpaRepository<AuxiliarVet
      *
      * @return Número de auxiliares activos
      */
-    @Query("SELECT COUNT(a) FROM AuxiliarVeterinario a WHERE a.estado = true")
+    @Query("SELECT COUNT(a) FROM AuxiliarVeterinario a WHERE a.activo = true")
     long countAuxiliaresActivos();
 }

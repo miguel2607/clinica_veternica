@@ -109,14 +109,14 @@ public class Correo {
      * Cuerpo del correo en texto plano.
      */
     @Size(max = 5000, message = "El cuerpo no puede exceder 5000 caracteres")
-    @Column(length = 5000)
+    @Column(columnDefinition = "TEXT")
     private String cuerpoTexto;
 
     /**
      * Cuerpo del correo en HTML.
      */
     @Size(max = 10000, message = "El cuerpo HTML no puede exceder 10000 caracteres")
-    @Column(length = 10000)
+    @Column(columnDefinition = "TEXT")
     private String cuerpoHTML;
 
     /**

@@ -29,10 +29,10 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     /**
      * Busca un propietario por documento de identidad.
      *
-     * @param documentoIdentidad Documento del propietario
+     * @param documento Documento del propietario
      * @return Optional con el propietario si existe
      */
-    Optional<Propietario> findByDocumentoIdentidad(String documentoIdentidad);
+    Optional<Propietario> findByDocumento(String documento);
 
     /**
      * Busca un propietario por email.
@@ -69,10 +69,11 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
      * Busca un propietario por tipo y número de documento.
      *
      * @param tipoDocumento Tipo de documento
-     * @param numeroDocumento Número de documento
+     * @param documento Número de documento
      * @return Optional con el propietario si existe
      */
-    Optional<Propietario> findByTipoDocumentoAndNumeroDocumento(String tipoDocumento, String numeroDocumento);
+    @Query("SELECT p FROM Propietario p WHERE p.tipoDocumento = :tipoDocumento AND p.documento = :documento")
+    Optional<Propietario> findByTipoDocumentoAndNumeroDocumento(@Param("tipoDocumento") String tipoDocumento, @Param("documento") String documento);
 
     /**
      * Busca propietarios por teléfono que contenga el texto.
@@ -85,19 +86,20 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     /**
      * Verifica si existe un propietario con el documento dado.
      *
-     * @param documentoIdentidad Documento a verificar
+     * @param documento Documento a verificar
      * @return true si existe
      */
-    boolean existsByDocumentoIdentidad(String documentoIdentidad);
+    boolean existsByDocumento(String documento);
 
     /**
      * Verifica si existe un propietario con tipo y número de documento.
      *
      * @param tipoDocumento Tipo de documento
-     * @param numeroDocumento Número de documento
+     * @param documento Número de documento
      * @return true si existe
      */
-    boolean existsByTipoDocumentoAndNumeroDocumento(String tipoDocumento, String numeroDocumento);
+    @Query("SELECT COUNT(p) > 0 FROM Propietario p WHERE p.tipoDocumento = :tipoDocumento AND p.documento = :documento")
+    boolean existsByTipoDocumentoAndNumeroDocumento(@Param("tipoDocumento") String tipoDocumento, @Param("documento") String documento);
 
     /**
      * Verifica si existe un propietario con el email dado.
@@ -185,10 +187,11 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     List<Propietario> findPropietariosOrdenadosPorNumeroMascotas();
 
     /**
-     * Busca propietarios que aceptan notificaciones por email.
+     * Busca propietarios activos (para notificaciones).
+     * Nota: El campo recibirNotificaciones no existe en la entidad actual.
      *
-     * @return Lista de propietarios
+     * @return Lista de propietarios activos
      */
-    @Query("SELECT p FROM Propietario p WHERE p.activo = true AND p.recibirNotificaciones = true")
+    @Query("SELECT p FROM Propietario p WHERE p.activo = true")
     List<Propietario> findPropietariosConNotificacionesActivas();
 }

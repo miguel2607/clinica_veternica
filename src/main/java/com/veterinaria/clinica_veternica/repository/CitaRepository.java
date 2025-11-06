@@ -65,7 +65,8 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
-           "AND c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :inicio AND :fin " +
+           "ORDER BY c.fechaCita, c.horaCita")
     List<Cita> findCitasPorVeterinarioYFecha(@Param("veterinario") Veterinario veterinario,
                                               @Param("inicio") LocalDateTime inicio,
                                               @Param("fin") LocalDateTime fin);
@@ -76,7 +77,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @param mascota Mascota
      * @return Lista de citas ordenada
      */
-    @Query("SELECT c FROM Cita c WHERE c.mascota = :mascota ORDER BY c.fechaHora DESC")
+    @Query("SELECT c FROM Cita c WHERE c.mascota = :mascota ORDER BY c.fechaCita DESC, c.horaCita DESC")
     List<Cita> findCitasPorMascotaOrdenadas(@Param("mascota") Mascota mascota);
 
     /**
@@ -85,7 +86,8 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas programadas
      */
     @Query("SELECT c FROM Cita c WHERE c.estado IN ('PROGRAMADA', 'CONFIRMADA') " +
-           "AND c.fechaHora > CURRENT_TIMESTAMP ORDER BY c.fechaHora")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) > CURRENT_TIMESTAMP " +
+           "ORDER BY c.fechaCita, c.horaCita")
     List<Cita> findCitasProgramadas();
 
     /**
@@ -97,7 +99,8 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
-           "AND c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :inicio AND :fin " +
+           "ORDER BY c.fechaCita, c.horaCita")
     List<Cita> findCitasDelDia(@Param("veterinario") Veterinario veterinario,
                                 @Param("inicio") LocalDateTime inicio,
                                 @Param("fin") LocalDateTime fin);
@@ -109,7 +112,8 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @param fin Fecha de fin
      * @return Lista de citas
      */
-    @Query("SELECT c FROM Cita c WHERE c.fechaHora BETWEEN :inicio AND :fin ORDER BY c.fechaHora")
+    @Query("SELECT c FROM Cita c WHERE FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :inicio AND :fin " +
+           "ORDER BY c.fechaCita, c.horaCita")
     List<Cita> findCitasEnRango(@Param("inicio") LocalDateTime inicio,
                                  @Param("fin") LocalDateTime fin);
 
@@ -119,8 +123,9 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.estado = 'CONFIRMADA' " +
-           "AND c.fechaHora <= CURRENT_TIMESTAMP AND c.fechaHora >= :hace2Horas " +
-           "ORDER BY c.fechaHora")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) <= CURRENT_TIMESTAMP " +
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) >= :hace2Horas " +
+           "ORDER BY c.fechaCita, c.horaCita")
     List<Cita> findCitasPendientesAtencion(@Param("hace2Horas") LocalDateTime hace2Horas);
 
     /**
@@ -140,7 +145,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas canceladas
      */
     @Query("SELECT c FROM Cita c WHERE c.estado = 'CANCELADA' " +
-           "AND c.fechaHora BETWEEN :inicio AND :fin")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :inicio AND :fin")
     List<Cita> findCitasCanceladasEnRango(@Param("inicio") LocalDateTime inicio,
                                            @Param("fin") LocalDateTime fin);
 
@@ -152,7 +157,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.estado IN ('PROGRAMADA', 'CONFIRMADA') " +
-           "AND c.fechaHora BETWEEN :ahora AND :limite " +
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :ahora AND :limite " +
            "AND c.recordatorioEnviado = false")
     List<Cita> findCitasParaRecordatorio(@Param("ahora") LocalDateTime ahora,
                                           @Param("limite") LocalDateTime limite);
@@ -166,7 +171,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
-           "AND c.estado = 'ATENDIDA' AND c.fechaHora BETWEEN :inicio AND :fin")
+           "AND c.estado = 'ATENDIDA' AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :inicio AND :fin")
     List<Cita> findCitasAtendidasPorVeterinario(@Param("veterinario") Veterinario veterinario,
                                                   @Param("inicio") LocalDateTime inicio,
                                                   @Param("fin") LocalDateTime fin);

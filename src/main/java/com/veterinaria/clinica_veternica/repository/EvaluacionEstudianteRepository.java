@@ -28,6 +28,6 @@ public interface EvaluacionEstudianteRepository extends JpaRepository<Evaluacion
     @Query("SELECT e FROM EvaluacionEstudiante e WHERE e.fechaEvaluacion BETWEEN :inicio AND :fin")
     List<EvaluacionEstudiante> findEvaluacionesEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
-    @Query("SELECT AVG(e.calificacionTotal) FROM EvaluacionEstudiante e WHERE e.estudiante = :estudiante")
+    @Query("SELECT AVG(e.calificacion) FROM EvaluacionEstudiante e WHERE e.estudiante = :estudiante")
     Double getPromedioCalificaciones(@Param("estudiante") Estudiante estudiante);
 }

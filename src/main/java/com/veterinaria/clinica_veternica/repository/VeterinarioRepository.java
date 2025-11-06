@@ -27,14 +27,6 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     // ===================================================================
 
     /**
-     * Busca un veterinario por su tarjeta profesional.
-     *
-     * @param tarjetaProfesional Número de tarjeta profesional
-     * @return Optional con el veterinario si existe
-     */
-    Optional<Veterinario> findByTarjetaProfesional(String tarjetaProfesional);
-
-    /**
      * Busca un veterinario por su registro profesional.
      *
      * @param registroProfesional Número de registro profesional
@@ -61,10 +53,10 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     /**
      * Busca veterinarios activos.
      *
-     * @param estado Estado del veterinario
+     * @param activo Estado activo del veterinario
      * @return Lista de veterinarios activos
      */
-    List<Veterinario> findByEstado(Boolean estado);
+    List<Veterinario> findByActivo(Boolean activo);
 
     /**
      * Busca veterinarios activos (query derivado).
@@ -74,21 +66,14 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     List<Veterinario> findByActivoTrue();
 
     /**
-     * Busca veterinarios por especialidad y estado.
+     * Busca veterinarios por especialidad y estado activo.
      *
      * @param especialidad Especialidad
-     * @param estado Estado
+     * @param activo Estado activo
      * @return Lista de veterinarios
      */
-    List<Veterinario> findByEspecialidadAndEstado(String especialidad, Boolean estado);
-
-    /**
-     * Verifica si existe un veterinario con la tarjeta profesional dada.
-     *
-     * @param tarjetaProfesional Tarjeta profesional a verificar
-     * @return true si existe
-     */
-    boolean existsByTarjetaProfesional(String tarjetaProfesional);
+    @Query("SELECT v FROM Veterinario v WHERE v.especialidad = :especialidad AND v.activo = :activo")
+    List<Veterinario> findByEspecialidadAndEstado(@Param("especialidad") String especialidad, @Param("activo") Boolean activo);
 
     /**
      * Verifica si existe un veterinario con el registro profesional dado.
@@ -104,28 +89,28 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      * @param idUsuario ID del usuario
      * @return true si existe
      */
-    boolean existsByUsuarioId(Long idUsuario);
+    @Query("SELECT COUNT(v) > 0 FROM Veterinario v WHERE v.usuario.idUsuario = :idUsuario")
+    boolean existsByUsuarioId(@Param("idUsuario") Long idUsuario);
 
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
     // ===================================================================
 
     /**
-     * Busca veterinarios activos y disponibles.
+     * Busca veterinarios activos.
      *
-     * @return Lista de veterinarios disponibles
+     * @return Lista de veterinarios activos
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.estado = true AND v.disponible = true")
+    @Query("SELECT v FROM Veterinario v WHERE v.activo = true")
     List<Veterinario> findVeterinariosDisponibles();
 
     /**
-     * Busca veterinarios por especialidad que estén activos y disponibles.
+     * Busca veterinarios por especialidad que estén activos.
      *
      * @param especialidad Especialidad buscada
      * @return Lista de veterinarios
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.especialidad = :especialidad " +
-           "AND v.estado = true AND v.disponible = true")
+    @Query("SELECT v FROM Veterinario v WHERE v.especialidad = :especialidad AND v.activo = true")
     List<Veterinario> findVeterinariosDisponiblesPorEspecialidad(@Param("especialidad") String especialidad);
 
     /**
@@ -164,7 +149,7 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      *
      * @return Número de veterinarios activos
      */
-    @Query("SELECT COUNT(v) FROM Veterinario v WHERE v.estado = true")
+    @Query("SELECT COUNT(v) FROM Veterinario v WHERE v.activo = true")
     long countVeterinariosActivos();
 
     /**
@@ -181,7 +166,7 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      * @param anios Años de experiencia mínimos
      * @return Lista de veterinarios
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.aniosExperiencia >= :anios AND v.estado = true")
+    @Query("SELECT v FROM Veterinario v WHERE v.añosExperiencia >= :anios AND v.activo = true")
     List<Veterinario> findByExperienciaMinima(@Param("anios") Integer anios);
 
     /**
@@ -189,6 +174,6 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      *
      * @return Lista de veterinarios ordenada
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.estado = true ORDER BY v.aniosExperiencia DESC")
+    @Query("SELECT v FROM Veterinario v WHERE v.activo = true ORDER BY v.añosExperiencia DESC")
     List<Veterinario> findVeterinariosOrdenadosPorExperiencia();
 }

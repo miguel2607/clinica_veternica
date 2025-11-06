@@ -19,15 +19,15 @@ import java.util.Optional;
 @Repository
 public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
 
-    Optional<Proveedor> findByNit(String nit);
+    Optional<Proveedor> findByDocumento(String documento);
 
     List<Proveedor> findByActivo(Boolean activo);
 
-    @Query("SELECT p FROM Proveedor p WHERE p.activo = true ORDER BY p.nombre")
+    @Query("SELECT p FROM Proveedor p WHERE p.activo = true ORDER BY p.nombreEmpresa")
     List<Proveedor> findProveedoresActivos();
 
-    @Query("SELECT p FROM Proveedor p WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :busqueda, '%')) AND p.activo = true")
+    @Query("SELECT p FROM Proveedor p WHERE LOWER(p.nombreEmpresa) LIKE LOWER(CONCAT('%', :busqueda, '%')) AND p.activo = true")
     List<Proveedor> buscarProveedores(@Param("busqueda") String busqueda);
 
-    boolean existsByNit(String nit);
+    boolean existsByDocumento(String documento);
 }

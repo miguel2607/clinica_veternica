@@ -87,4 +87,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String headerAuth = request.getHeader(jwtProperties.getHeaderString());
         return jwtUtils.parseJwt(headerAuth);
     }
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String p = request.getRequestURI();
+        return p.startsWith("/swagger-ui")
+                || p.startsWith("/v3/api-docs")
+                || p.equals("/error")
+                || p.startsWith("/api/auth");
+    }
+
 }

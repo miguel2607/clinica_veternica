@@ -42,8 +42,6 @@ public class SecurityConfig {
 
     /**
      * Configura el PasswordEncoder para encriptar contraseñas con BCrypt.
-     *
-     * @return PasswordEncoder
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -52,8 +50,6 @@ public class SecurityConfig {
 
     /**
      * Configura el AuthenticationProvider con el UserDetailsService y PasswordEncoder.
-     *
-     * @return AuthenticationProvider
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -65,9 +61,6 @@ public class SecurityConfig {
 
     /**
      * Configura el AuthenticationManager.
-     *
-     * @param config Configuración de autenticación
-     * @return AuthenticationManager
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -76,8 +69,6 @@ public class SecurityConfig {
 
     /**
      * Configura CORS (Cross-Origin Resource Sharing).
-     *
-     * @return CorsConfigurationSource
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -96,48 +87,51 @@ public class SecurityConfig {
 
     /**
      * Configura la cadena de filtros de seguridad.
-     *
-     * @param http HttpSecurity
-     * @return SecurityFilterChain
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Deshabilitar CSRF (no es necesario con JWT)
-            .csrf(AbstractHttpConfigurer::disable)
+                // 🔒 Deshabilitar CSRF (no es necesario con JWT)
+                .csrf(AbstractHttpConfigurer::disable)
 
-            // Configurar CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // 🌐 Configurar CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // Configurar manejo de excepciones de autenticación
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-            )
+                // ⚠️ Configurar manejo de excepciones de autenticación
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                )
 
-            // Configurar gestión de sesiones como STATELESS (sin sesiones)
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+                // 📦 Configurar gestión de sesiones como STATELESS (sin sesiones)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
-            // Configurar autorización de endpoints
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos (sin autenticación)
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/error").permitAll()
+                // 🚧 Configurar autorización de endpoints
+                .authorizeHttpRequests(auth -> auth
+                        // ✅ Endpoints públicos (sin autenticación)
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs/swagger-config",
+                                "/actuator/**",
+                                "/error"
+                        ).permitAll()
 
-                // Endpoints que requieren autenticación
-                .requestMatchers("/api/**").authenticated()
+                        // 🔐 Endpoints que requieren autenticación
+                        .requestMatchers("/api/**").authenticated()
 
-                // Cualquier otra petición requiere autenticación
-                .anyRequest().authenticated()
-            );
+                        // ⚙️ Cualquier otra petición requiere autenticación
+                        .anyRequest().authenticated()
+                );
 
-        // Agregar el proveedor de autenticación
+        // 🧩 Agregar el proveedor de autenticación
         http.authenticationProvider(authenticationProvider());
 
-        // Agregar el filtro JWT antes del filtro de autenticación de Spring Security
+        // 🧱 Agregar el filtro JWT antes del filtro de autenticación de Spring Security
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
