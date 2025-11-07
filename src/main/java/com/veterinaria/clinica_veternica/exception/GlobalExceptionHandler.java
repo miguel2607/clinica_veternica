@@ -1,7 +1,7 @@
 package com.veterinaria.clinica_veternica.exception;
 
 import com.veterinaria.clinica_veternica.dto.response.ErrorResponse;
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  * @since 2025-11-03
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -210,9 +211,8 @@ public class GlobalExceptionHandler {
                 .traceId(generateTraceId())
                 .build();
 
-        // Log del error para debugging (en producción usar un logger como SLF4J)
-        System.err.println("Error no manejado: " + ex.getMessage());
-        ex.printStackTrace();
+        // Log del error usando SLF4J
+        log.error("Error no manejado en el sistema", ex);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }

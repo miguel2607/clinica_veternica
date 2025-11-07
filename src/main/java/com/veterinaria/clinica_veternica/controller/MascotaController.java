@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class MascotaController {
     private final IMascotaService mascotaService;
 
     @Operation(summary = "Crear nueva mascota")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'VETERINARIO')")
     @PostMapping
     public ResponseEntity<MascotaResponseDTO> crear(@Valid @RequestBody MascotaRequestDTO requestDTO) {
         return new ResponseEntity<>(mascotaService.crear(requestDTO), HttpStatus.CREATED);
@@ -88,6 +90,7 @@ public class MascotaController {
     }
 
     @Operation(summary = "Eliminar mascota")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         mascotaService.eliminar(id);

@@ -1,5 +1,8 @@
 package com.veterinaria.clinica_veternica.controller;
 
+import com.veterinaria.clinica_veternica.dto.request.usuario.BloquearUsuarioRequestDTO;
+import com.veterinaria.clinica_veternica.dto.request.usuario.CambiarPasswordRequestDTO;
+import com.veterinaria.clinica_veternica.dto.request.usuario.ResetearPasswordRequestDTO;
 import com.veterinaria.clinica_veternica.dto.request.usuario.UsuarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.UsuarioResponseDTO;
 import com.veterinaria.clinica_veternica.service.interfaces.IUsuarioService;
@@ -15,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -86,8 +88,8 @@ public class UsuarioController {
     @PatchMapping("/{id}/cambiar-password")
     public ResponseEntity<Void> cambiarPassword(
             @PathVariable Long id,
-            @RequestBody Map<String, String> passwords) {
-        usuarioService.cambiarPassword(id, passwords.get("passwordActual"), passwords.get("passwordNueva"));
+            @Valid @RequestBody CambiarPasswordRequestDTO requestDTO) {
+        usuarioService.cambiarPassword(id, requestDTO.getPasswordActual(), requestDTO.getPasswordNueva());
         return ResponseEntity.noContent().build();
     }
 
@@ -95,8 +97,8 @@ public class UsuarioController {
     @PatchMapping("/{id}/resetear-password")
     public ResponseEntity<Void> resetearPassword(
             @PathVariable Long id,
-            @RequestBody Map<String, String> password) {
-        usuarioService.resetearPassword(id, password.get("nuevaPassword"));
+            @Valid @RequestBody ResetearPasswordRequestDTO requestDTO) {
+        usuarioService.resetearPassword(id, requestDTO.getNuevaPassword());
         return ResponseEntity.noContent().build();
     }
 
@@ -104,8 +106,10 @@ public class UsuarioController {
     @PatchMapping("/{id}/bloquear")
     public ResponseEntity<Void> bloquearUsuario(
             @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> motivo) {
-        String motivoBloqueo = motivo != null ? motivo.get("motivo") : "Bloqueado por administrador";
+            @RequestBody(required = false) BloquearUsuarioRequestDTO requestDTO) {
+        String motivoBloqueo = requestDTO != null && requestDTO.getMotivo() != null 
+                ? requestDTO.getMotivo() 
+                : "Bloqueado por administrador";
         usuarioService.bloquearUsuario(id, motivoBloqueo);
         return ResponseEntity.noContent().build();
     }

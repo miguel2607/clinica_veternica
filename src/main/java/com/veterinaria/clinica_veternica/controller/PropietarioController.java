@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class PropietarioController {
     private final IPropietarioService propietarioService;
 
     @Operation(summary = "Crear nuevo propietario")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA')")
     @PostMapping
     public ResponseEntity<PropietarioResponseDTO> crear(@Valid @RequestBody PropietarioRequestDTO requestDTO) {
         return new ResponseEntity<>(propietarioService.crear(requestDTO), HttpStatus.CREATED);
@@ -90,6 +92,7 @@ public class PropietarioController {
     }
 
     @Operation(summary = "Eliminar propietario")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         propietarioService.eliminar(id);

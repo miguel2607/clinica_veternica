@@ -1,5 +1,6 @@
 package com.veterinaria.clinica_veternica.dto.response.agenda;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -96,6 +97,7 @@ public class CitaResponseDTO {
     /**
      * DTO simplificado de Mascota.
      */
+    @Schema(description = "Información simplificada de la mascota")
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -111,6 +113,7 @@ public class CitaResponseDTO {
     /**
      * DTO simplificado de Veterinario.
      */
+    @Schema(description = "Información simplificada del veterinario")
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -124,6 +127,7 @@ public class CitaResponseDTO {
     /**
      * DTO simplificado de Servicio.
      */
+    @Schema(description = "Información simplificada del servicio")
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

@@ -187,11 +187,10 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     List<Propietario> findPropietariosOrdenadosPorNumeroMascotas();
 
     /**
-     * Busca propietarios activos (para notificaciones).
-     * Nota: El campo recibirNotificaciones no existe en la entidad actual.
+     * Busca propietarios activos que aceptan notificaciones.
      *
-     * @return Lista de propietarios activos
+     * @return Lista de propietarios activos que aceptan notificaciones
      */
-    @Query("SELECT p FROM Propietario p WHERE p.activo = true")
+    @Query("SELECT p FROM Propietario p WHERE p.activo = true AND p.aceptaNotificaciones = true")
     List<Propietario> findPropietariosConNotificacionesActivas();
 }
