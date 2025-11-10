@@ -251,7 +251,7 @@ public class Inventario {
      * @return true si está crítico (0 unidades o menor al mínimo)
      */
     public boolean esNivelCritico() {
-        return cantidadActual == 0 || requiereReorden;
+        return (cantidadActual != null && cantidadActual == 0) || Boolean.TRUE.equals(requiereReorden);
     }
 
     /**
@@ -272,9 +272,39 @@ public class Inventario {
      * @return true si tuvo movimiento reciente
      */
     public boolean tieneMovimientoReciente() {
-        LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
+        LocalDateTime hace30Dias = LocalDateTime.now().minusDays(com.veterinaria.clinica_veternica.util.Constants.DIAS_POR_MES);
         return (fechaUltimaEntrada != null && fechaUltimaEntrada.isAfter(hace30Dias)) ||
                (fechaUltimaSalida != null && fechaUltimaSalida.isAfter(hace30Dias));
+    }
+
+    /**
+     * Obtiene la cantidad disponible (alias de cantidadActual).
+     * Método de conveniencia para compatibilidad con código existente.
+     *
+     * @return Cantidad disponible en stock
+     */
+    public Integer getCantidadDisponible() {
+        return cantidadActual;
+    }
+
+    /**
+     * Obtiene el stock mínimo del insumo asociado.
+     * Método de conveniencia que accede al Insumo relacionado.
+     *
+     * @return Stock mínimo o null si no está disponible
+     */
+    public Integer getStockMinimo() {
+        return insumo != null ? insumo.getStockMinimo() : null;
+    }
+
+    /**
+     * Obtiene el stock máximo del insumo asociado.
+     * Método de conveniencia que accede al Insumo relacionado.
+     *
+     * @return Stock máximo o null si no está disponible
+     */
+    public Integer getStockMaximo() {
+        return insumo != null ? insumo.getStockMaximo() : null;
     }
 
     // ===================================================================

@@ -102,10 +102,15 @@ public class PushNotificacionFactory implements NotificacionFactory {
                     log.info("Push enviada exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (Exception e) {
-                    log.error("Error al enviar Push: {}", e.getMessage());
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar Push: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
+                    return false;
+                } catch (Exception e) {
+                    log.error("Error inesperado al enviar Push: {}", e.getMessage(), e);
+                    this.estadoEnvio = "ERROR";
+                    this.mensajeError = "Error inesperado al enviar notificación push";
                     return false;
                 }
             }

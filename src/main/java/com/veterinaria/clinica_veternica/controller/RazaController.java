@@ -4,7 +4,7 @@ import com.veterinaria.clinica_veternica.dto.request.paciente.RazaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.RazaResponseDTO;
 import com.veterinaria.clinica_veternica.service.interfaces.IRazaService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

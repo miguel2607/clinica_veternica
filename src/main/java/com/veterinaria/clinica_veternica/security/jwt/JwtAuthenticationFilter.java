@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.security.jwt;
 
 import com.veterinaria.clinica_veternica.security.service.UserDetailsServiceImpl;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,8 +70,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.debug("Usuario autenticado: {}", username);
             }
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             log.error("No se puede establecer la autenticación del usuario: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Error inesperado durante la autenticación: {}", e.getMessage(), e);
         }
 
         // Continuar con la cadena de filtros

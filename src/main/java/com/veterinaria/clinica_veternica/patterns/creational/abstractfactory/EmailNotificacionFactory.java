@@ -90,10 +90,15 @@ public class EmailNotificacionFactory implements NotificacionFactory {
                     log.info("EMAIL enviado exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (Exception e) {
-                    log.error("Error al enviar EMAIL: {}", e.getMessage());
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar EMAIL: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
+                    return false;
+                } catch (Exception e) {
+                    log.error("Error inesperado al enviar EMAIL: {}", e.getMessage(), e);
+                    this.estadoEnvio = "ERROR";
+                    this.mensajeError = "Error inesperado al enviar email";
                     return false;
                 }
             }

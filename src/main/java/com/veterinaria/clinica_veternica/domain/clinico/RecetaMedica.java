@@ -450,7 +450,9 @@ public class RecetaMedica {
      */
     public void calcularFechaVigencia() {
         if (fechaEmision != null && fechaVigencia == null) {
-            int diasVigencia = esControlada() ? 15 : 30;
+            int diasVigencia = esControlada() 
+                    ? com.veterinaria.clinica_veternica.util.Constants.DIAS_VIGENCIA_RECETA_CONTROLADA
+                    : com.veterinaria.clinica_veternica.util.Constants.DIAS_VIGENCIA_RECETA_SIMPLE;
             this.fechaVigencia = fechaEmision.plusDays(diasVigencia);
         }
     }

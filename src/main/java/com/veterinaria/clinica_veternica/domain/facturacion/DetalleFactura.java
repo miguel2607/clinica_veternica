@@ -143,7 +143,7 @@ public class DetalleFactura {
             // Calcular descuento
             if (porcentajeDescuento != null && porcentajeDescuento.compareTo(BigDecimal.ZERO) > 0) {
                 this.montoDescuento = totalSinDescuento.multiply(porcentajeDescuento)
-                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                    .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
             } else {
                 this.montoDescuento = BigDecimal.ZERO;
             }

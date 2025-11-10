@@ -306,4 +306,47 @@ public final class Constants {
      * Zona horaria por defecto (Colombia).
      */
     public static final String DEFAULT_TIMEZONE = "America/Bogota";
+
+    // ===================================================================
+    // CONSTANTES DE TIEMPO (en milisegundos)
+    // ===================================================================
+
+    /**
+     * Una hora en milisegundos.
+     */
+    public static final long UNA_HORA_MS = 60 * 60 * 1000L; // 3600000
+
+    /**
+     * Un día en milisegundos.
+     */
+    public static final long UN_DIA_MS = 24 * 60 * 60 * 1000L; // 86400000
+
+    /**
+     * Un mes en días (promedio).
+     */
+    public static final int DIAS_POR_MES = 30;
+
+    // ===================================================================
+    // CONSTANTES DE PORCENTAJES Y DIVISORES
+    // ===================================================================
+
+    /**
+     * Divisor para convertir porcentaje a decimal (100).
+     */
+    public static final BigDecimal PORCENTAJE_DIVISOR = new BigDecimal("100");
+
+    /**
+     * Días de vigencia para recetas controladas.
+     */
+    public static final int DIAS_VIGENCIA_RECETA_CONTROLADA = 15;
+
+    /**
+     * Días de vigencia para recetas simples.
+     */
+    public static final int DIAS_VIGENCIA_RECETA_SIMPLE = 30;
+
+    /**
+     * Consumo diario promedio estimado para cálculo de reposición (unidades por día).
+     */
+    public static final int CONSUMO_DIARIO_PROMEDIO_ESTIMADO = 10;
 }

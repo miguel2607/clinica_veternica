@@ -141,7 +141,11 @@ public class JwtUtils {
         try {
             Date expiration = getExpirationDateFromToken(token);
             return expiration.before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Error al verificar expiración del token: {}", e.getMessage());
+            return true;
         } catch (Exception e) {
+            log.warn("Error inesperado al verificar expiración del token: {}", e.getMessage());
             return true;
         }
     }

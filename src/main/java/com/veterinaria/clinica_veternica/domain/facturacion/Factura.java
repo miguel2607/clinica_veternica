@@ -274,7 +274,7 @@ public class Factura {
         // Calcular descuento
         if (porcentajeDescuento != null && porcentajeDescuento.compareTo(BigDecimal.ZERO) > 0) {
             this.montoDescuento = subtotal.multiply(porcentajeDescuento)
-                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
         } else {
             this.montoDescuento = BigDecimal.ZERO;
         }
@@ -285,7 +285,7 @@ public class Factura {
         // Calcular impuesto
         if (porcentajeImpuesto != null && porcentajeImpuesto.compareTo(BigDecimal.ZERO) > 0) {
             this.montoImpuesto = baseImponible.multiply(porcentajeImpuesto)
-                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
         } else {
             this.montoImpuesto = BigDecimal.ZERO;
         }
