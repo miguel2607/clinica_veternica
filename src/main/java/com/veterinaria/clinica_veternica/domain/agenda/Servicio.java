@@ -331,6 +331,9 @@ public class Servicio {
             return true;
         }
 
+        if (especiesAplicables == null || especie == null) {
+            return false;
+        }
         return especiesAplicables.toLowerCase().contains(especie.toLowerCase());
     }
 

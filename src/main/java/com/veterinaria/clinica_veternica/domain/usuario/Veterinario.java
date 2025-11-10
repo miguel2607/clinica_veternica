@@ -136,8 +136,8 @@ public class Veterinario extends Personal {
      */
     public boolean puedeAtenderCirugias() {
         return especialidad != null &&
-               (especialidad.toLowerCase().contains("cirugía") ||
-                especialidad.toLowerCase().contains("cirugia"));
+               (especialidad != null && (especialidad.toLowerCase().contains("cirugía") ||
+                especialidad.toLowerCase().contains("cirugia")));
     }
 
     /**

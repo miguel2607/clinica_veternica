@@ -259,7 +259,7 @@ public class Propietario {
      * @param canal Canal preferido (EMAIL, SMS, WHATSAPP)
      */
     public void setCanalNotificacionPreferido(String canal) {
-        if (canal != null && (canal.equals("EMAIL") || canal.equals("SMS") || canal.equals("WHATSAPP"))) {
+        if (canal != null && ("EMAIL".equals(canal) || "SMS".equals(canal) || "WHATSAPP".equals(canal))) {
             this.canalNotificacionPreferido = canal;
         }
     }
