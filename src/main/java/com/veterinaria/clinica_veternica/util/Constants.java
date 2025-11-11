@@ -1,5 +1,7 @@
 package com.veterinaria.clinica_veternica.util;
 
+import java.math.BigDecimal;
+
 /**
  * Clase de constantes globales del sistema.
  *
@@ -95,11 +97,6 @@ public final class Constants {
      * Rol de Propietario (dueño de mascota).
      */
     public static final String ROLE_PROPIETARIO = "PROPIETARIO";
-
-    /**
-     * Rol de Estudiante en práctica.
-     */
-    public static final String ROLE_ESTUDIANTE = "ESTUDIANTE";
 
     // ===================================================================
     // CONSTANTES DE ESTADOS DE CITA

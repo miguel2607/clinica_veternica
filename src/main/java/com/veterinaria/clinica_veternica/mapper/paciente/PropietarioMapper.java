@@ -39,7 +39,7 @@ public interface PropietarioMapper {
      * @return DTO de response
      */
     @Mapping(target = "nombreCompleto", expression = "java(getNombreCompleto(propietario))")
-    @Mapping(target = "edad", expression = "java(calcularEdad(propietario.getFechaNacimiento()))")
+    @Mapping(target = "edad", ignore = true)
     @Mapping(target = "direccionCompleta", expression = "java(getDireccionCompleta(propietario))")
     @Mapping(target = "cantidadMascotas", expression = "java(propietario.getCantidadMascotas())")
     PropietarioResponseDTO toResponseDTO(Propietario propietario);
@@ -76,45 +76,16 @@ public interface PropietarioMapper {
     }
 
     /**
-     * Calcula la edad a partir de la fecha de nacimiento.
-     *
-     * @param fechaNacimiento Fecha de nacimiento
-     * @return Edad en años
-     */
-    default Integer calcularEdad(LocalDate fechaNacimiento) {
-        if (fechaNacimiento == null) {
-            return null;
-        }
-        return Period.between(fechaNacimiento, LocalDate.now()).getYears();
-    }
-
-    /**
      * Obtiene la dirección completa formateada.
+     * La dirección ya incluye ciudad y código postal si están disponibles.
      *
      * @param propietario Entidad
      * @return Dirección completa
      */
     default String getDireccionCompleta(Propietario propietario) {
-        StringBuilder direccionCompleta = new StringBuilder();
-
         if (propietario.getDireccion() != null && !propietario.getDireccion().isBlank()) {
-            direccionCompleta.append(propietario.getDireccion());
+            return propietario.getDireccion();
         }
-
-        if (propietario.getCiudad() != null && !propietario.getCiudad().isBlank()) {
-            if (direccionCompleta.length() > 0) {
-                direccionCompleta.append(", ");
-            }
-            direccionCompleta.append(propietario.getCiudad());
-        }
-
-        if (propietario.getCodigoPostal() != null && !propietario.getCodigoPostal().isBlank()) {
-            if (direccionCompleta.length() > 0) {
-                direccionCompleta.append(" ");
-            }
-            direccionCompleta.append("(").append(propietario.getCodigoPostal()).append(")");
-        }
-
-        return direccionCompleta.length() > 0 ? direccionCompleta.toString() : null;
+        return null;
     }
 }

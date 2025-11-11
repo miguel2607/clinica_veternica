@@ -88,13 +88,6 @@ public class Mascota {
     private Double peso;
 
     /**
-     * Talla o tamaño (Pequeño, Mediano, Grande, Extra Grande).
-     */
-    @Size(max = 20, message = "La talla no puede exceder 20 caracteres")
-    @Column(length = 20)
-    private String talla;
-
-    /**
      * Número de microchip (identificación única internacional).
      */
     @Size(max = 20, message = "El número de microchip no puede exceder 20 caracteres")
@@ -109,24 +102,11 @@ public class Mascota {
     private Boolean esterilizado = false;
 
     /**
-     * Alergias conocidas de la mascota.
-     */
-    @Size(max = 500, message = "Las alergias no pueden exceder 500 caracteres")
-    @Column(length = 500)
-    private String alergias;
-
-    /**
-     * Enfermedades crónicas o condiciones preexistentes.
-     */
-    @Size(max = 500, message = "Las enfermedades crónicas no pueden exceder 500 caracteres")
-    @Column(length = 500)
-    private String enfermedadesCronicas;
-
-    /**
      * Observaciones generales sobre el comportamiento o características especiales.
+     * Incluye alergias, enfermedades crónicas, información de fallecimiento, etc.
      */
-    @Size(max = 1000, message = "Las observaciones no pueden exceder 1000 caracteres")
-    @Column(length = 1000)
+    @Size(max = 2000, message = "Las observaciones no pueden exceder 2000 caracteres")
+    @Column(length = 2000)
     private String observaciones;
 
     /**
@@ -143,19 +123,6 @@ public class Mascota {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
-
-    /**
-     * Fecha de fallecimiento (si aplica).
-     */
-    @Column
-    private LocalDate fechaFallecimiento;
-
-    /**
-     * Causa de fallecimiento (si aplica).
-     */
-    @Size(max = 500, message = "La causa de fallecimiento no puede exceder 500 caracteres")
-    @Column(length = 500)
-    private String causaFallecimiento;
 
     /**
      * Propietario de la mascota.
@@ -225,9 +192,7 @@ public class Mascota {
         if (fechaNacimiento == null) {
             return null;
         }
-        LocalDate fechaReferencia = activo && fechaFallecimiento == null
-            ? LocalDate.now()
-            : fechaFallecimiento;
+        LocalDate fechaReferencia = activo ? LocalDate.now() : LocalDate.now();
         return Period.between(fechaNacimiento, fechaReferencia);
     }
 
@@ -360,9 +325,11 @@ public class Mascota {
      * @param causa Causa de fallecimiento
      */
     public void registrarFallecimiento(LocalDate fecha, String causa) {
-        this.fechaFallecimiento = fecha;
-        this.causaFallecimiento = causa;
         this.activo = false;
+        String infoFallecimiento = String.format("FALLECIMIENTO: Fecha: %s, Causa: %s", fecha, causa);
+        this.observaciones = (this.observaciones != null 
+            ? this.observaciones + "\n" 
+            : "") + infoFallecimiento;
     }
 
     /**

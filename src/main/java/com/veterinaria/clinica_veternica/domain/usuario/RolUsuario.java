@@ -12,7 +12,6 @@ package com.veterinaria.clinica_veternica.domain.usuario;
  * - AUXILIAR: Auxiliar veterinario que asiste en procedimientos
  * - RECEPCIONISTA: Personal de recepción que gestiona citas y facturación
  * - PROPIETARIO: Dueño de mascota con acceso limitado a su información
- * - ESTUDIANTE: Estudiante en práctica con acceso supervisado
  *
  * @author Clínica Veterinaria Team
  * @version 1.0
@@ -47,13 +46,7 @@ public enum RolUsuario {
      * Propietario de mascota.
      * Permisos: Consulta de información de sus mascotas, solicitud de citas, visualización de facturas.
      */
-    PROPIETARIO("Propietario"),
-
-    /**
-     * Estudiante en práctica.
-     * Permisos: Acceso supervisado, registro de bitácoras, consulta de casos.
-     */
-    ESTUDIANTE("Estudiante");
+    PROPIETARIO("Propietario");
 
     private final String displayName;
 

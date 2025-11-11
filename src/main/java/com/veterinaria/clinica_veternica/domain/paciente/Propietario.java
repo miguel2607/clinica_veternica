@@ -82,26 +82,12 @@ public class Propietario {
     private String apellidos;
 
     /**
-     * Fecha de nacimiento del propietario.
-     */
-    @Past(message = "La fecha de nacimiento debe ser en el pasado")
-    @Column
-    private LocalDate fechaNacimiento;
-
-    /**
      * Teléfono principal de contacto.
      */
     @NotBlank(message = "El teléfono es obligatorio")
     @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
     @Column(nullable = false, length = 15)
     private String telefono;
-
-    /**
-     * Teléfono secundario de contacto (opcional).
-     */
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
-    @Column(length = 15)
-    private String telefonoSecundario;
 
     /**
      * Correo electrónico del propietario.
@@ -113,25 +99,11 @@ public class Propietario {
     private String email;
 
     /**
-     * Dirección de residencia.
+     * Dirección de residencia completa (incluye ciudad y código postal si aplica).
      */
-    @Size(max = 200, message = "La dirección no puede exceder 200 caracteres")
-    @Column(length = 200)
+    @Size(max = 300, message = "La dirección no puede exceder 300 caracteres")
+    @Column(length = 300)
     private String direccion;
-
-    /**
-     * Ciudad de residencia.
-     */
-    @Size(max = 100, message = "La ciudad no puede exceder 100 caracteres")
-    @Column(length = 100)
-    private String ciudad;
-
-    /**
-     * Código postal.
-     */
-    @Size(max = 10, message = "El código postal no puede exceder 10 caracteres")
-    @Column(length = 10)
-    private String codigoPostal;
 
     /**
      * Observaciones o notas adicionales sobre el propietario.
@@ -146,20 +118,6 @@ public class Propietario {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
-
-    /**
-     * Indica si el propietario ha aceptado recibir notificaciones.
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean aceptaNotificaciones = true;
-
-    /**
-     * Canal preferido para notificaciones (EMAIL, SMS, WHATSAPP).
-     */
-    @Column(length = 20)
-    @Builder.Default
-    private String canalNotificacionPreferido = "EMAIL";
 
     /**
      * Mascotas del propietario.
@@ -239,42 +197,7 @@ public class Propietario {
         this.activo = false;
     }
 
-    /**
-     * Habilita las notificaciones.
-     */
-    public void habilitarNotificaciones() {
-        this.aceptaNotificaciones = true;
-    }
 
-    /**
-     * Deshabilita las notificaciones.
-     */
-    public void deshabilitarNotificaciones() {
-        this.aceptaNotificaciones = false;
-    }
-
-    /**
-     * Establece el canal de notificación preferido.
-     *
-     * @param canal Canal preferido (EMAIL, SMS, WHATSAPP)
-     */
-    public void setCanalNotificacionPreferido(String canal) {
-        if (canal != null && ("EMAIL".equals(canal) || "SMS".equals(canal) || "WHATSAPP".equals(canal))) {
-            this.canalNotificacionPreferido = canal;
-        }
-    }
-
-    /**
-     * Calcula la edad del propietario.
-     *
-     * @return Edad en años, o null si no hay fecha de nacimiento
-     */
-    public Integer getEdad() {
-        if (fechaNacimiento == null) {
-            return null;
-        }
-        return LocalDate.now().getYear() - fechaNacimiento.getYear();
-    }
 
     // ===================================================================
     // EQUALS Y HASHCODE

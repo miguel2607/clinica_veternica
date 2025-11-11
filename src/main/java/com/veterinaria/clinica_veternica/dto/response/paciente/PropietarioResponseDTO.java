@@ -107,16 +107,6 @@ public class PropietarioResponseDTO {
     private Boolean activo;
 
     /**
-     * Indica si acepta recibir notificaciones.
-     */
-    private Boolean aceptaNotificaciones;
-
-    /**
-     * Canal preferido para notificaciones.
-     */
-    private String canalNotificacionPreferido;
-
-    /**
      * Cantidad de mascotas registradas.
      */
     private Integer cantidadMascotas;

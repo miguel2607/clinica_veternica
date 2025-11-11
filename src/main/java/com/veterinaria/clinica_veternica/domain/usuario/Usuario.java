@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * Entidad que representa un usuario del sistema.
  *
  * Almacena las credenciales y configuración de autenticación para acceder al sistema.
- * Se relaciona con Personal, Propietario o Estudiante según el rol.
+ * Se relaciona con Personal o Propietario según el rol.
  *
  * Características:
  * - Credenciales de acceso (username, password)

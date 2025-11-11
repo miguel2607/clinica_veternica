@@ -151,14 +151,17 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
 
     /**
      * Busca próximas citas para recordatorios (próximas 24 horas).
+     * 
+     * NOTA: El control de recordatorios enviados ahora se maneja en la tabla 'comunicaciones'.
+     * Esta query devuelve todas las citas elegibles; el servicio debe verificar si ya tienen
+     * recordatorios programados en la tabla de comunicaciones.
      *
      * @param ahora Fecha y hora actual
      * @param limite Fecha y hora límite (24 horas después)
      * @return Lista de citas
      */
     @Query("SELECT c FROM Cita c WHERE c.estado IN ('PROGRAMADA', 'CONFIRMADA') " +
-           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :ahora AND :limite " +
-           "AND c.recordatorioEnviado = false")
+           "AND FUNCTION('TIMESTAMP', c.fechaCita, c.horaCita) BETWEEN :ahora AND :limite")
     List<Cita> findCitasParaRecordatorio(@Param("ahora") LocalDateTime ahora,
                                           @Param("limite") LocalDateTime limite);
 

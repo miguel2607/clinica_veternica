@@ -107,53 +107,22 @@ public class HistoriaClinica {
     @Column(length = 1000)
     private String medicamentosActuales;
 
-    /**
-     * Dieta habitual de la mascota.
-     */
-    @Size(max = 500, message = "La dieta no puede exceder 500 caracteres")
-    @Column(length = 500)
-    private String dieta;
 
     /**
      * Observaciones generales de la historia clínica.
+     * Incluye dieta, tipo de sangre, motivo de archivo, etc.
      */
-    @Size(max = 2000, message = "Las observaciones no pueden exceder 2000 caracteres")
-    @Column(length = 2000)
+    @Size(max = 3000, message = "Las observaciones no pueden exceder 3000 caracteres")
+    @Column(length = 3000)
     private String observacionesGenerales;
 
     /**
-     * Tipo de sangre (si se conoce).
-     */
-    @Size(max = 10, message = "El tipo de sangre no puede exceder 10 caracteres")
-    @Column(length = 10)
-    private String tipoSangre;
-
-    /**
      * Indica si la historia clínica está activa.
+     * Si está inactiva, significa que está archivada.
      */
     @Column(nullable = false)
     @Builder.Default
     private Boolean activa = true;
-
-    /**
-     * Indica si la historia fue archivada (mascota fallecida o inactiva).
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean archivada = false;
-
-    /**
-     * Fecha de archivo (si aplica).
-     */
-    @Column
-    private LocalDateTime fechaArchivo;
-
-    /**
-     * Motivo de archivo.
-     */
-    @Size(max = 500, message = "El motivo de archivo no puede exceder 500 caracteres")
-    @Column(length = 500)
-    private String motivoArchivo;
 
     /**
      * Evoluciones clínicas asociadas a esta historia.
@@ -368,23 +337,30 @@ public class HistoriaClinica {
     /**
      * Archiva la historia clínica.
      *
-     * @param motivo Motivo del archivo
+     * @param motivo Motivo del archivo (se guarda en observaciones)
      */
     public void archivar(String motivo) {
-        this.archivada = true;
         this.activa = false;
-        this.fechaArchivo = LocalDateTime.now();
-        this.motivoArchivo = motivo;
+        if (motivo != null && !motivo.isBlank()) {
+            String motivoArchivo = "ARCHIVADA: " + motivo + " - " + LocalDateTime.now();
+            this.observacionesGenerales = (this.observacionesGenerales != null 
+                ? this.observacionesGenerales + "\n" 
+                : "") + motivoArchivo;
+        }
     }
 
     /**
      * Reactiva la historia clínica.
      */
     public void reactivar() {
-        this.archivada = false;
         this.activa = true;
-        this.fechaArchivo = null;
-        this.motivoArchivo = null;
+    }
+
+    /**
+     * Verifica si está archivada.
+     */
+    public boolean estaArchivada() {
+        return !activa;
     }
 
     /**

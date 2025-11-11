@@ -110,12 +110,6 @@ public class Cita {
     private Integer duracionEstimadaMinutos;
 
     /**
-     * Hora de fin estimada (calculada automáticamente).
-     */
-    @Column
-    private LocalTime horaFinEstimada;
-
-    /**
      * Estado actual de la cita.
      */
     @NotNull(message = "El estado es obligatorio")
@@ -161,33 +155,14 @@ public class Cita {
     private String direccionDomicilio;
 
     /**
-     * Indica si requiere seguimiento posterior.
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean requiereSeguimiento = false;
-
-    /**
-     * Fecha programada para seguimiento (si aplica).
-     */
-    @Column
-    private LocalDate fechaSeguimiento;
-
-    /**
      * Precio acordado para la cita.
      * Puede incluir descuentos, urgencias, domicilio, etc.
+     * Se calcula desde el servicio base + ajustes.
      */
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.0", message = "El precio no puede ser negativo")
     @Column(nullable = false)
     private BigDecimal precioFinal;
-
-    /**
-     * Indica si la cita fue pagada.
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean pagada = false;
 
     /**
      * Fecha y hora de confirmación de la cita.
@@ -206,12 +181,6 @@ public class Cita {
      */
     @Column
     private LocalDateTime fechaHoraFinAtencion;
-
-    /**
-     * Duración real de la atención en minutos (calculada).
-     */
-    @Column
-    private Integer duracionRealMinutos;
 
     /**
      * Fecha y hora de cancelación (si aplica).
@@ -234,34 +203,6 @@ public class Cita {
     private String canceladaPor;
 
     /**
-     * Indica si se envió notificación de recordatorio.
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean recordatorioEnviado = false;
-
-    /**
-     * Fecha y hora de envío del recordatorio.
-     */
-    @Column
-    private LocalDateTime fechaEnvioRecordatorio;
-
-    /**
-     * Calificación de la atención (1-5 estrellas).
-     */
-    @Min(value = 1, message = "La calificación mínima es 1")
-    @Max(value = 5, message = "La calificación máxima es 5")
-    @Column
-    private Integer calificacion;
-
-    /**
-     * Comentario del propietario sobre la atención.
-     */
-    @Size(max = 1000, message = "El comentario no puede exceder 1000 caracteres")
-    @Column(length = 1000)
-    private String comentarioPropietario;
-
-    /**
      * Fecha y hora de creación del registro.
      */
     @CreatedDate
@@ -280,15 +221,25 @@ public class Cita {
     // ===================================================================
 
     /**
-     * Calcula la hora de fin estimada.
-     * Se ejecuta antes de persistir o actualizar.
+     * Obtiene la hora de fin estimada (calculada).
      */
-    @PrePersist
-    @PreUpdate
-    public void calcularHoraFinEstimada() {
+    public LocalTime getHoraFinEstimada() {
         if (horaCita != null && duracionEstimadaMinutos != null) {
-            this.horaFinEstimada = horaCita.plusMinutes(duracionEstimadaMinutos);
+            return horaCita.plusMinutes(duracionEstimadaMinutos);
         }
+        return null;
+    }
+
+    /**
+     * Obtiene la duración real en minutos (calculada).
+     */
+    public Integer getDuracionRealMinutos() {
+        if (fechaHoraInicioAtencion != null && fechaHoraFinAtencion != null) {
+            long minutos = java.time.Duration.between(
+                fechaHoraInicioAtencion, fechaHoraFinAtencion).toMinutes();
+            return (int) minutos;
+        }
+        return null;
     }
 
     /**
@@ -317,7 +268,6 @@ public class Cita {
         }
 
         this.fechaHoraFinAtencion = LocalDateTime.now();
-        calcularDuracionReal();
     }
 
     /**
@@ -332,19 +282,7 @@ public class Cita {
      */
     public void finalizarAtencion() {
         this.fechaHoraFinAtencion = LocalDateTime.now();
-        calcularDuracionReal();
         marcarComoAtendida();
-    }
-
-    /**
-     * Calcula la duración real de la atención.
-     */
-    private void calcularDuracionReal() {
-        if (fechaHoraInicioAtencion != null && fechaHoraFinAtencion != null) {
-            long minutos = java.time.Duration.between(
-                fechaHoraInicioAtencion, fechaHoraFinAtencion).toMinutes();
-            this.duracionRealMinutos = (int) minutos;
-        }
     }
 
     /**
@@ -377,38 +315,6 @@ public class Cita {
         this.estado = EstadoCita.NO_ASISTIO;
     }
 
-    /**
-     * Marca la cita como pagada.
-     */
-    public void marcarComoPagada() {
-        this.pagada = true;
-    }
-
-    /**
-     * Registra el envío del recordatorio.
-     */
-    public void registrarEnvioRecordatorio() {
-        this.recordatorioEnviado = true;
-        this.fechaEnvioRecordatorio = LocalDateTime.now();
-    }
-
-    /**
-     * Registra la calificación del propietario.
-     *
-     * @param calificacion Calificación (1-5)
-     * @param comentario Comentario opcional
-     */
-    public void registrarCalificacion(int calificacion, String comentario) {
-        if (this.estado != EstadoCita.ATENDIDA) {
-            throw new IllegalStateException("Solo se pueden calificar citas atendidas");
-        }
-        if (calificacion < 1 || calificacion > 5) {
-            throw new IllegalArgumentException("La calificación debe estar entre 1 y 5");
-        }
-
-        this.calificacion = calificacion;
-        this.comentarioPropietario = comentario;
-    }
 
     /**
      * Verifica si la cita está pendiente (programada o confirmada).

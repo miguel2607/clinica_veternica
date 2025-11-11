@@ -75,11 +75,6 @@ public class CitaResponseDTO {
     private String estado;
 
     /**
-     * Indica si se envió recordatorio.
-     */
-    private Boolean recordatorioEnviado;
-
-    /**
      * Indica si es una cita de emergencia.
      */
     private Boolean esEmergencia;

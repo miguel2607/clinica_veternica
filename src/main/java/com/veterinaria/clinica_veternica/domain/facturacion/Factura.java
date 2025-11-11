@@ -35,8 +35,7 @@ import java.util.List;
            @Index(name = "idx_factura_numero", columnList = "numero_factura"),
            @Index(name = "idx_factura_propietario", columnList = "id_propietario"),
            @Index(name = "idx_factura_fecha", columnList = "fecha_emision"),
-           @Index(name = "idx_factura_cita", columnList = "id_cita"),
-           @Index(name = "idx_factura_pagada", columnList = "pagada")
+           @Index(name = "idx_factura_cita", columnList = "id_cita")
        },
        uniqueConstraints = {
            @UniqueConstraint(name = "uk_factura_numero", columnNames = "numero_factura")
@@ -90,12 +89,6 @@ public class Factura {
     private LocalDate fechaEmision = LocalDate.now();
 
     /**
-     * Fecha de vencimiento para el pago.
-     */
-    @Column
-    private LocalDate fechaVencimiento;
-
-    /**
      * Subtotal (suma de todos los detalles sin impuestos).
      */
     @NotNull(message = "El subtotal es obligatorio")
@@ -114,13 +107,6 @@ public class Factura {
     private BigDecimal porcentajeDescuento = BigDecimal.ZERO;
 
     /**
-     * Monto del descuento calculado.
-     */
-    @Column
-    @Builder.Default
-    private BigDecimal montoDescuento = BigDecimal.ZERO;
-
-    /**
      * Porcentaje de impuesto (IVA, IGV, etc.).
      */
     @DecimalMin(value = "0.0", message = "El impuesto no puede ser negativo")
@@ -130,14 +116,8 @@ public class Factura {
     private BigDecimal porcentajeImpuesto = BigDecimal.ZERO;
 
     /**
-     * Monto del impuesto calculado.
-     */
-    @Column
-    @Builder.Default
-    private BigDecimal montoImpuesto = BigDecimal.ZERO;
-
-    /**
      * Total a pagar (subtotal - descuento + impuesto).
+     * Se calcula automáticamente en @PreUpdate.
      */
     @NotNull(message = "El total es obligatorio")
     @DecimalMin(value = "0.0", message = "El total no puede ser negativo")
@@ -147,24 +127,11 @@ public class Factura {
 
     /**
      * Monto total pagado hasta el momento.
+     * Se actualiza al agregar pagos.
      */
     @Column
     @Builder.Default
     private BigDecimal montoPagado = BigDecimal.ZERO;
-
-    /**
-     * Saldo pendiente de pago.
-     */
-    @Column
-    @Builder.Default
-    private BigDecimal saldoPendiente = BigDecimal.ZERO;
-
-    /**
-     * Indica si la factura está completamente pagada.
-     */
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean pagada = false;
 
     /**
      * Fecha de pago completo.
@@ -271,33 +238,27 @@ public class Factura {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        // Calcular descuento
+        // Calcular monto descuento
+        BigDecimal montoDescuento = BigDecimal.ZERO;
         if (porcentajeDescuento != null && porcentajeDescuento.compareTo(BigDecimal.ZERO) > 0) {
-            this.montoDescuento = subtotal.multiply(porcentajeDescuento)
+            montoDescuento = subtotal.multiply(porcentajeDescuento)
                 .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
-        } else {
-            this.montoDescuento = BigDecimal.ZERO;
         }
 
         // Calcular base imponible
         BigDecimal baseImponible = subtotal.subtract(montoDescuento);
 
-        // Calcular impuesto
+        // Calcular monto impuesto
+        BigDecimal montoImpuesto = BigDecimal.ZERO;
         if (porcentajeImpuesto != null && porcentajeImpuesto.compareTo(BigDecimal.ZERO) > 0) {
-            this.montoImpuesto = baseImponible.multiply(porcentajeImpuesto)
+            montoImpuesto = baseImponible.multiply(porcentajeImpuesto)
                 .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
-        } else {
-            this.montoImpuesto = BigDecimal.ZERO;
         }
 
         // Calcular total
         this.total = baseImponible.add(montoImpuesto);
 
-        // Calcular saldo pendiente
-        this.saldoPendiente = this.total.subtract(this.montoPagado);
-
-        // Verificar si está pagada
-        this.pagada = this.saldoPendiente.compareTo(BigDecimal.ZERO) <= 0;
+        // El estado de pagada se calcula con el método isPagada()
     }
 
     /**
@@ -333,7 +294,7 @@ public class Factura {
         this.montoPagado = this.montoPagado.add(pago.getMonto());
         calcularTotales();
 
-        if (this.pagada && this.fechaPago == null) {
+        if (this.isPagada() && this.fechaPago == null) {
             this.fechaPago = LocalDateTime.now();
         }
     }
@@ -353,27 +314,33 @@ public class Factura {
     }
 
     /**
-     * Verifica si la factura está vencida.
-     *
-     * @return true si está vencida
+     * Obtiene el monto del descuento (calculado).
      */
-    public boolean estaVencida() {
-        if (pagada || fechaVencimiento == null) {
-            return false;
+    public BigDecimal getMontoDescuento() {
+        if (porcentajeDescuento != null && porcentajeDescuento.compareTo(BigDecimal.ZERO) > 0) {
+            return subtotal.multiply(porcentajeDescuento)
+                .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
         }
-        return fechaVencimiento.isBefore(LocalDate.now());
+        return BigDecimal.ZERO;
     }
 
     /**
-     * Obtiene los días de vencimiento (negativo si está vencida).
-     *
-     * @return Días hasta o desde el vencimiento
+     * Obtiene el monto del impuesto (calculado).
      */
-    public long getDiasVencimiento() {
-        if (fechaVencimiento == null) {
-            return 0;
+    public BigDecimal getMontoImpuesto() {
+        BigDecimal baseImponible = subtotal.subtract(getMontoDescuento());
+        if (porcentajeImpuesto != null && porcentajeImpuesto.compareTo(BigDecimal.ZERO) > 0) {
+            return baseImponible.multiply(porcentajeImpuesto)
+                .divide(com.veterinaria.clinica_veternica.util.Constants.PORCENTAJE_DIVISOR, 2, java.math.RoundingMode.HALF_UP);
         }
-        return java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), fechaVencimiento);
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Obtiene el saldo pendiente (calculado).
+     */
+    public BigDecimal getSaldoPendiente() {
+        return total.subtract(montoPagado);
     }
 
     /**
@@ -383,6 +350,16 @@ public class Factura {
      */
     public boolean esValida() {
         return !anulada;
+    }
+
+    /**
+     * Indica si la factura está completamente pagada (calculado).
+     *
+     * @return true si está pagada
+     */
+    public boolean isPagada() {
+        return montoPagado != null && total != null 
+            && montoPagado.compareTo(total) >= 0;
     }
 
     /**

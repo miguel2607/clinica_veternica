@@ -43,6 +43,11 @@ public class InventarioResponseDTO {
     private Boolean tieneMovimientoReciente;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaModificacion;
+    
+    // Campos mapeados desde el Insumo relacionado
+    private Integer stockMinimo;
+    private Integer stockMaximo;
+    private BigDecimal precioUnitario;
 
     // Métodos de conveniencia para compatibilidad
     /**
@@ -50,35 +55,5 @@ public class InventarioResponseDTO {
      */
     public Integer getCantidadDisponible() {
         return cantidadActual;
-    }
-
-    /**
-     * Obtiene el stock mínimo del insumo asociado.
-     * Nota: Este valor debería venir del Insumo, pero por ahora retornamos null.
-     * En producción, debería mapearse desde el Insumo.
-     */
-    public Integer getStockMinimo() {
-        // TODO: Mapear desde el Insumo asociado
-        return null;
-    }
-
-    /**
-     * Obtiene el stock máximo del insumo asociado.
-     * Nota: Este valor debería venir del Insumo, pero por ahora retornamos null.
-     * En producción, debería mapearse desde el Insumo.
-     */
-    public Integer getStockMaximo() {
-        // TODO: Mapear desde el Insumo asociado
-        return null;
-    }
-
-    /**
-     * Obtiene el precio unitario del insumo asociado.
-     * Nota: Este valor debería venir del Insumo, pero por ahora retornamos null.
-     * En producción, debería mapearse desde el Insumo.
-     */
-    public BigDecimal getPrecioUnitario() {
-        // TODO: Mapear desde el Insumo asociado
-        return null;
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+
 
 /**
  * Repositorio para la entidad Mascota.
@@ -223,18 +223,24 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
 
     /**
      * Busca mascotas con alergias registradas.
+     * NOTA: Las alergias ahora se registran en HistoriaClinica, no en Mascota.
+     * Esta query busca mascotas que tienen historia clínica con alergias registradas.
      *
      * @return Lista de mascotas con alergias
      */
-    @Query("SELECT m FROM Mascota m WHERE m.alergias IS NOT NULL AND m.alergias <> '' AND m.activo = true")
+    @Query("SELECT m FROM Mascota m JOIN m.historiaClinica h " +
+           "WHERE h.alergias IS NOT NULL AND h.alergias <> '' AND m.activo = true")
     List<Mascota> findMascotasConAlergias();
 
     /**
      * Busca mascotas con enfermedades crónicas registradas.
+     * NOTA: Las enfermedades crónicas ahora se registran en HistoriaClinica, no en Mascota.
+     * Esta query busca mascotas que tienen historia clínica con enfermedades crónicas registradas.
      *
      * @return Lista de mascotas con enfermedades crónicas
      */
-    @Query("SELECT m FROM Mascota m WHERE m.enfermedadesCronicas IS NOT NULL AND m.enfermedadesCronicas <> '' AND m.activo = true")
+    @Query("SELECT m FROM Mascota m JOIN m.historiaClinica h " +
+           "WHERE h.enfermedadesCronicas IS NOT NULL AND h.enfermedadesCronicas <> '' AND m.activo = true")
     List<Mascota> findMascotasConCondicionesMedicas();
 
     /**

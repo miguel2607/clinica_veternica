@@ -171,11 +171,13 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
 
     /**
      * Busca propietarios por ciudad.
+     * NOTA: La ciudad ahora está incluida en el campo 'direccion'.
+     * Esta query busca propietarios cuya dirección contenga el texto de la ciudad.
      *
-     * @param ciudad Ciudad
+     * @param ciudad Ciudad a buscar en la dirección
      * @return Lista de propietarios
      */
-    @Query("SELECT p FROM Propietario p WHERE LOWER(p.ciudad) = LOWER(:ciudad) AND p.activo = true")
+    @Query("SELECT p FROM Propietario p WHERE LOWER(p.direccion) LIKE LOWER(CONCAT('%', :ciudad, '%')) AND p.activo = true")
     List<Propietario> findPropietariosPorCiudad(@Param("ciudad") String ciudad);
 
     /**
@@ -187,10 +189,10 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     List<Propietario> findPropietariosOrdenadosPorNumeroMascotas();
 
     /**
-     * Busca propietarios activos que aceptan notificaciones.
+     * Busca propietarios activos.
      *
-     * @return Lista de propietarios activos que aceptan notificaciones
+     * @return Lista de propietarios activos
      */
-    @Query("SELECT p FROM Propietario p WHERE p.activo = true AND p.aceptaNotificaciones = true")
-    List<Propietario> findPropietariosConNotificacionesActivas();
+    @Query("SELECT p FROM Propietario p WHERE p.activo = true")
+    List<Propietario> findPropietariosActivos();
 }

@@ -101,17 +101,6 @@ public class PropietarioRequestDTO {
     private String observaciones;
 
     /**
-     * Indica si el propietario ha aceptado recibir notificaciones.
-     */
-    private Boolean aceptaNotificaciones;
-
-    /**
-     * Canal preferido para notificaciones (EMAIL, SMS, WHATSAPP).
-     */
-    @Size(max = 20, message = "El canal de notificación no puede exceder 20 caracteres")
-    private String canalNotificacionPreferido;
-
-    /**
      * Indica si el propietario está activo.
      */
     private Boolean activo;
