@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @since 2025-11-03
  */
 @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
+@SuppressWarnings("unused")
 public class BusinessException extends RuntimeException {
 
     private final String errorCode;

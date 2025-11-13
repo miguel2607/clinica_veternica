@@ -60,7 +60,7 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Override
     public PropietarioResponseDTO actualizar(Long id, PropietarioRequestDTO requestDTO) {
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
 
         // Validar documento único (si cambió)
         if (!propietario.getDocumento().equals(requestDTO.getDocumento()) &&
@@ -94,7 +94,7 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Transactional(readOnly = true)
     public PropietarioResponseDTO buscarPorId(Long id) {
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
         return propietarioMapper.toResponseDTO(propietario);
     }
 
@@ -142,7 +142,7 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Transactional(readOnly = true)
     public PropietarioResponseDTO buscarPorEmail(String email) {
         Propietario propietario = propietarioRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "email", email));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "email", email));
         return propietarioMapper.toResponseDTO(propietario);
     }
 
@@ -156,7 +156,7 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Override
     public void eliminar(Long id) {
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
 
         if (propietario.getMascotas() != null && !propietario.getMascotas().isEmpty()) {
             throw new BusinessException(
@@ -173,9 +173,9 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Override
     public PropietarioResponseDTO activar(Long id) {
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
 
-        if (Boolean.TRUE.equals(propietario.getActivo())) {
+        if (Constants.isTrue(propietario.getActivo())) {
             throw new BusinessException("El propietario ya está activo", "PROPIETARIO_YA_ACTIVO");
         }
 

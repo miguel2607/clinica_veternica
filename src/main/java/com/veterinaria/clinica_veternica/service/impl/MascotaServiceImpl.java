@@ -38,11 +38,11 @@ public class MascotaServiceImpl implements IMascotaService {
     public MascotaResponseDTO crear(MascotaRequestDTO requestDTO) {
         // Validar que el propietario existe
         Propietario propietario = propietarioRepository.findById(requestDTO.getIdPropietario())
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", requestDTO.getIdPropietario()));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", requestDTO.getIdPropietario()));
 
         // Validar que la especie existe
         Especie especie = especieRepository.findById(requestDTO.getIdEspecie())
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", requestDTO.getIdEspecie()));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", requestDTO.getIdEspecie()));
 
         // Validar raza si se proporciona
         Raza raza = null;
@@ -76,15 +76,15 @@ public class MascotaServiceImpl implements IMascotaService {
     @Override
     public MascotaResponseDTO actualizar(Long id, MascotaRequestDTO requestDTO) {
         Mascota mascota = mascotaRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Mascota", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_MASCOTA, "id", id));
 
         // Validar propietario
         Propietario propietario = propietarioRepository.findById(requestDTO.getIdPropietario())
-            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", requestDTO.getIdPropietario()));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", requestDTO.getIdPropietario()));
 
         // Validar especie
         Especie especie = especieRepository.findById(requestDTO.getIdEspecie())
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", requestDTO.getIdEspecie()));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", requestDTO.getIdEspecie()));
 
         // Validar raza
         Raza raza = null;
@@ -114,7 +114,7 @@ public class MascotaServiceImpl implements IMascotaService {
     @Transactional(readOnly = true)
     public MascotaResponseDTO buscarPorId(Long id) {
         Mascota mascota = mascotaRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Mascota", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_MASCOTA, "id", id));
         return mascotaMapper.toResponseDTO(mascota);
     }
 
@@ -143,7 +143,7 @@ public class MascotaServiceImpl implements IMascotaService {
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> listarPorPropietario(Long idPropietario) {
         if (!propietarioRepository.existsById(idPropietario)) {
-            throw new ResourceNotFoundException("Propietario", "id", idPropietario);
+            throw new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", idPropietario);
         }
         List<Mascota> mascotas = mascotaRepository.findByPropietarioId(idPropietario);
         return mascotaMapper.toResponseDTOList(mascotas);
@@ -153,7 +153,7 @@ public class MascotaServiceImpl implements IMascotaService {
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> listarPorEspecie(Long idEspecie) {
         if (!especieRepository.existsById(idEspecie)) {
-            throw new ResourceNotFoundException("Especie", "id", idEspecie);
+            throw new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", idEspecie);
         }
         List<Mascota> mascotas = mascotaRepository.findByEspecieId(idEspecie);
         return mascotaMapper.toResponseDTOList(mascotas);
@@ -182,7 +182,7 @@ public class MascotaServiceImpl implements IMascotaService {
     @Override
     public void eliminar(Long id) {
         Mascota mascota = mascotaRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Mascota", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_MASCOTA, "id", id));
 
         // Verificar si tiene historia clínica
         if (mascota.getHistoriaClinica() != null) {
@@ -207,9 +207,9 @@ public class MascotaServiceImpl implements IMascotaService {
     @Override
     public MascotaResponseDTO activar(Long id) {
         Mascota mascota = mascotaRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Mascota", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_MASCOTA, "id", id));
 
-        if (Boolean.TRUE.equals(mascota.getActivo())) {
+        if (Constants.isTrue(mascota.getActivo())) {
             throw new BusinessException("La mascota ya está activa", "MASCOTA_YA_ACTIVA");
         }
 

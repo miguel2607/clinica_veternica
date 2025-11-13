@@ -113,7 +113,7 @@ public class Mascota {
      * URL de la foto de la mascota.
      */
     @Size(max = 255, message = "La URL de la foto no puede exceder 255 caracteres")
-    @Column(length = 255)
+    @Column(length = 255) // Explicit length for clarity
     private String fotoUrl;
 
     /**

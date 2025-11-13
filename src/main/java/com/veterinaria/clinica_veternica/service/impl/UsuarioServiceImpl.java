@@ -69,7 +69,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
         // Validar username único (si cambió)
         if (!usuario.getUsername().equals(requestDTO.getUsername()) &&
@@ -111,7 +111,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
         return usuarioMapper.toResponseDTO(usuario);
     }
 
@@ -119,7 +119,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorUsername(String username) {
         Usuario usuario = usuarioRepository.findByUsername(username)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "username", username));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "username", username));
         return usuarioMapper.toResponseDTO(usuario);
     }
 
@@ -127,7 +127,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "email", email));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "email", email));
         return usuarioMapper.toResponseDTO(usuario);
     }
 
@@ -167,7 +167,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void cambiarPassword(Long id, String passwordActual, String passwordNueva) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
         // Verificar password actual
         if (!passwordEncoder.matches(passwordActual, usuario.getPassword())) {
@@ -187,7 +187,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void resetearPassword(Long id, String nuevaPassword) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
         usuario.setPassword(passwordEncoder.encode(nuevaPassword));
         usuario.setIntentosFallidos(0);
@@ -198,9 +198,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void bloquearUsuario(Long id, String motivo) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
-        if (Boolean.TRUE.equals(usuario.getBloqueado())) {
+        if (Constants.isTrue(usuario.getBloqueado())) {
             throw new BusinessException("El usuario ya está bloqueado", "USUARIO_YA_BLOQUEADO");
         }
 
@@ -212,9 +212,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void desbloquearUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
-        if (Boolean.FALSE.equals(usuario.getBloqueado())) {
+        if (Constants.isFalse(usuario.getBloqueado())) {
             throw new BusinessException("El usuario no está bloqueado", "USUARIO_NO_BLOQUEADO");
         }
 
@@ -227,9 +227,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void activarUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
-        if (Boolean.TRUE.equals(usuario.getEstado())) {
+        if (Constants.isTrue(usuario.getEstado())) {
             throw new BusinessException("El usuario ya está activo", "USUARIO_YA_ACTIVO");
         }
 
@@ -240,9 +240,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     public void desactivarUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
-        if (Boolean.FALSE.equals(usuario.getEstado())) {
+        if (Constants.isFalse(usuario.getEstado())) {
             throw new BusinessException("El usuario ya está inactivo", "USUARIO_YA_INACTIVO");
         }
 
@@ -272,7 +272,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional(readOnly = true)
     public boolean verificarPassword(Long id, String password) {
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
         return passwordEncoder.matches(password, usuario.getPassword());
     }
 }

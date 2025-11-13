@@ -14,6 +14,7 @@ import java.math.BigDecimal;
  * @version 1.0
  * @since 2025-11-02
  */
+@SuppressWarnings("unused")
 public final class Constants {
 
     // Constructor privado para evitar instanciación
@@ -245,7 +246,7 @@ public final class Constants {
     /**
      * Extensiones de archivo permitidas para documentos.
      */
-    public static final String[] ALLOWED_FILE_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "doc", "docx"};
+    protected static final String[] ALLOWED_FILE_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "doc", "docx"};
 
     // ===================================================================
     // CONSTANTES DE DURACIÓN DE SERVICIOS (en minutos)
@@ -346,4 +347,144 @@ public final class Constants {
      * Consumo diario promedio estimado para cálculo de reposición (unidades por día).
      */
     public static final int CONSUMO_DIARIO_PROMEDIO_ESTIMADO = 10;
+
+    // ===================================================================
+    // CONSTANTES DE NOMBRES DE ENTIDADES (para mensajes de error)
+    // ===================================================================
+
+    /**
+     * Nombre de la entidad Administrador.
+     */
+    public static final String ENTIDAD_ADMINISTRADOR = "Administrador";
+
+    /**
+     * Nombre de la entidad AuxiliarVeterinario.
+     */
+    public static final String ENTIDAD_AUXILIAR_VETERINARIO = "AuxiliarVeterinario";
+
+    /**
+     * Nombre de la entidad Factura.
+     */
+    public static final String ENTIDAD_FACTURA = "Factura";
+
+    /**
+     * Nombre de la entidad Historia Clínica.
+     */
+    public static final String ENTIDAD_HISTORIA_CLINICA = "Historia Clínica";
+
+    /**
+     * Nombre de la entidad HistoriaClinica (sin espacio).
+     */
+    public static final String ENTIDAD_HISTORIA_CLINICA_SIN_ESPACIO = "HistoriaClinica";
+
+    /**
+     * Nombre de la entidad Mascota.
+     */
+    public static final String ENTIDAD_MASCOTA = "Mascota";
+
+    /**
+     * Nombre de la entidad Horario.
+     */
+    public static final String ENTIDAD_HORARIO = "Horario";
+
+    /**
+     * Nombre de la entidad Insumo.
+     */
+    public static final String ENTIDAD_INSUMO = "Insumo";
+
+    /**
+     * Nombre de la entidad Inventario.
+     */
+    public static final String ENTIDAD_INVENTARIO = "Inventario";
+
+    /**
+     * Nombre de la entidad Tipo de Insumo.
+     */
+    public static final String ENTIDAD_TIPO_INSUMO = "Tipo de Insumo";
+
+    /**
+     * Nombre de la entidad Proveedor.
+     */
+    public static final String ENTIDAD_PROVEEDOR = "Proveedor";
+
+    /**
+     * Nombre de la entidad Recepcionista.
+     */
+    public static final String ENTIDAD_RECEPCIONISTA = "Recepcionista";
+
+    /**
+     * Nombre de la entidad Servicio.
+     */
+    public static final String ENTIDAD_SERVICIO = "Servicio";
+
+    /**
+     * Nombre de la entidad Cita.
+     */
+    public static final String ENTIDAD_CITA = "Cita";
+
+    /**
+     * Nombre de la entidad Propietario.
+     */
+    public static final String ENTIDAD_PROPIETARIO = "Propietario";
+
+    /**
+     * Nombre de la entidad Veterinario.
+     */
+    public static final String ENTIDAD_VETERINARIO = "Veterinario";
+
+    /**
+     * Nombre de la entidad Especie.
+     */
+    public static final String ENTIDAD_ESPECIE = "Especie";
+
+    /**
+     * Nombre de la entidad Usuario.
+     */
+    public static final String ENTIDAD_USUARIO = "Usuario";
+
+    /**
+     * Nombre de la entidad Notificación.
+     */
+    public static final String ENTIDAD_NOTIFICACION = "NOTIFICACION";
+
+    /**
+     * Prefijo para notificaciones.
+     */
+    public static final String PREFIJO_NOTIFICACION = "Notificación: ";
+
+    /**
+     * Rol ADMIN para validaciones.
+     */
+    public static final String ROLE_ADMIN_STRING = "ROLE_ADMIN";
+
+    /**
+     * Rol VETERINARIO para validaciones.
+     */
+    public static final String ROLE_VETERINARIO_STRING = "ROLE_VETERINARIO";
+
+    // ===================================================================
+    // MÉTODOS HELPER PARA BOOLEANOS
+    // ===================================================================
+
+    /**
+     * Verifica si un Boolean es true de forma segura (maneja null).
+     * Útil para evitar NullPointerException cuando se trabaja con Boolean (objeto).
+     *
+     * @param value Valor Boolean a verificar
+     * @return true si el valor es Boolean.TRUE, false en caso contrario (incluyendo null)
+     */
+    public static boolean isTrue(Boolean value) {
+        return Boolean.TRUE.equals(value);
+    }
+
+    /**
+     * Verifica si un Boolean es false de forma segura (maneja null).
+     * Útil para evitar NullPointerException cuando se trabaja con Boolean (objeto).
+     *
+     * @param value Valor Boolean a verificar
+     * @return true si el valor es Boolean.FALSE, false en caso contrario (incluyendo null)
+     */
+    public static boolean isFalse(Boolean value) {
+        return Boolean.FALSE.equals(value);
+    }
 }

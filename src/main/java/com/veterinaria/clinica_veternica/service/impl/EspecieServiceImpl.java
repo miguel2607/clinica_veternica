@@ -62,7 +62,7 @@ public class EspecieServiceImpl implements IEspecieService {
     public EspecieResponseDTO actualizar(Long id, EspecieRequestDTO requestDTO) {
         // Buscar especie existente
         Especie especie = especieRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", id));
 
         // Validar que no exista otra especie con el mismo nombre
         if (!especie.getNombre().equalsIgnoreCase(requestDTO.getNombre()) &&
@@ -87,7 +87,7 @@ public class EspecieServiceImpl implements IEspecieService {
     @Transactional(readOnly = true)
     public EspecieResponseDTO buscarPorId(Long id) {
         Especie especie = especieRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", id));
 
         return especieMapper.toResponseDTO(especie);
     }
@@ -127,7 +127,7 @@ public class EspecieServiceImpl implements IEspecieService {
     @Override
     public void eliminar(Long id) {
         Especie especie = especieRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", id));
 
         // Verificar si tiene razas asociadas
         if (especie.getRazas() != null && !especie.getRazas().isEmpty()) {
@@ -146,9 +146,9 @@ public class EspecieServiceImpl implements IEspecieService {
     @Override
     public EspecieResponseDTO activar(Long id) {
         Especie especie = especieRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Especie", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_ESPECIE, "id", id));
 
-        if (Boolean.TRUE.equals(especie.getActivo())) {
+        if (Constants.isTrue(especie.getActivo())) {
             throw new BusinessException("La especie ya está activa", "ESPECIE_YA_ACTIVA");
         }
 

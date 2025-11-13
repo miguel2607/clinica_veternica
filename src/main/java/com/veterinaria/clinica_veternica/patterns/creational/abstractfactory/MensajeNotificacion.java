@@ -42,7 +42,9 @@ public class MensajeNotificacion {
 
     /**
      * Verifica si el mensaje es urgente.
+     * @return true si el mensaje es urgente o de alta prioridad
      */
+    @SuppressWarnings("unused")
     public boolean esUrgente() {
         return PRIORIDAD_URGENTE.equalsIgnoreCase(prioridad) || PRIORIDAD_ALTA.equalsIgnoreCase(prioridad);
     }

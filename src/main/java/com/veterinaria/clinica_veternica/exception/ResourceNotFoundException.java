@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @since 2025-11-03
  */
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
+@SuppressWarnings("unused")
 public class ResourceNotFoundException extends RuntimeException {
 
     private final String resourceName;

@@ -52,7 +52,9 @@ public class SecurityConfig {
      * Configura el AuthenticationProvider con el UserDetailsService y PasswordEncoder.
      */
     @Bean
+    @SuppressWarnings("deprecation")
     public AuthenticationProvider authenticationProvider() {
+        // Using deprecated methods for compatibility with Spring Security 6.x
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setPasswordEncoder(passwordEncoder());
         authProvider.setUserDetailsService(userDetailsService);

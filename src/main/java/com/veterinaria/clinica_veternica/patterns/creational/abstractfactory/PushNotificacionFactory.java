@@ -94,23 +94,23 @@ public class PushNotificacionFactory implements NotificacionFactory {
                             mensaje.getAsunto());
 
                     // Simulación de envío (en producción, integrar con FCM, APNs, etc)
-                    // TODO: Integrar con Firebase Cloud Messaging / Apple Push Notification Service
+                    // NOTA: Para producción, integrar con Firebase Cloud Messaging / Apple Push Notification Service
 
-                    this.idExterno = "PUSH-" + UUID.randomUUID().toString();
+                    this.idExterno = "PUSH-" + UUID.randomUUID();
                     this.estadoEnvio = "ENVIADO";
 
                     log.info("Push enviada exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (RuntimeException e) {
-                    log.error("Error al enviar Push: {}", e.getMessage(), e);
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.error("Error de validación al enviar Push: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
                     return false;
-                } catch (Exception e) {
-                    log.error("Error inesperado al enviar Push: {}", e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar Push: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
-                    this.mensajeError = "Error inesperado al enviar notificación push";
+                    this.mensajeError = "Error al procesar el envío de notificación push";
                     return false;
                 }
             }

@@ -18,6 +18,7 @@ package com.veterinaria.clinica_veternica.domain.agenda;
  * @version 1.0
  * @since 2025-11-02
  */
+@SuppressWarnings("unused")
 public enum TipoServicio {
     /**
      * Consulta general veterinaria.

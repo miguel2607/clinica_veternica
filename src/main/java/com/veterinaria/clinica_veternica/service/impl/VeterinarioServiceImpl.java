@@ -52,7 +52,7 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Override
     public VeterinarioResponseDTO actualizar(Long id, VeterinarioRequestDTO requestDTO) {
         Veterinario veterinario = veterinarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Veterinario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", id));
 
         // Validar registro profesional único (si cambió)
         if (!veterinario.getRegistroProfesional().equals(requestDTO.getRegistroProfesional()) &&
@@ -74,7 +74,7 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Transactional(readOnly = true)
     public VeterinarioResponseDTO buscarPorId(Long id) {
         Veterinario veterinario = veterinarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Veterinario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", id));
         return veterinarioMapper.toResponseDTO(veterinario);
     }
 
@@ -82,7 +82,7 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Transactional(readOnly = true)
     public VeterinarioResponseDTO buscarPorRegistroProfesional(String registroProfesional) {
         Veterinario veterinario = veterinarioRepository.findByRegistroProfesional(registroProfesional)
-            .orElseThrow(() -> new ResourceNotFoundException("Veterinario", "registroProfesional", registroProfesional));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "registroProfesional", registroProfesional));
         return veterinarioMapper.toResponseDTO(veterinario);
     }
 
@@ -137,7 +137,7 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Override
     public void eliminar(Long id) {
         Veterinario veterinario = veterinarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Veterinario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", id));
 
         // Verificar si tiene citas asociadas
         if (veterinario.getCitas() != null && !veterinario.getCitas().isEmpty()) {
@@ -164,9 +164,9 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Override
     public VeterinarioResponseDTO activar(Long id) {
         Veterinario veterinario = veterinarioRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Veterinario", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", id));
 
-        if (Boolean.TRUE.equals(veterinario.getActivo())) {
+        if (Constants.isTrue(veterinario.getActivo())) {
             throw new BusinessException("El veterinario ya está activo", "VETERINARIO_YA_ACTIVO");
         }
 

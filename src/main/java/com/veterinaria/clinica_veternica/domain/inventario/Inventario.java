@@ -251,7 +251,7 @@ public class Inventario {
      * @return true si está crítico (0 unidades o menor al mínimo)
      */
     public boolean esNivelCritico() {
-        return (cantidadActual != null && cantidadActual == 0) || Boolean.TRUE.equals(requiereReorden);
+        return (cantidadActual != null && cantidadActual == 0) || com.veterinaria.clinica_veternica.util.Constants.isTrue(requiereReorden);
     }
 
     /**

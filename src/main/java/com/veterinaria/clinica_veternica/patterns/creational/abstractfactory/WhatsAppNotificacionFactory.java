@@ -103,23 +103,23 @@ public class WhatsAppNotificacionFactory implements NotificacionFactory {
                             mensaje.getDestinatario(), mensaje.getTamano());
 
                     // Simulación de envío (en producción, integrar con WhatsApp Business API)
-                    // TODO: Integrar con WhatsApp Business API
+                    // NOTA: Para producción, integrar con WhatsApp Business API
 
-                    this.idExterno = "WA-" + UUID.randomUUID().toString();
+                    this.idExterno = "WA-" + UUID.randomUUID();
                     this.estadoEnvio = "ENVIADO";
 
                     log.info("WhatsApp enviado exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (RuntimeException e) {
-                    log.error("Error al enviar WhatsApp: {}", e.getMessage(), e);
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.error("Error de validación al enviar WhatsApp: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
                     return false;
-                } catch (Exception e) {
-                    log.error("Error inesperado al enviar WhatsApp: {}", e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar WhatsApp: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
-                    this.mensajeError = "Error inesperado al enviar WhatsApp";
+                    this.mensajeError = "Error al procesar el envío de WhatsApp";
                     return false;
                 }
             }

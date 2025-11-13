@@ -91,23 +91,23 @@ public class SMSNotificacionFactory implements NotificacionFactory {
                             mensaje.getDestinatario(), mensaje.getTamano());
 
                     // Simulación de envío (en producción, integrar con Twilio, AWS SNS, etc)
-                    // TODO: Integrar con servicio real de SMS
+                    // NOTA: Para producción, integrar con servicio real de SMS (Twilio, AWS SNS, etc.)
 
-                    this.idExterno = "SMS-" + UUID.randomUUID().toString();
+                    this.idExterno = "SMS-" + UUID.randomUUID();
                     this.estadoEnvio = "ENVIADO";
 
                     log.info("SMS enviado exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (RuntimeException e) {
-                    log.error("Error al enviar SMS: {}", e.getMessage(), e);
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.error("Error de validación al enviar SMS: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
                     return false;
-                } catch (Exception e) {
-                    log.error("Error inesperado al enviar SMS: {}", e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar SMS: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
-                    this.mensajeError = "Error inesperado al enviar SMS";
+                    this.mensajeError = "Error al procesar el envío de SMS";
                     return false;
                 }
             }

@@ -8,7 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
+import java.security.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
@@ -25,9 +25,9 @@ public class JwtUtils {
     /**
      * Genera la clave secreta a partir de la cadena configurada.
      *
-     * @return SecretKey para firmar tokens
+     * @return Key para firmar tokens
      */
-    private SecretKey getSigningKey() {
+    private Key getSigningKey() {
         byte[] keyBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }

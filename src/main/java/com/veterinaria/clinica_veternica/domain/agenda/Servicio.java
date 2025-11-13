@@ -349,13 +349,8 @@ public class Servicio {
                 && edadMeses < edadMinimaRecomendadaMeses) {
             return false;
         }
-
-        if (pesoMinimoRecomendadoKg != null && pesoKg != null 
-                && pesoKg < pesoMinimoRecomendadoKg) {
-            return false;
-        }
-
-        return true;
+        return pesoMinimoRecomendadoKg == null || pesoKg == null 
+                || pesoKg >= pesoMinimoRecomendadoKg;
     }
 
     /**

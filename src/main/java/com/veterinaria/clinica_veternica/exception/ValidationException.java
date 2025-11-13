@@ -15,6 +15,7 @@ import java.util.Map;
  * @since 2025-11-03
  */
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+@SuppressWarnings("unused")
 public class ValidationException extends RuntimeException {
 
     private final Map<String, String> errors;

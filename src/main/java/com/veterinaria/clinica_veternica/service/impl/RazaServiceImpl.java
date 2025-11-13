@@ -189,7 +189,7 @@ public class RazaServiceImpl implements IRazaService {
         Raza raza = razaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Raza", "id", id));
 
-        if (Boolean.TRUE.equals(raza.getActivo())) {
+        if (Constants.isTrue(raza.getActivo())) {
             throw new BusinessException("La raza ya está activa", "RAZA_YA_ACTIVA");
         }
 

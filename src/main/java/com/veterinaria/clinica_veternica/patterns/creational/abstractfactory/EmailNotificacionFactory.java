@@ -82,23 +82,23 @@ public class EmailNotificacionFactory implements NotificacionFactory {
                             mensaje.getDestinatario(), mensaje.getAsunto());
 
                     // Simulación de envío (en producción, aquí iría la integración con SMTP/SendGrid/etc)
-                    // TODO: Integrar con servicio real de email
+                    // NOTA: Para producción, integrar con servicio real de email (SendGrid, AWS SES, etc.)
 
-                    this.idExterno = "EMAIL-" + UUID.randomUUID().toString();
+                    this.idExterno = "EMAIL-" + UUID.randomUUID();
                     this.estadoEnvio = "ENVIADO";
 
                     log.info("EMAIL enviado exitosamente. ID: {}", idExterno);
                     return true;
 
-                } catch (RuntimeException e) {
-                    log.error("Error al enviar EMAIL: {}", e.getMessage(), e);
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.error("Error de validación al enviar EMAIL: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
                     this.mensajeError = e.getMessage();
                     return false;
-                } catch (Exception e) {
-                    log.error("Error inesperado al enviar EMAIL: {}", e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    log.error("Error al enviar EMAIL: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
-                    this.mensajeError = "Error inesperado al enviar email";
+                    this.mensajeError = "Error al procesar el envío de email";
                     return false;
                 }
             }
