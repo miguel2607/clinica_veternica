@@ -19,6 +19,12 @@ import java.time.LocalDateTime;
 @Builder
 public class MensajeNotificacion {
 
+    /**
+     * Constantes para prioridades.
+     */
+    private static final String PRIORIDAD_URGENTE = "URGENTE";
+    private static final String PRIORIDAD_ALTA = "ALTA";
+
     private String id;
     private String canal;
     private String destinatario;
@@ -38,7 +44,7 @@ public class MensajeNotificacion {
      * Verifica si el mensaje es urgente.
      */
     public boolean esUrgente() {
-        return "URGENTE".equalsIgnoreCase(prioridad) || "ALTA".equalsIgnoreCase(prioridad);
+        return PRIORIDAD_URGENTE.equalsIgnoreCase(prioridad) || PRIORIDAD_ALTA.equalsIgnoreCase(prioridad);
     }
 
     /**

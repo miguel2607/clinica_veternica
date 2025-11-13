@@ -67,8 +67,8 @@ public class Veterinario extends Personal {
     /**
      * Años de experiencia profesional.
      */
-    @Column
-    private Integer añosExperiencia;
+    @Column(name = "anios_experiencia")
+    private Integer aniosExperiencia;
 
     /**
      * Horarios de disponibilidad del veterinario.

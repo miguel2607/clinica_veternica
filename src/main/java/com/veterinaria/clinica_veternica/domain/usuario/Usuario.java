@@ -160,7 +160,7 @@ public class Usuario {
      * @return true si el usuario está activo, no bloqueado y el bloqueo ha expirado
      */
     public boolean puedeIniciarSesion() {
-        if (!estado || bloqueado) {
+        if (estado == null || !estado || (bloqueado != null && bloqueado)) {
             return false;
         }
 

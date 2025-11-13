@@ -56,6 +56,29 @@ import java.time.LocalDateTime;
 public class Tratamiento {
 
     /**
+     * Constantes para estados del tratamiento.
+     */
+    private static final String ESTADO_ACTIVO = "ACTIVO";
+    private static final String ESTADO_COMPLETADO = "COMPLETADO";
+    private static final String ESTADO_SUSPENDIDO = "SUSPENDIDO";
+    private static final String ESTADO_CANCELADO = "CANCELADO";
+    
+    /**
+     * Constantes para tipos de tratamiento.
+     */
+    private static final String TIPO_MEDICAMENTO = "MEDICAMENTO";
+    private static final String TIPO_TERAPIA = "TERAPIA";
+    private static final String TIPO_PROCEDIMIENTO = "PROCEDIMIENTO";
+    private static final String TIPO_CIRUGIA = "CIRUGIA";
+    
+    /**
+     * Constantes para prioridades.
+     */
+    private static final String PRIORIDAD_URGENTE = "URGENTE";
+    private static final String PRIORIDAD_ALTA = "ALTA";
+    private static final String PRIORIDAD_NORMAL = "NORMAL";
+
+    /**
      * Identificador único del tratamiento.
      */
     @Id
@@ -219,7 +242,7 @@ public class Tratamiento {
     @Size(max = 20, message = "El estado no puede exceder 20 caracteres")
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private String estado = "ACTIVO";
+    private String estado = ESTADO_ACTIVO;
 
     /**
      * Motivo de suspensión o cancelación (si aplica).
@@ -236,7 +259,7 @@ public class Tratamiento {
     @Size(max = 20, message = "La prioridad no puede exceder 20 caracteres")
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private String prioridad = "NORMAL";
+    private String prioridad = PRIORIDAD_NORMAL;
 
     /**
      * Costo del tratamiento.
@@ -290,7 +313,7 @@ public class Tratamiento {
      * @return true si está activo
      */
     public boolean estaActivo() {
-        return activo != null && activo && "ACTIVO".equalsIgnoreCase(estado);
+        return activo != null && activo && ESTADO_ACTIVO.equalsIgnoreCase(estado);
     }
 
     /**
@@ -299,7 +322,7 @@ public class Tratamiento {
      * @return true si está completado
      */
     public boolean estaCompletado() {
-        return "COMPLETADO".equalsIgnoreCase(estado);
+        return ESTADO_COMPLETADO.equalsIgnoreCase(estado);
     }
 
     /**
@@ -308,7 +331,7 @@ public class Tratamiento {
      * @return true si está suspendido
      */
     public boolean estaSuspendido() {
-        return "SUSPENDIDO".equalsIgnoreCase(estado);
+        return ESTADO_SUSPENDIDO.equalsIgnoreCase(estado);
     }
 
     /**
@@ -317,7 +340,7 @@ public class Tratamiento {
      * @return true si está cancelado
      */
     public boolean estaCancelado() {
-        return "CANCELADO".equalsIgnoreCase(estado);
+        return ESTADO_CANCELADO.equalsIgnoreCase(estado);
     }
 
     /**
@@ -326,7 +349,7 @@ public class Tratamiento {
      * @return true si es medicamento
      */
     public boolean esMedicamento() {
-        return "MEDICAMENTO".equalsIgnoreCase(tipoTratamiento);
+        return TIPO_MEDICAMENTO.equalsIgnoreCase(tipoTratamiento);
     }
 
     /**
@@ -335,7 +358,7 @@ public class Tratamiento {
      * @return true si es terapia
      */
     public boolean esTerapia() {
-        return "TERAPIA".equalsIgnoreCase(tipoTratamiento);
+        return TIPO_TERAPIA.equalsIgnoreCase(tipoTratamiento);
     }
 
     /**
@@ -344,7 +367,7 @@ public class Tratamiento {
      * @return true si es procedimiento
      */
     public boolean esProcedimiento() {
-        return "PROCEDIMIENTO".equalsIgnoreCase(tipoTratamiento);
+        return TIPO_PROCEDIMIENTO.equalsIgnoreCase(tipoTratamiento);
     }
 
     /**
@@ -353,7 +376,7 @@ public class Tratamiento {
      * @return true si es cirugía
      */
     public boolean esCirugia() {
-        return "CIRUGIA".equalsIgnoreCase(tipoTratamiento);
+        return TIPO_CIRUGIA.equalsIgnoreCase(tipoTratamiento);
     }
 
     /**
@@ -362,7 +385,7 @@ public class Tratamiento {
      * @return true si la prioridad es URGENTE
      */
     public boolean esUrgente() {
-        return "URGENTE".equalsIgnoreCase(prioridad);
+        return PRIORIDAD_URGENTE.equalsIgnoreCase(prioridad);
     }
 
     /**
@@ -371,7 +394,7 @@ public class Tratamiento {
      * @return true si es alta o urgente
      */
     public boolean esAltaPrioridad() {
-        return "ALTA".equalsIgnoreCase(prioridad) || esUrgente();
+        return PRIORIDAD_ALTA.equalsIgnoreCase(prioridad) || esUrgente();
     }
 
     /**
@@ -429,7 +452,7 @@ public class Tratamiento {
         long diasTranscurridos = getDiasTranscurridos();
         double porcentaje = (diasTranscurridos * 100.0) / duracionTotal;
 
-        return Math.min(100.0, Math.max(0.0, porcentaje));
+        return Math.clamp(porcentaje, 0.0, 100.0);
     }
 
     /**
@@ -454,7 +477,7 @@ public class Tratamiento {
      * Marca el tratamiento como completado.
      */
     public void completar() {
-        this.estado = "COMPLETADO";
+        this.estado = ESTADO_COMPLETADO;
         this.fechaFinalizacion = LocalDate.now();
         this.activo = false;
     }
@@ -465,7 +488,7 @@ public class Tratamiento {
      * @param motivo Motivo de la suspensión
      */
     public void suspender(String motivo) {
-        this.estado = "SUSPENDIDO";
+        this.estado = ESTADO_SUSPENDIDO;
         this.motivoSuspension = motivo;
         this.activo = false;
     }
@@ -476,7 +499,7 @@ public class Tratamiento {
      * @param motivo Motivo de la cancelación
      */
     public void cancelar(String motivo) {
-        this.estado = "CANCELADO";
+        this.estado = ESTADO_CANCELADO;
         this.motivoSuspension = motivo;
         this.activo = false;
     }
@@ -485,7 +508,7 @@ public class Tratamiento {
      * Reactiva el tratamiento.
      */
     public void reactivar() {
-        this.estado = "ACTIVO";
+        this.estado = ESTADO_ACTIVO;
         this.activo = true;
         this.motivoSuspension = null;
     }

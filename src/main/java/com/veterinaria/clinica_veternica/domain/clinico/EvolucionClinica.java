@@ -50,6 +50,20 @@ import java.time.LocalDateTime;
 public class EvolucionClinica {
 
     /**
+     * Constantes para estados del paciente.
+     */
+    private static final String ESTADO_ESTABLE = "ESTABLE";
+    private static final String ESTADO_MEJORANDO = "MEJORANDO";
+    private static final String ESTADO_EMPEORANDO = "EMPEORANDO";
+    private static final String ESTADO_CRITICO = "CRITICO";
+    
+    /**
+     * Constantes para tipos de evolución.
+     */
+    private static final String TIPO_EMERGENCIA = "EMERGENCIA";
+    private static final String TIPO_SEGUIMIENTO = "SEGUIMIENTO";
+
+    /**
      * Identificador único de la evolución clínica.
      */
     @Id
@@ -245,7 +259,7 @@ public class EvolucionClinica {
      * @return true si el estado es ESTABLE
      */
     public boolean estaEstable() {
-        return "ESTABLE".equalsIgnoreCase(estadoPaciente);
+        return ESTADO_ESTABLE.equalsIgnoreCase(estadoPaciente);
     }
 
     /**
@@ -254,7 +268,7 @@ public class EvolucionClinica {
      * @return true si el estado es MEJORANDO
      */
     public boolean estaMejorando() {
-        return "MEJORANDO".equalsIgnoreCase(estadoPaciente);
+        return ESTADO_MEJORANDO.equalsIgnoreCase(estadoPaciente);
     }
 
     /**
@@ -263,7 +277,7 @@ public class EvolucionClinica {
      * @return true si el estado es EMPEORANDO
      */
     public boolean estaEmpeorando() {
-        return "EMPEORANDO".equalsIgnoreCase(estadoPaciente);
+        return ESTADO_EMPEORANDO.equalsIgnoreCase(estadoPaciente);
     }
 
     /**
@@ -272,7 +286,7 @@ public class EvolucionClinica {
      * @return true si el estado es CRITICO
      */
     public boolean estaCritico() {
-        return "CRITICO".equalsIgnoreCase(estadoPaciente);
+        return ESTADO_CRITICO.equalsIgnoreCase(estadoPaciente);
     }
 
     /**
@@ -281,7 +295,7 @@ public class EvolucionClinica {
      * @return true si el tipo es EMERGENCIA
      */
     public boolean esEmergencia() {
-        return "EMERGENCIA".equalsIgnoreCase(tipoEvolucion);
+        return TIPO_EMERGENCIA.equalsIgnoreCase(tipoEvolucion);
     }
 
     /**
@@ -290,7 +304,7 @@ public class EvolucionClinica {
      * @return true si el tipo es SEGUIMIENTO
      */
     public boolean esSeguimiento() {
-        return "SEGUIMIENTO".equalsIgnoreCase(tipoEvolucion);
+        return TIPO_SEGUIMIENTO.equalsIgnoreCase(tipoEvolucion);
     }
 
     /**

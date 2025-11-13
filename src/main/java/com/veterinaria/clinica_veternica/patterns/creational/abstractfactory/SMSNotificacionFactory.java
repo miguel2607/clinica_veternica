@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class SMSNotificacionFactory implements NotificacionFactory {
 
     private static final String CANAL = "SMS";
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[+]?[0-9]{7,15}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^[+]?\\d{7,15}$");
     private static final int MAX_SMS_LENGTH = 160;
 
     @Override

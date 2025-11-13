@@ -8,9 +8,9 @@ import com.veterinaria.clinica_veternica.dto.request.agenda.CitaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.CitaResponseDTO;
 import org.mapstruct.*;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+
 import java.util.List;
 
 /**

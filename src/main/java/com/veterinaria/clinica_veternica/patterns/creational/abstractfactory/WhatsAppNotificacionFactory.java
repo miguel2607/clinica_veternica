@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class WhatsAppNotificacionFactory implements NotificacionFactory {
 
     private static final String CANAL = "WHATSAPP";
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[+]?[0-9]{7,15}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^[+]?\\d{7,15}$");
     private static final int MAX_WHATSAPP_LENGTH = 4096;
 
     @Override
@@ -76,7 +76,7 @@ public class WhatsAppNotificacionFactory implements NotificacionFactory {
                 // Eliminar espacios, guiones, paréntesis
                 String normalizado = destinatario.replaceAll("[\\s\\-()]", "");
                 // Agregar + si no lo tiene
-                if (!normalizado.startsWith("+") && normalizado.matches("^[0-9]{10,15}$")) {
+                if (!normalizado.startsWith("+") && normalizado.matches("^\\d{10,15}$")) {
                     normalizado = "+" + normalizado;
                 }
                 return normalizado;

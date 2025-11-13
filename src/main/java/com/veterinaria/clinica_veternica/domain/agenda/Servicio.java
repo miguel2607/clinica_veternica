@@ -345,16 +345,14 @@ public class Servicio {
      * @return true si cumple los requisitos
      */
     public boolean esAptoParaMascota(Integer edadMeses, Double pesoKg) {
-        if (edadMinimaRecomendadaMeses != null && edadMeses != null) {
-            if (edadMeses < edadMinimaRecomendadaMeses) {
-                return false;
-            }
+        if (edadMinimaRecomendadaMeses != null && edadMeses != null 
+                && edadMeses < edadMinimaRecomendadaMeses) {
+            return false;
         }
 
-        if (pesoMinimoRecomendadoKg != null && pesoKg != null) {
-            if (pesoKg < pesoMinimoRecomendadoKg) {
-                return false;
-            }
+        if (pesoMinimoRecomendadoKg != null && pesoKg != null 
+                && pesoKg < pesoMinimoRecomendadoKg) {
+            return false;
         }
 
         return true;

@@ -186,7 +186,7 @@ public class Pago {
      * @return true si es válido
      */
     public boolean esValido() {
-        return !anulado;
+        return anulado == null || !anulado;
     }
 
     /**
@@ -223,7 +223,7 @@ public class Pago {
      * @param motivo Motivo de la anulación
      */
     public void anular(String motivo) {
-        if (this.anulado) {
+        if (this.anulado != null && this.anulado) {
             throw new IllegalStateException("El pago ya está anulado");
         }
         this.anulado = true;

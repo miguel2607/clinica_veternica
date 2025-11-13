@@ -158,7 +158,7 @@ public class Horario {
             }
 
             // Validar que la duración del horario permita al menos una cita
-            long minutosDisponibles = (horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
+            long minutosDisponibles = ((long) horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
             if (minutosDisponibles < duracionCitaMinutos) {
                 throw new IllegalArgumentException(
                     "El horario debe tener al menos la duración de una cita");
@@ -176,7 +176,7 @@ public class Horario {
             return 0;
         }
 
-        long minutosDisponibles = (horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
+        long minutosDisponibles = ((long) horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
         int slotsDisponibles = (int) (minutosDisponibles / duracionCitaMinutos);
 
         return slotsDisponibles * maxCitasSimultaneas;
@@ -192,7 +192,7 @@ public class Horario {
             return 0.0;
         }
 
-        long segundos = horaFin.toSecondOfDay() - horaInicio.toSecondOfDay();
+        long segundos = (long) horaFin.toSecondOfDay() - horaInicio.toSecondOfDay();
         return Math.round((segundos / 3600.0) * 100.0) / 100.0;
     }
 
@@ -206,7 +206,7 @@ public class Horario {
             return 0;
         }
 
-        return (horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
+        return ((long) horaFin.toSecondOfDay() - horaInicio.toSecondOfDay()) / 60;
     }
 
     /**

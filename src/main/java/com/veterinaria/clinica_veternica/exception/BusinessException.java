@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
 public class BusinessException extends RuntimeException {
 
-    private String errorCode;
+    private final String errorCode;
 
     /**
      * Constructor con mensaje personalizado.
@@ -28,6 +28,7 @@ public class BusinessException extends RuntimeException {
      */
     public BusinessException(String message) {
         super(message);
+        this.errorCode = null;
     }
 
     /**
@@ -49,6 +50,7 @@ public class BusinessException extends RuntimeException {
      */
     public BusinessException(String message, Throwable cause) {
         super(message, cause);
+        this.errorCode = null;
     }
 
     /**
@@ -65,9 +67,5 @@ public class BusinessException extends RuntimeException {
 
     public String getErrorCode() {
         return errorCode;
-    }
-
-    public void setErrorCode(String errorCode) {
-        this.errorCode = errorCode;
     }
 }

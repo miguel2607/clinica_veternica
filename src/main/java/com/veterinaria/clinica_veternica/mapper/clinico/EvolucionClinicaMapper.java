@@ -37,13 +37,13 @@ public interface EvolucionClinicaMapper {
 
     @Named("checkTemperatura")
     default Boolean checkTemperatura(EvolucionClinica evolucion) {
-        if (evolucion == null || evolucion.getTemperatura() == null) return null;
+        if (evolucion == null || evolucion.getTemperatura() == null) return false;
         return evolucion.getTemperatura() >= 37.5 && evolucion.getTemperatura() <= 39.2;
     }
 
     @Named("checkSignosVitales")
     default Boolean checkSignosVitales(EvolucionClinica evolucion) {
-        if (evolucion == null) return null;
+        if (evolucion == null) return false;
         boolean tempOk = evolucion.getTemperatura() == null ||
             (evolucion.getTemperatura() >= 37.5 && evolucion.getTemperatura() <= 39.2);
         boolean fcOk = evolucion.getFrecuenciaCardiaca() == null ||

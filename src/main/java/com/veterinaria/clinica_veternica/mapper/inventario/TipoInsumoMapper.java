@@ -26,6 +26,7 @@ public interface TipoInsumoMapper {
      */
     @Mapping(target = "idTipoInsumo", ignore = true)
     @Mapping(target = "insumos", ignore = true)
+    @Mapping(target = "requiereControlEspecial", ignore = true) // No se mapea desde DTO
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)
     TipoInsumo toEntity(TipoInsumoRequestDTO requestDTO);
@@ -37,6 +38,7 @@ public interface TipoInsumoMapper {
      * @return DTO de response
      */
     @Mapping(target = "cantidadInsumos", expression = "java(tipoInsumo.getCantidadInsumos())")
+    @Mapping(target = "categoria", ignore = true) // La entidad no tiene categoria, solo requiereControlEspecial
     TipoInsumoResponseDTO toResponseDTO(TipoInsumo tipoInsumo);
 
     /**
@@ -55,6 +57,7 @@ public interface TipoInsumoMapper {
      */
     @Mapping(target = "idTipoInsumo", ignore = true)
     @Mapping(target = "insumos", ignore = true)
+    @Mapping(target = "requiereControlEspecial", ignore = true) // No se actualiza desde DTO
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

@@ -63,7 +63,7 @@ public class PagoRequestDTO {
      * Últimos 4 dígitos de la tarjeta (si aplica).
      */
     @Size(max = 4, message = "Los últimos 4 dígitos deben ser exactamente 4")
-    @Pattern(regexp = "^[0-9]{4}$", message = "Deben ser exactamente 4 dígitos")
+    @Pattern(regexp = "^\\d{4}$", message = "Deben ser exactamente 4 dígitos")
     private String ultimos4Digitos;
 
     /**

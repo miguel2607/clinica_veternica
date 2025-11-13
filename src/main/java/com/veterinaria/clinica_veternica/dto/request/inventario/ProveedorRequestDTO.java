@@ -49,13 +49,13 @@ public class ProveedorRequestDTO {
      * Teléfono principal.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     private String telefono;
 
     /**
      * Teléfono secundario.
      */
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     private String telefonoSecundario;
 
     /**

@@ -183,7 +183,7 @@ public final class Constants {
     /**
      * Patrón de validación para teléfono (Colombia).
      */
-    public static final String PHONE_PATTERN = "^\\+?[0-9]{10,13}$";
+    public static final String PHONE_PATTERN = "^\\+?\\d{10,13}$";
 
     // ===================================================================
     // CONSTANTES DE MENSAJES

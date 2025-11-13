@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(value = HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends RuntimeException {
 
-    private String resourceName;
-    private String fieldName;
-    private Object fieldValue;
+    private final String resourceName;
+    private final String fieldName;
+    private final transient Object fieldValue;
 
     /**
      * Constructor con mensaje personalizado.
@@ -25,6 +25,9 @@ public class ResourceNotFoundException extends RuntimeException {
      */
     public ResourceNotFoundException(String message) {
         super(message);
+        this.resourceName = null;
+        this.fieldName = null;
+        this.fieldValue = null;
     }
 
     /**
@@ -49,6 +52,9 @@ public class ResourceNotFoundException extends RuntimeException {
      */
     public ResourceNotFoundException(String message, Throwable cause) {
         super(message, cause);
+        this.resourceName = null;
+        this.fieldName = null;
+        this.fieldValue = null;
     }
 
     public String getResourceName() {

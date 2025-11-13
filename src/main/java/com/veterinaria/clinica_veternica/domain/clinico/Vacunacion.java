@@ -58,6 +58,16 @@ import java.time.LocalDateTime;
 public class Vacunacion {
 
     /**
+     * Constantes para tipos de reacción.
+     */
+    private static final String REACCION_SEVERA = "SEVERA";
+    
+    /**
+     * Constantes para tipos de vacuna.
+     */
+    private static final String TIPO_ANTIRRABICA = "ANTIRRABICA";
+
+    /**
      * Identificador único de la vacunación.
      */
     @Id
@@ -367,7 +377,7 @@ public class Vacunacion {
      * @return true si está vigente
      */
     public boolean estaVigente() {
-        if (!vigente) {
+        if (vigente == null || !vigente) {
             return false;
         }
         if (fechaFinInmunidad == null) {
@@ -415,7 +425,7 @@ public class Vacunacion {
      * @return true si fue severa
      */
     public boolean reaccionSevera() {
-        return tuvoReaccion() && "SEVERA".equalsIgnoreCase(tipoReaccion);
+        return tuvoReaccion() && REACCION_SEVERA.equalsIgnoreCase(tipoReaccion);
     }
 
     /**
@@ -467,7 +477,7 @@ public class Vacunacion {
      * @return true si es antirrábica
      */
     public boolean esAntirrabica() {
-        return "ANTIRRABICA".equalsIgnoreCase(tipoVacuna) ||
+        return TIPO_ANTIRRABICA.equalsIgnoreCase(tipoVacuna) ||
                (nombreVacuna != null && nombreVacuna.toLowerCase().contains("rabia"));
     }
 
@@ -490,7 +500,7 @@ public class Vacunacion {
             return 0.0;
         }
         double porcentaje = (numeroDosis * 100.0) / totalDosisEsquema;
-        return Math.min(100.0, Math.max(0.0, porcentaje));
+        return Math.clamp(porcentaje, 0.0, 100.0);
     }
 
     /**

@@ -11,7 +11,7 @@ package com.veterinaria.clinica_veternica.domain.agenda;
  * - VACUNACION: Aplicación de vacunas
  * - DESPARASITACION: Tratamiento antiparasitario
  * - CIRUGIA: Procedimientos quirúrgicos
- * - BAÑO: Servicio de baño e higiene
+ * - BANO: Servicio de baño e higiene
  * - PELUQUERIA: Corte y arreglo estético
  *
  * @author Clínica Veterinaria Team
@@ -52,7 +52,7 @@ public enum TipoServicio {
      * Categoría: ESTETICO
      * Duración estimada: 45 minutos
      */
-    BAÑO("Baño", CategoriaServicio.ESTETICO, 45),
+    BANO("Baño", CategoriaServicio.ESTETICO, 45),
 
     /**
      * Peluquería y corte.

@@ -74,7 +74,7 @@ public class VeterinarioResponseDTO {
     /**
      * Años de experiencia profesional.
      */
-    private Integer añosExperiencia;
+    private Integer aniosExperiencia;
 
     /**
      * Estado activo/inactivo.

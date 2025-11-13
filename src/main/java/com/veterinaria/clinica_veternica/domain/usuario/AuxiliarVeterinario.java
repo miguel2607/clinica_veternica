@@ -37,6 +37,11 @@ import lombok.experimental.SuperBuilder;
 public class AuxiliarVeterinario extends Personal {
 
     /**
+     * Constante para nivel de certificación avanzada.
+     */
+    private static final String NIVEL_AVANZADO = "Avanzado";
+
+    /**
      * Nivel de certificación del auxiliar.
      * Ejemplos: Básico, Intermedio, Avanzado
      */
@@ -85,6 +90,6 @@ public class AuxiliarVeterinario extends Personal {
      */
     public boolean tieneCertificacionAvanzada() {
         return nivelCertificacion != null &&
-               nivelCertificacion.equalsIgnoreCase("Avanzado");
+               nivelCertificacion.equalsIgnoreCase(NIVEL_AVANZADO);
     }
 }

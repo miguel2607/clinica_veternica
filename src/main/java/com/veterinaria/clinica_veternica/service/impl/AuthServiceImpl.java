@@ -68,11 +68,11 @@ public class AuthServiceImpl implements IAuthService {
                 .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
 
             // Verificar si el usuario está activo y no bloqueado
-            if (!usuario.getEstado()) {
+            if (usuario.getEstado() == null || !usuario.getEstado()) {
                 throw new UnauthorizedException("Usuario inactivo");
             }
 
-            if (usuario.getBloqueado()) {
+            if (usuario.getBloqueado() != null && usuario.getBloqueado()) {
                 throw new UnauthorizedException("Usuario bloqueado: " + usuario.getMotivoBloqueo());
             }
 

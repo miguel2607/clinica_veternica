@@ -34,6 +34,13 @@ import java.time.LocalDateTime;
 public class DetalleFactura {
 
     /**
+     * Constantes para tipos de item.
+     */
+    private static final String TIPO_SERVICIO = "SERVICIO";
+    private static final String TIPO_INSUMO = "INSUMO";
+    private static final String TIPO_PRODUCTO = "PRODUCTO";
+
+    /**
      * Identificador único del detalle.
      */
     @Id
@@ -181,7 +188,7 @@ public class DetalleFactura {
      * @return true si es servicio
      */
     public boolean esServicio() {
-        return "SERVICIO".equalsIgnoreCase(tipoItem);
+        return TIPO_SERVICIO.equalsIgnoreCase(tipoItem);
     }
 
     /**
@@ -190,8 +197,8 @@ public class DetalleFactura {
      * @return true si es insumo
      */
     public boolean esInsumo() {
-        return "INSUMO".equalsIgnoreCase(tipoItem) ||
-               "PRODUCTO".equalsIgnoreCase(tipoItem);
+        return TIPO_INSUMO.equalsIgnoreCase(tipoItem) ||
+               TIPO_PRODUCTO.equalsIgnoreCase(tipoItem);
     }
 
     /**

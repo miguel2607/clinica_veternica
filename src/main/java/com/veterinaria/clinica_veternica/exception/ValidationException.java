@@ -17,7 +17,7 @@ import java.util.Map;
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class ValidationException extends RuntimeException {
 
-    private Map<String, String> errors;
+    private final Map<String, String> errors;
 
     /**
      * Constructor con mensaje personalizado.
@@ -71,17 +71,10 @@ public class ValidationException extends RuntimeException {
      * @param errorMessage Mensaje de error
      */
     public void addError(String fieldName, String errorMessage) {
-        if (this.errors == null) {
-            this.errors = new HashMap<>();
-        }
         this.errors.put(fieldName, errorMessage);
     }
 
     public Map<String, String> getErrors() {
         return errors;
-    }
-
-    public void setErrors(Map<String, String> errors) {
-        this.errors = errors;
     }
 }

@@ -56,6 +56,18 @@ import java.time.LocalDateTime;
 public class RecetaMedica {
 
     /**
+     * Constantes para tipos de receta.
+     */
+    private static final String TIPO_CONTROLADA = "CONTROLADA";
+    private static final String TIPO_ESTUPEFACIENTE = "ESTUPEFACIENTE";
+    
+    /**
+     * Constantes para prioridades.
+     */
+    private static final String PRIORIDAD_URGENTE = "URGENTE";
+    private static final String PRIORIDAD_ALTA = "ALTA";
+
+    /**
      * Identificador único de la receta médica.
      */
     @Id
@@ -312,7 +324,7 @@ public class RecetaMedica {
      * @return true si está vigente
      */
     public boolean estaVigente() {
-        if (!vigente) {
+        if (vigente == null || !vigente) {
             return false;
         }
         if (fechaVigencia == null) {
@@ -386,8 +398,8 @@ public class RecetaMedica {
      * @return true si es controlada o estupefaciente
      */
     public boolean esControlada() {
-        return "CONTROLADA".equalsIgnoreCase(tipoReceta) ||
-               "ESTUPEFACIENTE".equalsIgnoreCase(tipoReceta);
+        return TIPO_CONTROLADA.equalsIgnoreCase(tipoReceta) ||
+               TIPO_ESTUPEFACIENTE.equalsIgnoreCase(tipoReceta);
     }
 
     /**
@@ -396,7 +408,7 @@ public class RecetaMedica {
      * @return true si la prioridad es URGENTE
      */
     public boolean esUrgente() {
-        return "URGENTE".equalsIgnoreCase(prioridad);
+        return PRIORIDAD_URGENTE.equalsIgnoreCase(prioridad);
     }
 
     /**
@@ -405,7 +417,7 @@ public class RecetaMedica {
      * @return true si es alta o urgente
      */
     public boolean esAltaPrioridad() {
-        return "ALTA".equalsIgnoreCase(prioridad) || esUrgente();
+        return PRIORIDAD_ALTA.equalsIgnoreCase(prioridad) || esUrgente();
     }
 
     /**

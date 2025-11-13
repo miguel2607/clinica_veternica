@@ -38,12 +38,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
         // Verificar si el usuario está activo
-        if (!usuario.getEstado()) {
+        if (usuario.getEstado() == null || !usuario.getEstado()) {
             throw new UsernameNotFoundException("Usuario inactivo: " + username);
         }
 
         // Verificar si el usuario está bloqueado
-        if (usuario.getBloqueado()) {
+        if (usuario.getBloqueado() != null && usuario.getBloqueado()) {
             throw new UsernameNotFoundException("Usuario bloqueado: " + username);
         }
 

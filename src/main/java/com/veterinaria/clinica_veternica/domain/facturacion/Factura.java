@@ -305,7 +305,7 @@ public class Factura {
      * @param motivo Motivo de la anulación
      */
     public void anular(String motivo) {
-        if (this.anulada) {
+        if (this.anulada != null && this.anulada) {
             throw new IllegalStateException("La factura ya está anulada");
         }
         this.anulada = true;
@@ -349,7 +349,7 @@ public class Factura {
      * @return true si es válida
      */
     public boolean esValida() {
-        return !anulada;
+        return anulada == null || !anulada;
     }
 
     /**

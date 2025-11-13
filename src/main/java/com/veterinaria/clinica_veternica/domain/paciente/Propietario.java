@@ -7,7 +7,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +84,7 @@ public class Propietario {
      * Teléfono principal de contacto.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     @Column(nullable = false, length = 15)
     private String telefono;
 

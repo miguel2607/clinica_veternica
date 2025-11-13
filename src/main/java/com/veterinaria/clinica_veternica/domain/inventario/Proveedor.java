@@ -82,14 +82,14 @@ public class Proveedor {
      * Teléfono principal.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     @Column(nullable = false, length = 15)
     private String telefono;
 
     /**
      * Teléfono secundario.
      */
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     @Column(length = 15)
     private String telefonoSecundario;
 

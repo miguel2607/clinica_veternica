@@ -54,12 +54,6 @@ public class MascotaRequestDTO {
     private Double peso;
 
     /**
-     * Talla o tamaño (Pequeño, Mediano, Grande, Extra Grande).
-     */
-    @Size(max = 20, message = "La talla no puede exceder 20 caracteres")
-    private String talla;
-
-    /**
      * Número de microchip (identificación única internacional).
      */
     @Size(max = 20, message = "El número de microchip no puede exceder 20 caracteres")
@@ -71,21 +65,11 @@ public class MascotaRequestDTO {
     private Boolean esterilizado;
 
     /**
-     * Alergias conocidas de la mascota.
-     */
-    @Size(max = 500, message = "Las alergias no pueden exceder 500 caracteres")
-    private String alergias;
-
-    /**
-     * Enfermedades crónicas o condiciones preexistentes.
-     */
-    @Size(max = 500, message = "Las enfermedades crónicas no pueden exceder 500 caracteres")
-    private String enfermedadesCronicas;
-
-    /**
      * Observaciones generales sobre el comportamiento o características especiales.
+     * NOTA: Las alergias y enfermedades crónicas se registran en HistoriaClinica.
+     * Si la mascota falleció, incluir esa información aquí.
      */
-    @Size(max = 1000, message = "Las observaciones no pueden exceder 1000 caracteres")
+    @Size(max = 2000, message = "Las observaciones no pueden exceder 2000 caracteres")
     private String observaciones;
 
     /**
@@ -113,17 +97,6 @@ public class MascotaRequestDTO {
      */
     @Positive(message = "El ID de la raza debe ser positivo")
     private Long idRaza;
-
-    /**
-     * Fecha de fallecimiento (si aplica).
-     */
-    private LocalDate fechaFallecimiento;
-
-    /**
-     * Causa de fallecimiento (si aplica).
-     */
-    @Size(max = 500, message = "La causa de fallecimiento no puede exceder 500 caracteres")
-    private String causaFallecimiento;
 
     /**
      * Indica si la mascota está activa.

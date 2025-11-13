@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+
 
 /**
  * DTO de Request para crear/actualizar un Propietario.
@@ -50,23 +50,11 @@ public class PropietarioRequestDTO {
     private String apellidos;
 
     /**
-     * Fecha de nacimiento del propietario.
-     */
-    @Past(message = "La fecha de nacimiento debe ser en el pasado")
-    private LocalDate fechaNacimiento;
-
-    /**
      * Teléfono principal de contacto.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
+    @Pattern(regexp = "^[+]?\\d{7,15}$", message = "Formato de teléfono inválido")
     private String telefono;
-
-    /**
-     * Teléfono secundario de contacto (opcional).
-     */
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "Formato de teléfono inválido")
-    private String telefonoSecundario;
 
     /**
      * Correo electrónico del propietario.
@@ -77,22 +65,12 @@ public class PropietarioRequestDTO {
     private String email;
 
     /**
-     * Dirección de residencia.
+     * Dirección de residencia completa.
+     * NOTA: Incluir ciudad y código postal aquí si es necesario.
+     * Ejemplo: "Calle Principal 123, Lima, 15001"
      */
-    @Size(max = 200, message = "La dirección no puede exceder 200 caracteres")
+    @Size(max = 300, message = "La dirección no puede exceder 300 caracteres")
     private String direccion;
-
-    /**
-     * Ciudad de residencia.
-     */
-    @Size(max = 100, message = "La ciudad no puede exceder 100 caracteres")
-    private String ciudad;
-
-    /**
-     * Código postal.
-     */
-    @Size(max = 10, message = "El código postal no puede exceder 10 caracteres")
-    private String codigoPostal;
 
     /**
      * Observaciones o notas adicionales sobre el propietario.

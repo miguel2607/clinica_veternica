@@ -192,7 +192,7 @@ public class Mascota {
         if (fechaNacimiento == null) {
             return null;
         }
-        LocalDate fechaReferencia = activo ? LocalDate.now() : LocalDate.now();
+        LocalDate fechaReferencia = LocalDate.now();
         return Period.between(fechaNacimiento, fechaReferencia);
     }
 
@@ -218,19 +218,31 @@ public class Mascota {
         }
 
         StringBuilder sb = new StringBuilder();
+        appendAnios(sb, edad);
+        appendMeses(sb, edad);
+        appendDias(sb, edad);
+
+        return !sb.isEmpty() ? sb.toString() : "Recién nacido";
+    }
+
+    private void appendAnios(StringBuilder sb, Period edad) {
         if (edad.getYears() > 0) {
             sb.append(edad.getYears()).append(" año").append(edad.getYears() > 1 ? "s" : "");
         }
+    }
+
+    private void appendMeses(StringBuilder sb, Period edad) {
         if (edad.getMonths() > 0) {
-            if (sb.length() > 0) sb.append(", ");
+            if (!sb.isEmpty()) sb.append(", ");
             sb.append(edad.getMonths()).append(" mes").append(edad.getMonths() > 1 ? "es" : "");
         }
+    }
+
+    private void appendDias(StringBuilder sb, Period edad) {
         if (edad.getYears() == 0 && edad.getDays() > 0) {
-            if (sb.length() > 0) sb.append(", ");
+            if (!sb.isEmpty()) sb.append(", ");
             sb.append(edad.getDays()).append(" día").append(edad.getDays() > 1 ? "s" : "");
         }
-
-        return sb.length() > 0 ? sb.toString() : "Recién nacido";
     }
 
     /**

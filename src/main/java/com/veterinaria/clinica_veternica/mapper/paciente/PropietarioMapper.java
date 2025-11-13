@@ -5,8 +5,8 @@ import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequest
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
 import org.mapstruct.*;
 
-import java.time.LocalDate;
-import java.time.Period;
+
+
 import java.util.List;
 
 /**

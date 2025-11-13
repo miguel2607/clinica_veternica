@@ -360,7 +360,7 @@ public class HistoriaClinica {
      * Verifica si está archivada.
      */
     public boolean estaArchivada() {
-        return !activa;
+        return activa == null || !activa;
     }
 
     /**

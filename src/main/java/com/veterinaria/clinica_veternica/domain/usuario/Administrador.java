@@ -43,15 +43,4 @@ public class Administrador extends Personal {
     public String getTipoPersonal() {
         return "Administrador";
     }
-
-    /**
-     * El administrador puede realizar cualquier acción.
-     *
-     * @param accion Acción a verificar
-     * @return true siempre (si está activo)
-     */
-    @Override
-    public boolean puedeRealizarAccion(String accion) {
-        return super.puedeRealizarAccion(accion);
-    }
 }

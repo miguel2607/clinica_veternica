@@ -41,5 +41,7 @@ public interface InsumoRepository extends JpaRepository<Insumo, Long> {
     @Query("SELECT i FROM Insumo i WHERE LOWER(i.nombre) LIKE LOWER(CONCAT('%', :busqueda, '%')) AND i.activo = true")
     List<Insumo> buscarInsumos(@Param("busqueda") String busqueda);
 
+    List<Insumo> findByProveedor(com.veterinaria.clinica_veternica.domain.inventario.Proveedor proveedor);
+
     boolean existsByCodigo(String codigo);
 }

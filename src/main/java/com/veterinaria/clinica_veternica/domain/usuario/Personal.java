@@ -14,7 +14,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 /**
- * Clase abstracta base para todo el personal de la clínica.
  *
  * Representa la información común de empleados y personal de la clínica veterinaria.
  * Utiliza herencia con estrategia JOINED para mantener datos específicos en tablas separadas.
@@ -93,7 +92,7 @@ public abstract class Personal {
      * Número de teléfono de contacto.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^\\+?[0-9]{10,13}$", message = "El teléfono debe ser válido")
+    @Pattern(regexp = "^\\+?\\d{10,13}$", message = "El teléfono debe ser válido")
     @Column(nullable = false, length = 15)
     private String telefono;
 
@@ -184,7 +183,7 @@ public abstract class Personal {
      * @return true si está activo
      */
     public boolean estaActivo() {
-        return activo;
+        return activo != null && activo;
     }
 
     /**
@@ -203,7 +202,7 @@ public abstract class Personal {
      * @return true si puede realizar la acción
      */
     public boolean puedeRealizarAccion(String accion) {
-        return activo && usuario != null && usuario.puedeIniciarSesion();
+        return estaActivo() && usuario != null && usuario.puedeIniciarSesion();
     }
 
     // ===================================================================

@@ -52,7 +52,7 @@ public class PersonalRequestDTO {
      * Teléfono de contacto.
      */
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^\\+?[0-9]{10,13}$", message = "El teléfono debe ser válido")
+    @Pattern(regexp = "^\\+?\\d{10,13}$", message = "El teléfono debe ser válido")
     private String telefono;
 
     /**

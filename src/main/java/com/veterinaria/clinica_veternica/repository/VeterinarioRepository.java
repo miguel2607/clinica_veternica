@@ -166,7 +166,7 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      * @param anios Años de experiencia mínimos
      * @return Lista de veterinarios
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.añosExperiencia >= :anios AND v.activo = true")
+    @Query("SELECT v FROM Veterinario v WHERE v.aniosExperiencia >= :anios AND v.activo = true")
     List<Veterinario> findByExperienciaMinima(@Param("anios") Integer anios);
 
     /**
@@ -174,6 +174,6 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
      *
      * @return Lista de veterinarios ordenada
      */
-    @Query("SELECT v FROM Veterinario v WHERE v.activo = true ORDER BY v.añosExperiencia DESC")
+    @Query("SELECT v FROM Veterinario v WHERE v.activo = true ORDER BY v.aniosExperiencia DESC")
     List<Veterinario> findVeterinariosOrdenadosPorExperiencia();
 }

@@ -108,18 +108,29 @@ public interface MascotaMapper {
         Period periodo = Period.between(fechaNacimiento, LocalDate.now());
         int anios = periodo.getYears();
         int meses = periodo.getMonths();
+        int dias = periodo.getDays();
 
         if (anios == 0 && meses == 0) {
-            int dias = periodo.getDays();
-            return dias + (dias == 1 ? " día" : " días");
+            return formatearDias(dias);
         } else if (anios == 0) {
-            return meses + (meses == 1 ? " mes" : " meses");
+            return formatearMeses(meses);
         } else if (meses == 0) {
-            return anios + (anios == 1 ? " año" : " años");
+            return formatearAnios(anios);
         } else {
-            return anios + (anios == 1 ? " año" : " años") + " y " +
-                   meses + (meses == 1 ? " mes" : " meses");
+            return formatearAnios(anios) + " y " + formatearMeses(meses);
         }
+    }
+
+    private String formatearDias(int dias) {
+        return dias + (dias == 1 ? " día" : " días");
+    }
+
+    private String formatearMeses(int meses) {
+        return meses + (meses == 1 ? " mes" : " meses");
+    }
+
+    private String formatearAnios(int anios) {
+        return anios + (anios == 1 ? " año" : " años");
     }
 
     /**
