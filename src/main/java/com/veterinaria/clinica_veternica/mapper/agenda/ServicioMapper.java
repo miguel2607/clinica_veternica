@@ -10,7 +10,7 @@ import org.mapstruct.*;
 import java.util.List;
 
 /**
- * Mapper para convertir entre Servicio (Entity) y sus DTOs.
+ * Mapper para convertir entre Servicio (Entity) y sus DTO_s.
  *
  * @author Clínica Veterinaria Team
  * @version 1.0

@@ -114,15 +114,20 @@ public class SecurityConfig {
                         // ✅ Endpoints públicos (sin autenticación)
                         .requestMatchers(
                                 "/api/auth/**",
+                                // Swagger UI y OpenAPI docs
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/swagger-ui/index.html",
+                                "/swagger-ui/index.html/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs/swagger-config",
                                 "/api-docs",
                                 "/api-docs/**",
                                 "/api-docs/swagger-config",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/configuration/**",
                                 "/actuator/**",
                                 "/error"
                         ).permitAll()

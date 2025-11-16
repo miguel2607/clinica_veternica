@@ -15,6 +15,7 @@ import com.veterinaria.clinica_veternica.repository.MascotaRepository;
 import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.RazaRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IMascotaService;
+import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

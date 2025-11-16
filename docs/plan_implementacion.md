@@ -165,10 +165,6 @@ clinica_veternica/
 │   │   │               │   │   │   ├── CitaBuilder.java
 │   │   │               │   │   │   └── ReporteBuilder.java
 │   │   │               │   │   │
-│   │   │               │   │   └── prototype/
-│   │   │               │   │       ├── ServicioPrototype.java (interface)
-│   │   │               │   │       └── PlantillaServicio.java
-│   │   │               │   │
 │   │   │               │   ├── structural/            # Patrones Estructurales
 │   │   │               │   │   │
 │   │   │               │   │   ├── adapter/
@@ -183,11 +179,6 @@ clinica_veternica/
 │   │   │               │   │   │   ├── ReportePDFImpl.java
 │   │   │               │   │   │   ├── ReporteExcelImpl.java
 │   │   │               │   │   │   └── ReporteJSONImpl.java
-│   │   │               │   │   │
-│   │   │               │   │   ├── composite/
-│   │   │               │   │   │   ├── MenuComponent.java (interface)
-│   │   │               │   │   │   ├── MenuItem.java
-│   │   │               │   │   │   └── MenuComposite.java
 │   │   │               │   │   │
 │   │   │               │   │   ├── decorator/
 │   │   │               │   │   │   ├── ServicioDecorator.java (abstract)
@@ -367,18 +358,7 @@ clinica_veternica/
 
 ---
 
-### **5. PROTOTYPE** 🧬
-**Uso**: Clonación de plantillas de servicios
-- `ServicioPrototype` (interface)
-- `PlantillaServicio`: Servicios estándar como plantillas
-
-**Justificación**: Servicios frecuentes pueden clonarse en lugar de crearse desde cero.
-
-**Épicas relacionadas**: Épica 2 (Gestión de Servicios)
-
----
-
-### **6. ADAPTER** 🔌
+### **5. ADAPTER** 🔌
 **Uso**: Integración con pasarelas de pago externas
 - `PaymentGatewayAdapter` (interface)
 - `StripePaymentAdapter`
@@ -391,7 +371,7 @@ clinica_veternica/
 
 ---
 
-### **7. BRIDGE** 🌉
+### **6. BRIDGE** 🌉
 **Uso**: Generación de reportes en múltiples formatos
 - `ReporteAbstraction` (abstract): Define qué reportar
 - `ReporteImplementor` (interface): Define cómo exportar
@@ -403,19 +383,7 @@ clinica_veternica/
 
 ---
 
-### **8. COMPOSITE** 🌲
-**Uso**: Sistema de menús jerárquicos por roles
-- `MenuComponent` (interface)
-- `MenuItem`: Opciones individuales
-- `MenuComposite`: Menús con submenús
-
-**Justificación**: Estructura jerárquica de menús que se trata uniformemente.
-
-**Épicas relacionadas**: Épica 1 (Gestión de Usuarios)
-
----
-
-### **9. DECORATOR** 🎁
+### **7. DECORATOR** 🎁
 **Uso**: Agregar funcionalidades adicionales a servicios dinámicamente
 - `ServicioDecorator` (abstract)
 - `ServicioConDescuentoDecorator`: Aplica descuentos
@@ -429,7 +397,7 @@ clinica_veternica/
 
 ---
 
-### **10. FACADE** ⭐ **(IMPORTANTE)** 🏛️
+### **8. FACADE** ⭐ **(IMPORTANTE)** 🏛️
 **Uso**: Simplificar subsistemas complejos
 - `ClinicaFacade`: Operaciones comunes de la clínica
 - `CitaFacade`: Coordina la creación de citas (validaciones, notificaciones, disponibilidad)
@@ -442,7 +410,7 @@ clinica_veternica/
 
 ---
 
-### **11. PROXY** 🛡️
+### **9. PROXY** 🛡️
 **Uso**: Control de acceso y caché
 - `InventarioProxy`: Verifica permisos antes de modificar inventario
 - `HistoriaClinicaProxy`: Control de acceso a historias clínicas sensibles
@@ -454,7 +422,7 @@ clinica_veternica/
 
 ---
 
-### **12. CHAIN OF RESPONSIBILITY** ⛓️
+### **10. CHAIN OF RESPONSIBILITY** ⛓️
 **Uso**: Cadena de validaciones
 - `ValidacionHandler` (abstract)
 - `ValidacionDatosHandler`: Valida datos de entrada
@@ -468,7 +436,7 @@ clinica_veternica/
 
 ---
 
-### **13. COMMAND** 📝
+### **11. COMMAND** 📝
 **Uso**: Encapsular operaciones como objetos
 - `Command` (interface)
 - `CrearCitaCommand`
@@ -482,7 +450,7 @@ clinica_veternica/
 
 ---
 
-### **14. OBSERVER** 👁️
+### **12. OBSERVER** 👁️
 **Uso**: Sistema de notificaciones automáticas
 - `CitaObserver` (interface)
 - `NotificacionObserver`: Envía notificaciones al cambiar estado de cita
@@ -496,7 +464,7 @@ clinica_veternica/
 
 ---
 
-### **15. STRATEGY** 💡
+### **13. STRATEGY** 💡
 **Uso**: Diferentes estrategias de pago
 - `PagoStrategy` (interface)
 - `PagoEfectivoStrategy`
@@ -509,7 +477,7 @@ clinica_veternica/
 
 ---
 
-### **16. TEMPLATE METHOD** 📋
+### **14. TEMPLATE METHOD** 📋
 **Uso**: Flujo estándar de atención con pasos variables
 - `AtencionTemplate` (abstract): Define el flujo general
 - `AtencionConsultaGeneral`
@@ -522,7 +490,7 @@ clinica_veternica/
 
 ---
 
-### **17. MEDIATOR** 🤝
+### **15. MEDIATOR** 🤝
 **Uso**: Coordinar comunicación entre componentes de una cita
 - `CitaMediator`: Coordina Veterinario, Mascota, Horario, Servicio, Notificaciones
 - `Component`: Componentes que se comunican vía mediador
@@ -533,7 +501,7 @@ clinica_veternica/
 
 ---
 
-### **18. MEMENTO** 💾
+### **16. MEMENTO** 💾
 **Uso**: Guardar y restaurar estados de historias clínicas
 - `HistoriaClinicaMemento`: Captura estado
 - `HistoriaClinicaCaretaker`: Gestiona mementos
@@ -545,7 +513,7 @@ clinica_veternica/
 
 ---
 
-### **19. STATE** 🔄
+### **17. STATE** 🔄
 **Uso**: Gestión de estados de citas
 - `CitaState` (interface)
 - `CitaProgramadaState`
@@ -767,7 +735,6 @@ clinica_veternica/
 3. **Adapter** → PaymentGatewayAdapters
 4. **Decorator** → ServicioDecorators
 5. **Bridge** → Sistema de reportes
-6. **Composite** → Sistema de menús
 
 **Tiempo estimado**: 3-4 días
 

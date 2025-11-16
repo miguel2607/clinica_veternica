@@ -39,7 +39,7 @@ public class VacunacionRequestDTO {
     @NotNull
     private LocalDate fechaAplicacion;
 
-    @NotNull @Future
+    @NotNull
     private LocalDate fechaProximaDosis;
 
     @Size(max = 100)

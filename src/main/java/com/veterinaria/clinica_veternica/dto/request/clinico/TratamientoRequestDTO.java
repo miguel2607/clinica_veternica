@@ -49,7 +49,6 @@ public class TratamientoRequestDTO {
     private LocalDate fechaInicio;
 
     @NotNull(message = "La fecha de fin es obligatoria")
-    @Future(message = "La fecha de fin debe ser futura")
     private LocalDate fechaFin;
 
     @Size(max = 1000)

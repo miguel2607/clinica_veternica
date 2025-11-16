@@ -140,6 +140,14 @@ public class Factura {
     private LocalDateTime fechaPago;
 
     /**
+     * Indica si la factura está completamente pagada.
+     * Se actualiza automáticamente cuando se agregan pagos.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean pagada = false;
+
+    /**
      * Indica si la factura fue anulada.
      */
     @Column(nullable = false)
@@ -221,6 +229,10 @@ public class Factura {
                 java.time.Year.now().getValue(),
                 System.currentTimeMillis() % 1000000);
         }
+        // Inicializar pagada si es null
+        if (pagada == null) {
+            this.pagada = false;
+        }
         // Calcular totales
         calcularTotales();
     }
@@ -258,7 +270,8 @@ public class Factura {
         // Calcular total
         this.total = baseImponible.add(montoImpuesto);
 
-        // El estado de pagada se calcula con el método isPagada()
+        // Actualizar el campo pagada basado en el cálculo
+        this.pagada = this.isPagada();
     }
 
     /**
@@ -294,7 +307,10 @@ public class Factura {
         this.montoPagado = this.montoPagado.add(pago.getMonto());
         calcularTotales();
 
-        if (this.isPagada() && this.fechaPago == null) {
+        // Actualizar el campo pagada
+        this.pagada = this.isPagada();
+        
+        if (Boolean.TRUE.equals(this.pagada) && this.fechaPago == null) {
             this.fechaPago = LocalDateTime.now();
         }
     }

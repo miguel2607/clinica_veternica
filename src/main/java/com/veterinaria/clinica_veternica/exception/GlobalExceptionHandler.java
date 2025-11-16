@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -19,13 +20,15 @@ import java.util.UUID;
 /**
  * Manejador global de excepciones para toda la aplicación.
  * Captura y procesa todas las excepciones, devolviendo respuestas consistentes.
+ * 
+ * Excluye los paquetes de SpringDoc OpenAPI para evitar conflictos.
  *
  * @author Clínica Veterinaria Team
  * @version 1.0
  * @since 2025-11-03
  */
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.veterinaria.clinica_veternica.controller")
 public class GlobalExceptionHandler {
 
     /**
@@ -185,6 +188,54 @@ public class GlobalExceptionHandler {
                 .path(getPath(request))
                 .traceId(generateTraceId())
                 .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Maneja HttpMessageNotReadableException (400 Bad Request).
+     * Se lanza cuando hay errores al deserializar el JSON del request body.
+     * Por ejemplo: formato de fecha/hora incorrecto, tipos incompatibles, etc.
+     *
+     * @param ex Excepción
+     * @param request Request web
+     * @return ResponseEntity con ErrorResponse
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            WebRequest request) {
+
+        String mensaje = "Error al procesar el JSON enviado. ";
+        String causa = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+
+        if (causa != null) {
+            if (causa.contains("LocalTime")) {
+                mensaje += "El formato de hora debe ser HH:mm:ss, HH:mm, H:mm, H (ej: '09:00:00', '09:00', '9:00', '9') " +
+                          "o formato 12 horas: h:mm a, h a (ej: '9:00 AM', '9 PM', '9:30 PM', '9AM'). Valor recibido no válido.";
+            } else if (causa.contains("LocalDate")) {
+                mensaje += "El formato de fecha debe ser yyyy-MM-dd (ej: '2025-11-15'). Valor recibido no válido.";
+            } else if (causa.contains("LocalDateTime")) {
+                mensaje += "El formato de fecha y hora debe ser yyyy-MM-ddTHH:mm:ss (ej: '2025-11-15T09:00:00'). Valor recibido no válido.";
+            } else if (causa.contains("Cannot deserialize")) {
+                mensaje += "Error de formato en los datos enviados: " + causa;
+            } else {
+                mensaje += causa;
+            }
+        } else {
+            mensaje += "Verifique que el formato del JSON sea correcto.";
+        }
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(mensaje)
+                .path(getPath(request))
+                .traceId(generateTraceId())
+                .build();
+
+        log.warn("Error al deserializar JSON: {}", causa);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }

@@ -36,12 +36,18 @@ public class HorarioRequestDTO {
 
     /**
      * Hora de inicio de disponibilidad.
+     * Formatos soportados: 
+     * - 24 horas: HH:mm:ss, HH:mm, H:mm, H (ej: "09:00:00", "09:00", "9:00", "9")
+     * - 12 horas: h:mm a, h a (ej: "9:00 AM", "9 PM", "9:30 PM", "9AM")
      */
     @NotNull(message = "La hora de inicio es obligatoria")
     private LocalTime horaInicio;
 
     /**
      * Hora de fin de disponibilidad.
+     * Formatos soportados: 
+     * - 24 horas: HH:mm:ss, HH:mm, H:mm, H (ej: "17:00:00", "17:00", "17:00", "17")
+     * - 12 horas: h:mm a, h a (ej: "5:00 PM", "5 PM", "5:30 PM", "5PM")
      */
     @NotNull(message = "La hora de fin es obligatoria")
     private LocalTime horaFin;

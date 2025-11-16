@@ -9,6 +9,7 @@ import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.paciente.EspecieMapper;
 import com.veterinaria.clinica_veternica.repository.EspecieRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IEspecieService;
+import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

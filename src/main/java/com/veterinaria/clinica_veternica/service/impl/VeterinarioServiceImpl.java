@@ -1,6 +1,6 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
-import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
+
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.usuario.VeterinarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.VeterinarioResponseDTO;
@@ -11,6 +11,7 @@ import com.veterinaria.clinica_veternica.mapper.usuario.VeterinarioMapper;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IVeterinarioService;
+import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
