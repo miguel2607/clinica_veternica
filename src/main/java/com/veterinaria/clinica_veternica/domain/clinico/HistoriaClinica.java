@@ -46,7 +46,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"mascota", "evoluciones", "tratamientos", "recetas", "vacunaciones"})
+@ToString(exclude = {"mascota", "evoluciones", "vacunaciones"})
 public class HistoriaClinica {
 
     /**
@@ -134,24 +134,6 @@ public class HistoriaClinica {
     private List<EvolucionClinica> evoluciones = new ArrayList<>();
 
     /**
-     * Tratamientos asociados a esta historia.
-     * Relación One-to-Many con Tratamiento.
-     */
-    @OneToMany(mappedBy = "historiaClinica", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("fechaInicio DESC")
-    @Builder.Default
-    private List<Tratamiento> tratamientos = new ArrayList<>();
-
-    /**
-     * Recetas médicas asociadas a esta historia.
-     * Relación One-to-Many con RecetaMedica.
-     */
-    @OneToMany(mappedBy = "historiaClinica", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("fechaEmision DESC")
-    @Builder.Default
-    private List<RecetaMedica> recetas = new ArrayList<>();
-
-    /**
      * Vacunaciones registradas en esta historia.
      * Relación One-to-Many con Vacunacion.
      */
@@ -213,46 +195,6 @@ public class HistoriaClinica {
     }
 
     /**
-     * Agrega un tratamiento a la historia.
-     *
-     * @param tratamiento Tratamiento a agregar
-     */
-    public void agregarTratamiento(Tratamiento tratamiento) {
-        tratamientos.add(tratamiento);
-        tratamiento.setHistoriaClinica(this);
-    }
-
-    /**
-     * Elimina un tratamiento de la historia.
-     *
-     * @param tratamiento Tratamiento a eliminar
-     */
-    public void eliminarTratamiento(Tratamiento tratamiento) {
-        tratamientos.remove(tratamiento);
-        tratamiento.setHistoriaClinica(null);
-    }
-
-    /**
-     * Agrega una receta médica a la historia.
-     *
-     * @param receta Receta a agregar
-     */
-    public void agregarReceta(RecetaMedica receta) {
-        recetas.add(receta);
-        receta.setHistoriaClinica(this);
-    }
-
-    /**
-     * Elimina una receta médica de la historia.
-     *
-     * @param receta Receta a eliminar
-     */
-    public void eliminarReceta(RecetaMedica receta) {
-        recetas.remove(receta);
-        receta.setHistoriaClinica(null);
-    }
-
-    /**
      * Agrega una vacunación a la historia.
      *
      * @param vacunacion Vacunación a agregar
@@ -282,24 +224,6 @@ public class HistoriaClinica {
     }
 
     /**
-     * Obtiene el número total de tratamientos.
-     *
-     * @return Cantidad de tratamientos
-     */
-    public int getCantidadTratamientos() {
-        return tratamientos != null ? tratamientos.size() : 0;
-    }
-
-    /**
-     * Obtiene el número total de recetas.
-     *
-     * @return Cantidad de recetas
-     */
-    public int getCantidadRecetas() {
-        return recetas != null ? recetas.size() : 0;
-    }
-
-    /**
      * Obtiene el número total de vacunaciones.
      *
      * @return Cantidad de vacunaciones
@@ -318,20 +242,6 @@ public class HistoriaClinica {
             return null;
         }
         return evoluciones.get(0); // Ya está ordenada por fecha descendente
-    }
-
-    /**
-     * Obtiene los tratamientos activos (en curso).
-     *
-     * @return Lista de tratamientos activos
-     */
-    public List<Tratamiento> getTratamientosActivos() {
-        if (tratamientos == null) {
-            return new ArrayList<>();
-        }
-        return tratamientos.stream()
-            .filter(Tratamiento::estaActivo)
-            .toList();
     }
 
     /**

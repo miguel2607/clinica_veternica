@@ -141,7 +141,7 @@ public class CacheConfig {
      *    - Implementar estadísticas de hit/miss del caché
      *    - Configurar tamaño máximo de cada caché
      *
-     * TODO: Para producción de alto tráfico, considerar:
+
      * - Redis con Spring Data Redis
      * - Hazelcast para caché distribuido
      * - Caffeine como implementación más eficiente

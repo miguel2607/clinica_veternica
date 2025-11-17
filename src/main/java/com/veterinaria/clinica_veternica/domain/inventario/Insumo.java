@@ -31,7 +31,6 @@ import java.util.List;
            @Index(name = "idx_insumo_nombre", columnList = "nombre"),
            @Index(name = "idx_insumo_codigo", columnList = "codigo"),
            @Index(name = "idx_insumo_tipo", columnList = "id_tipo_insumo"),
-           @Index(name = "idx_insumo_proveedor", columnList = "id_proveedor"),
            @Index(name = "idx_insumo_estado", columnList = "estado")
        },
        uniqueConstraints = {
@@ -43,7 +42,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"tipoInsumo", "proveedor", "movimientos"})
+@ToString(exclude = {"tipoInsumo"})
 public class Insumo {
 
     /**
@@ -84,14 +83,6 @@ public class Insumo {
     @JoinColumn(name = "id_tipo_insumo", nullable = false)
     @NotNull(message = "El tipo de insumo es obligatorio")
     private TipoInsumo tipoInsumo;
-
-    /**
-     * Proveedor principal del insumo.
-     * Relación Many-to-One con Proveedor.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_proveedor")
-    private Proveedor proveedor;
 
     /**
      * Unidad de medida (Unidad, Caja, Kg, Litro, etc.).
@@ -203,15 +194,6 @@ public class Insumo {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
-
-    /**
-     * Movimientos de inventario asociados a este insumo.
-     * Relación One-to-Many con MovimientoInventario.
-     */
-    @OneToMany(mappedBy = "insumo", cascade = CascadeType.ALL)
-    @OrderBy("fechaMovimiento DESC")
-    @Builder.Default
-    private List<MovimientoInventario> movimientos = new ArrayList<>();
 
     /**
      * Fecha y hora de creación del registro.
@@ -339,25 +321,6 @@ public class Insumo {
             throw new IllegalArgumentException("Stock insuficiente");
         }
         this.cantidadStock -= cantidad;
-    }
-
-    /**
-     * Agrega un movimiento de inventario.
-     *
-     * @param movimiento Movimiento a agregar
-     */
-    public void agregarMovimiento(MovimientoInventario movimiento) {
-        movimientos.add(movimiento);
-        movimiento.setInsumo(this);
-    }
-
-    /**
-     * Obtiene la cantidad de movimientos.
-     *
-     * @return Cantidad de movimientos
-     */
-    public int getCantidadMovimientos() {
-        return movimientos != null ? movimientos.size() : 0;
     }
 
     /**

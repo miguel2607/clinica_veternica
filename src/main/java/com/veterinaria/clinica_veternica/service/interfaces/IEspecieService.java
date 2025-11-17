@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.paciente.EspecieRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.EspecieResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -47,14 +45,6 @@ public interface IEspecieService {
      * @return Lista de especies
      */
     List<EspecieResponseDTO> listarTodas();
-
-    /**
-     * Lista todas las especies con paginación.
-     *
-     * @param pageable Configuración de paginación
-     * @return Página de especies
-     */
-    Page<EspecieResponseDTO> listarTodas(Pageable pageable);
 
     /**
      * Lista solo las especies activas.

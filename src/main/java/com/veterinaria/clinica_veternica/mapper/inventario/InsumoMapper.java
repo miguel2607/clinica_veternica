@@ -1,7 +1,6 @@
 package com.veterinaria.clinica_veternica.mapper.inventario;
 
 import com.veterinaria.clinica_veternica.domain.inventario.Insumo;
-import com.veterinaria.clinica_veternica.domain.inventario.Proveedor;
 import com.veterinaria.clinica_veternica.domain.inventario.TipoInsumo;
 import com.veterinaria.clinica_veternica.dto.request.inventario.InsumoRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.inventario.InsumoResponseDTO;
@@ -28,9 +27,7 @@ public interface InsumoMapper {
      */
     @Mapping(target = "idInsumo", ignore = true)
     @Mapping(target = "tipoInsumo", ignore = true)
-    @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "fechaUltimaCompra", ignore = true)
-    @Mapping(target = "movimientos", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)
     Insumo toEntity(InsumoRequestDTO requestDTO);
@@ -43,8 +40,8 @@ public interface InsumoMapper {
      */
     @Mapping(target = "idTipoInsumo", source = "tipoInsumo.idTipoInsumo")
     @Mapping(target = "nombreTipoInsumo", source = "tipoInsumo.nombre")
-    @Mapping(target = "idProveedor", source = "proveedor.idProveedor")
-    @Mapping(target = "nombreProveedor", source = "proveedor.nombreEmpresa")
+    @Mapping(target = "idProveedor", ignore = true)
+    @Mapping(target = "nombreProveedor", ignore = true)
     @Mapping(target = "esStockBajo", expression = "java(insumo.esStockBajo())")
     @Mapping(target = "estaSinStock", expression = "java(insumo.estaSinStock())")
     @Mapping(target = "estaProximoAVencer", expression = "java(insumo.estaProximoAVencer())")
@@ -70,9 +67,7 @@ public interface InsumoMapper {
      */
     @Mapping(target = "idInsumo", ignore = true)
     @Mapping(target = "tipoInsumo", ignore = true)
-    @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "fechaUltimaCompra", ignore = true)
-    @Mapping(target = "movimientos", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -90,21 +85,6 @@ public interface InsumoMapper {
         }
         return TipoInsumo.builder()
                 .idTipoInsumo(idTipoInsumo)
-                .build();
-    }
-
-    /**
-     * Mapea el ID de proveedor a la entidad Proveedor.
-     *
-     * @param idProveedor ID del proveedor
-     * @return Entidad Proveedor con solo el ID establecido
-     */
-    default Proveedor mapIdToProveedor(Long idProveedor) {
-        if (idProveedor == null) {
-            return null;
-        }
-        return Proveedor.builder()
-                .idProveedor(idProveedor)
                 .build();
     }
 }

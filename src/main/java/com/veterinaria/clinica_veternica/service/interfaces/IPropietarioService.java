@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -23,8 +21,6 @@ public interface IPropietarioService {
     PropietarioResponseDTO buscarPorId(Long id);
 
     List<PropietarioResponseDTO> listarTodos();
-
-    Page<PropietarioResponseDTO> listarTodos(Pageable pageable);
 
     List<PropietarioResponseDTO> listarActivos();
 

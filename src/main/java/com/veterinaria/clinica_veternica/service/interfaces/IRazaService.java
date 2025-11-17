@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.paciente.RazaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.RazaResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -47,14 +45,6 @@ public interface IRazaService {
      * @return Lista de razas
      */
     List<RazaResponseDTO> listarTodas();
-
-    /**
-     * Lista todas las razas con paginación.
-     *
-     * @param pageable Configuración de paginación
-     * @return Página de razas
-     */
-    Page<RazaResponseDTO> listarTodas(Pageable pageable);
 
     /**
      * Lista razas por especie.

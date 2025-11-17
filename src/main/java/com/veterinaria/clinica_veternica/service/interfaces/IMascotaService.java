@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.paciente.MascotaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.MascotaResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -23,8 +21,6 @@ public interface IMascotaService {
     MascotaResponseDTO buscarPorId(Long id);
 
     List<MascotaResponseDTO> listarTodas();
-
-    Page<MascotaResponseDTO> listarTodas(Pageable pageable);
 
     List<MascotaResponseDTO> listarActivas();
 

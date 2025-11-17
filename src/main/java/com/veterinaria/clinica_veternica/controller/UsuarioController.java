@@ -10,9 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,13 +60,6 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
-    }
-
-    @Operation(summary = "Listar usuarios con paginación")
-    @GetMapping("/paginados")
-    public ResponseEntity<Page<UsuarioResponseDTO>> listarTodosPaginados(
-            @PageableDefault(size = 10, sort = "username") Pageable pageable) {
-        return ResponseEntity.ok(usuarioService.listarTodos(pageable));
     }
 
     @Operation(summary = "Listar usuarios por rol")

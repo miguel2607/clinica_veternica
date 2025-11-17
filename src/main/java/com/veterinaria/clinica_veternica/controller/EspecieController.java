@@ -10,9 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -77,14 +74,6 @@ public class EspecieController {
     @GetMapping
     public ResponseEntity<List<EspecieResponseDTO>> listarTodas() {
         List<EspecieResponseDTO> especies = especieService.listarTodas();
-        return ResponseEntity.ok(especies);
-    }
-
-    @Operation(summary = "Listar especies con paginación", description = "Obtiene especies con paginación y ordenamiento")
-    @GetMapping("/paginadas")
-    public ResponseEntity<Page<EspecieResponseDTO>> listarTodasPaginadas(
-            @PageableDefault(size = 10, sort = "nombre") Pageable pageable) {
-        Page<EspecieResponseDTO> especies = especieService.listarTodas(pageable);
         return ResponseEntity.ok(especies);
     }
 

@@ -11,8 +11,6 @@ import com.veterinaria.clinica_veternica.repository.EspecieRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IEspecieService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,13 +96,6 @@ public class EspecieServiceImpl implements IEspecieService {
     public List<EspecieResponseDTO> listarTodas() {
         List<Especie> especies = especieRepository.findAll();
         return especieMapper.toResponseDTOList(especies);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<EspecieResponseDTO> listarTodas(Pageable pageable) {
-        Page<Especie> especiesPage = especieRepository.findAll(pageable);
-        return especiesPage.map(especieMapper::toResponseDTO);
     }
 
     @Override

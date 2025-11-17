@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.usuario.UsuarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.UsuarioResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -27,8 +25,6 @@ public interface IUsuarioService {
     UsuarioResponseDTO buscarPorEmail(String email);
 
     List<UsuarioResponseDTO> listarTodos();
-
-    Page<UsuarioResponseDTO> listarTodos(Pageable pageable);
 
     List<UsuarioResponseDTO> listarPorRol(String rol);
 

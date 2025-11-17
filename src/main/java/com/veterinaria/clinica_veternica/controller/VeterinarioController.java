@@ -7,11 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,12 +23,14 @@ public class VeterinarioController {
     private final IVeterinarioService veterinarioService;
 
     @Operation(summary = "Crear nuevo veterinario")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<VeterinarioResponseDTO> crear(@Valid @RequestBody VeterinarioRequestDTO requestDTO) {
         return new ResponseEntity<>(veterinarioService.crear(requestDTO), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Actualizar veterinario")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO')")
     @PutMapping("/{id}")
     public ResponseEntity<VeterinarioResponseDTO> actualizar(
             @PathVariable Long id,
@@ -55,13 +55,6 @@ public class VeterinarioController {
     @GetMapping
     public ResponseEntity<List<VeterinarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(veterinarioService.listarTodos());
-    }
-
-    @Operation(summary = "Listar veterinarios con paginación")
-    @GetMapping("/paginados")
-    public ResponseEntity<Page<VeterinarioResponseDTO>> listarTodosPaginados(
-            @PageableDefault(size = 10, sort = "nombres") Pageable pageable) {
-        return ResponseEntity.ok(veterinarioService.listarTodos(pageable));
     }
 
     @Operation(summary = "Listar veterinarios activos")
@@ -89,6 +82,7 @@ public class VeterinarioController {
     }
 
     @Operation(summary = "Eliminar veterinario")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         veterinarioService.eliminar(id);
@@ -96,6 +90,7 @@ public class VeterinarioController {
     }
 
     @Operation(summary = "Activar veterinario")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/activar")
     public ResponseEntity<VeterinarioResponseDTO> activar(@PathVariable Long id) {
         return ResponseEntity.ok(veterinarioService.activar(id));

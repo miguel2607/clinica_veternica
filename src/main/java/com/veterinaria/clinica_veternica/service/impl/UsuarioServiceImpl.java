@@ -13,8 +13,6 @@ import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IUsuarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,13 +135,6 @@ public class UsuarioServiceImpl implements IUsuarioService {
     public List<UsuarioResponseDTO> listarTodos() {
         List<Usuario> usuarios = usuarioRepository.findAll();
         return usuarioMapper.toResponseDTOList(usuarios);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<UsuarioResponseDTO> listarTodos(Pageable pageable) {
-        Page<Usuario> usuariosPage = usuarioRepository.findAll(pageable);
-        return usuariosPage.map(usuarioMapper::toResponseDTO);
     }
 
     @Override

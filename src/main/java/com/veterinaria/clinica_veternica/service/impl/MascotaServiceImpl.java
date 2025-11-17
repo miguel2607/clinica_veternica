@@ -17,8 +17,6 @@ import com.veterinaria.clinica_veternica.repository.RazaRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IMascotaService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,13 +122,6 @@ public class MascotaServiceImpl implements IMascotaService {
     public List<MascotaResponseDTO> listarTodas() {
         List<Mascota> mascotas = mascotaRepository.findAll();
         return mascotaMapper.toResponseDTOList(mascotas);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<MascotaResponseDTO> listarTodas(Pageable pageable) {
-        Page<Mascota> mascotasPage = mascotaRepository.findAll(pageable);
-        return mascotasPage.map(mascotaMapper::toResponseDTO);
     }
 
     @Override

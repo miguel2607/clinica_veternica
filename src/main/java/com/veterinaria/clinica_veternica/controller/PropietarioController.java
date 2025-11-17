@@ -7,9 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +30,7 @@ public class PropietarioController {
     }
 
     @Operation(summary = "Actualizar propietario")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA')")
     @PutMapping("/{id}")
     public ResponseEntity<PropietarioResponseDTO> actualizar(
             @PathVariable Long id,
@@ -50,13 +48,6 @@ public class PropietarioController {
     @GetMapping
     public ResponseEntity<List<PropietarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(propietarioService.listarTodos());
-    }
-
-    @Operation(summary = "Listar propietarios con paginación")
-    @GetMapping("/paginados")
-    public ResponseEntity<Page<PropietarioResponseDTO>> listarTodosPaginados(
-            @PageableDefault(size = 10, sort = "nombres") Pageable pageable) {
-        return ResponseEntity.ok(propietarioService.listarTodos(pageable));
     }
 
     @Operation(summary = "Listar propietarios activos")

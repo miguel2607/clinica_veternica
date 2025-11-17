@@ -2,8 +2,6 @@ package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.usuario.VeterinarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.VeterinarioResponseDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -25,8 +23,6 @@ public interface IVeterinarioService {
     VeterinarioResponseDTO buscarPorRegistroProfesional(String registroProfesional);
 
     List<VeterinarioResponseDTO> listarTodos();
-
-    Page<VeterinarioResponseDTO> listarTodos(Pageable pageable);
 
     List<VeterinarioResponseDTO> listarActivos();
 

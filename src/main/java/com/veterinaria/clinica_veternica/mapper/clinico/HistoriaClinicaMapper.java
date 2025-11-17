@@ -14,8 +14,6 @@ public interface HistoriaClinicaMapper {
     @Mapping(target = "idHistoriaClinica", ignore = true)
     @Mapping(target = "mascota", ignore = true)
     @Mapping(target = "evoluciones", ignore = true)
-    @Mapping(target = "tratamientos", ignore = true)
-    @Mapping(target = "recetas", ignore = true)
     @Mapping(target = "vacunaciones", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)
@@ -23,7 +21,6 @@ public interface HistoriaClinicaMapper {
 
     @Mapping(target = "mascota", source = "mascota", qualifiedByName = "mapMascotaSimple")
     @Mapping(target = "cantidadEvoluciones", source = "evoluciones", qualifiedByName = "contarLista")
-    @Mapping(target = "cantidadTratamientos", source = "tratamientos", qualifiedByName = "contarLista")
     @Mapping(target = "cantidadVacunas", source = "vacunaciones", qualifiedByName = "contarLista")
     HistoriaClinicaResponseDTO toResponseDTO(HistoriaClinica historia);
 
@@ -32,8 +29,6 @@ public interface HistoriaClinicaMapper {
     @Mapping(target = "idHistoriaClinica", ignore = true)
     @Mapping(target = "mascota", ignore = true)
     @Mapping(target = "evoluciones", ignore = true)
-    @Mapping(target = "tratamientos", ignore = true)
-    @Mapping(target = "recetas", ignore = true)
     @Mapping(target = "vacunaciones", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
     @Mapping(target = "fechaModificacion", ignore = true)

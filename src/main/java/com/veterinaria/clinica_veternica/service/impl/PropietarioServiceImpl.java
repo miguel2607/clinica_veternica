@@ -11,8 +11,6 @@ import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IPropietarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -104,13 +102,6 @@ public class PropietarioServiceImpl implements IPropietarioService {
     public List<PropietarioResponseDTO> listarTodos() {
         List<Propietario> propietarios = propietarioRepository.findAll();
         return propietarioMapper.toResponseDTOList(propietarios);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<PropietarioResponseDTO> listarTodos(Pageable pageable) {
-        Page<Propietario> propietariosPage = propietarioRepository.findAll(pageable);
-        return propietariosPage.map(propietarioMapper::toResponseDTO);
     }
 
     @Override

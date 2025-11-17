@@ -13,8 +13,6 @@ import com.veterinaria.clinica_veternica.repository.RazaRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IRazaService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -115,13 +113,6 @@ public class RazaServiceImpl implements IRazaService {
     public List<RazaResponseDTO> listarTodas() {
         List<Raza> razas = razaRepository.findAll();
         return razaMapper.toResponseDTOList(razas);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<RazaResponseDTO> listarTodas(Pageable pageable) {
-        Page<Raza> razasPage = razaRepository.findAll(pageable);
-        return razasPage.map(razaMapper::toResponseDTO);
     }
 
     @Override

@@ -7,9 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +30,7 @@ public class MascotaController {
     }
 
     @Operation(summary = "Actualizar mascota")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'VETERINARIO')")
     @PutMapping("/{id}")
     public ResponseEntity<MascotaResponseDTO> actualizar(
             @PathVariable Long id,
@@ -50,13 +48,6 @@ public class MascotaController {
     @GetMapping
     public ResponseEntity<List<MascotaResponseDTO>> listarTodas() {
         return ResponseEntity.ok(mascotaService.listarTodas());
-    }
-
-    @Operation(summary = "Listar mascotas con paginación")
-    @GetMapping("/paginadas")
-    public ResponseEntity<Page<MascotaResponseDTO>> listarTodasPaginadas(
-            @PageableDefault(size = 10, sort = "nombre") Pageable pageable) {
-        return ResponseEntity.ok(mascotaService.listarTodas(pageable));
     }
 
     @Operation(summary = "Listar mascotas activas")

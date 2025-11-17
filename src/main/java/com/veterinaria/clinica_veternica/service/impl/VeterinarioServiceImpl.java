@@ -13,8 +13,6 @@ import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IVeterinarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,13 +90,6 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     public List<VeterinarioResponseDTO> listarTodos() {
         List<Veterinario> veterinarios = veterinarioRepository.findAll();
         return veterinarioMapper.toResponseDTOList(veterinarios);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<VeterinarioResponseDTO> listarTodos(Pageable pageable) {
-        Page<Veterinario> veterinariosPage = veterinarioRepository.findAll(pageable);
-        return veterinariosPage.map(veterinarioMapper::toResponseDTO);
     }
 
     @Override

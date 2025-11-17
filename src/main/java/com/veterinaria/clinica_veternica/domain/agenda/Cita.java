@@ -25,7 +25,6 @@ import java.time.LocalTime;
  * - Veterinario (profesional que atiende)
  * - Servicio (tipo de atención)
  * - Historia clínica (registro de atención)
- * - Facturación (cobro del servicio)
  *
  * Estados posibles: PROGRAMADA, CONFIRMADA, ATENDIDA, CANCELADA, NO_ASISTIO
  *
@@ -88,9 +87,10 @@ public class Cita {
 
     /**
      * Fecha de la cita.
+     * La validación @FutureOrPresent solo aplica para citas nuevas o en estados pendientes.
+     * Para citas atendidas, se permite fechas pasadas ya que es normal que una cita atendida tenga fecha pasada.
      */
     @NotNull(message = "La fecha de la cita es obligatoria")
-    @FutureOrPresent(message = "La fecha de la cita no puede ser en el pasado")
     @Column(nullable = false)
     private LocalDate fechaCita;
 
