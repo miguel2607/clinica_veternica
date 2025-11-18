@@ -7,6 +7,7 @@ import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
 import com.veterinaria.clinica_veternica.mapper.paciente.MascotaMapper;
 import com.veterinaria.clinica_veternica.repository.*;
 import com.veterinaria.clinica_veternica.service.impl.MascotaServiceImpl;
+import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class MascotaServiceTest {
 
     @Mock
     private MascotaMapper mascotaMapper;
+
+    @Mock
+    private ValidationHelper validationHelper;
 
     @InjectMocks
     private MascotaServiceImpl mascotaService;

@@ -8,7 +8,7 @@ import com.veterinaria.clinica_veternica.dto.request.paciente.MascotaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.MascotaResponseDTO;
 import com.veterinaria.clinica_veternica.exception.BusinessException;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
-import com.veterinaria.clinica_veternica.exception.ValidationException;
+
 import com.veterinaria.clinica_veternica.mapper.paciente.MascotaMapper;
 import com.veterinaria.clinica_veternica.repository.EspecieRepository;
 import com.veterinaria.clinica_veternica.repository.MascotaRepository;
@@ -16,6 +16,7 @@ import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.RazaRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IMascotaService;
 import com.veterinaria.clinica_veternica.util.Constants;
+import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class MascotaServiceImpl implements IMascotaService {
     private final EspecieRepository especieRepository;
     private final RazaRepository razaRepository;
     private final MascotaMapper mascotaMapper;
+    private final ValidationHelper validationHelper;
 
     @Override
     public MascotaResponseDTO crear(MascotaRequestDTO requestDTO) {
@@ -50,13 +52,12 @@ public class MascotaServiceImpl implements IMascotaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Raza", "id", requestDTO.getIdRaza()));
 
             // Validar que la raza pertenezca a la especie
-            if (!raza.getEspecie().getIdEspecie().equals(especie.getIdEspecie())) {
-                throw new ValidationException(
-                    "La raza '" + raza.getNombre() + "' no pertenece a la especie '" + especie.getNombre() + "'",
-                    "idRaza",
-                    "La raza no corresponde a la especie seleccionada"
-                );
-            }
+            validationHelper.validateRazaBelongsToSpecies(
+                raza.getEspecie().getIdEspecie(),
+                especie.getIdEspecie(),
+                raza.getNombre(),
+                especie.getNombre()
+            );
         }
 
         Mascota mascota = mascotaMapper.toEntity(requestDTO);
@@ -91,13 +92,12 @@ public class MascotaServiceImpl implements IMascotaService {
             raza = razaRepository.findById(requestDTO.getIdRaza())
                 .orElseThrow(() -> new ResourceNotFoundException("Raza", "id", requestDTO.getIdRaza()));
 
-            if (!raza.getEspecie().getIdEspecie().equals(especie.getIdEspecie())) {
-                throw new ValidationException(
-                    "La raza '" + raza.getNombre() + "' no pertenece a la especie '" + especie.getNombre() + "'",
-                    "idRaza",
-                    "La raza no corresponde a la especie seleccionada"
-                );
-            }
+            validationHelper.validateRazaBelongsToSpecies(
+                raza.getEspecie().getIdEspecie(),
+                especie.getIdEspecie(),
+                raza.getNombre(),
+                especie.getNombre()
+            );
         }
 
         mascotaMapper.updateEntityFromDTO(requestDTO, mascota);
@@ -164,10 +164,8 @@ public class MascotaServiceImpl implements IMascotaService {
     @Override
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> buscarPorNombre(String nombre) {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new ValidationException("El nombre de búsqueda no puede estar vacío");
-        }
-        List<Mascota> mascotas = mascotaRepository.findByNombreContainingIgnoreCase(nombre.trim());
+        String nombreSanitizado = validationHelper.validateAndSanitizeSearchTerm(nombre, 100);
+        List<Mascota> mascotas = mascotaRepository.findByNombreContainingIgnoreCase(nombreSanitizado);
         return mascotaMapper.toResponseDTOList(mascotas);
     }
 

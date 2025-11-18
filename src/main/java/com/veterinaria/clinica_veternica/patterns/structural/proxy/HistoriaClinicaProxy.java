@@ -74,8 +74,8 @@ public class HistoriaClinicaProxy {
                     String role = a.getAuthority();
                     return role.equals(Constants.ROLE_ADMIN_STRING) ||
                            role.equals(Constants.ROLE_VETERINARIO_STRING) ||
-                           role.equals("ROLE_RECEPCIONISTA") ||
-                           role.equals("ROLE_AUXILIAR_VETERINARIO");
+                           role.equals(Constants.ROLE_RECEPCIONISTA_STRING) ||
+                           role.equals(Constants.ROLE_AUXILIAR_VETERINARIO_STRING);
                 });
 
         if (tienePermiso) {
@@ -189,8 +189,8 @@ public class HistoriaClinicaProxy {
         boolean tieneAccesoLimitado = authorities.stream()
                 .anyMatch(a -> {
                     String role = a.getAuthority();
-                    return role.equals("ROLE_RECEPCIONISTA") ||
-                           role.equals("ROLE_AUXILIAR_VETERINARIO");
+                    return role.equals(Constants.ROLE_RECEPCIONISTA_STRING) ||
+                           role.equals(Constants.ROLE_AUXILIAR_VETERINARIO_STRING);
                 });
 
         if (tieneAccesoLimitado) {

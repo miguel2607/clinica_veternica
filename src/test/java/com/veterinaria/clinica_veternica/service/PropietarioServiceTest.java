@@ -8,6 +8,7 @@ import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
 import com.veterinaria.clinica_veternica.mapper.paciente.PropietarioMapper;
 import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.service.impl.PropietarioServiceImpl;
+import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,9 @@ class PropietarioServiceTest {
 
     @Mock
     private PropietarioMapper propietarioMapper;
+
+    @Mock
+    private ValidationHelper validationHelper;
 
     @InjectMocks
     private PropietarioServiceImpl propietarioService;
@@ -75,8 +79,9 @@ class PropietarioServiceTest {
     @Test
     @DisplayName("CREATE - Debe crear un propietario exitosamente")
     void testCrearPropietarioExitoso() {
-        when(propietarioRepository.existsByTipoDocumentoAndNumeroDocumento("CC", "1234567890"))
-                .thenReturn(false);
+        // ValidationHelper no lanza excepciones (validación exitosa)
+        doNothing().when(validationHelper).validateDocumentUnique(any(), any(), any());
+
         when(propietarioRepository.existsByEmail("juan@example.com")).thenReturn(false);
         when(propietarioMapper.toEntity(requestDTO)).thenReturn(propietario);
         when(propietarioRepository.save(any(Propietario.class))).thenReturn(propietario);

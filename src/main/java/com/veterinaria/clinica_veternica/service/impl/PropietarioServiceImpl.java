@@ -10,6 +10,7 @@ import com.veterinaria.clinica_veternica.mapper.paciente.PropietarioMapper;
 import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IPropietarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
+import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,19 +24,17 @@ public class PropietarioServiceImpl implements IPropietarioService {
 
     private final PropietarioRepository propietarioRepository;
     private final PropietarioMapper propietarioMapper;
+    private final ValidationHelper validationHelper;
 
     @Override
     public PropietarioResponseDTO crear(PropietarioRequestDTO requestDTO) {
         // Validar que no exista el documento
-        if (propietarioRepository.existsByTipoDocumentoAndNumeroDocumento(
-                requestDTO.getTipoDocumento(), requestDTO.getDocumento())) {
-            throw new ValidationException(
-                "Ya existe un propietario con el documento " + requestDTO.getTipoDocumento() +
-                " " + requestDTO.getDocumento(),
-                "documento",
-                "El documento ya está registrado"
-            );
-        }
+        validationHelper.validateDocumentUnique(
+            () -> propietarioRepository.existsByTipoDocumentoAndNumeroDocumento(
+                requestDTO.getTipoDocumento(), requestDTO.getDocumento()),
+            requestDTO.getTipoDocumento(),
+            requestDTO.getDocumento()
+        );
 
         // Validar email único
         if (requestDTO.getEmail() != null && propietarioRepository.existsByEmail(requestDTO.getEmail())) {
@@ -62,14 +61,12 @@ public class PropietarioServiceImpl implements IPropietarioService {
             .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
 
         // Validar documento único (si cambió)
-        if (!propietario.getDocumento().equals(requestDTO.getDocumento()) &&
-            propietarioRepository.existsByTipoDocumentoAndNumeroDocumento(
-                requestDTO.getTipoDocumento(), requestDTO.getDocumento())) {
-            throw new ValidationException(
-                "Ya existe otro propietario con el documento " + requestDTO.getTipoDocumento() +
-                " " + requestDTO.getDocumento(),
-                "documento",
-                "El documento ya está registrado"
+        if (!propietario.getDocumento().equals(requestDTO.getDocumento())) {
+            validationHelper.validateDocumentUnique(
+                () -> propietarioRepository.existsByTipoDocumentoAndNumeroDocumento(
+                    requestDTO.getTipoDocumento(), requestDTO.getDocumento()),
+                requestDTO.getTipoDocumento(),
+                requestDTO.getDocumento()
             );
         }
 
@@ -114,10 +111,8 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Override
     @Transactional(readOnly = true)
     public List<PropietarioResponseDTO> buscarPorNombre(String nombre) {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new ValidationException("El nombre de búsqueda no puede estar vacío");
-        }
-        List<Propietario> propietarios = propietarioRepository.buscarPorNombreCompleto(nombre.trim());
+        String nombreSanitizado = validationHelper.validateAndSanitizeSearchTerm(nombre, 200);
+        List<Propietario> propietarios = propietarioRepository.buscarPorNombreCompleto(nombreSanitizado);
         return propietarioMapper.toResponseDTOList(propietarios);
     }
 

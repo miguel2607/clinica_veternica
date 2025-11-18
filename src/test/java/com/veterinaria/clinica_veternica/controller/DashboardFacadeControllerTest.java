@@ -1,6 +1,8 @@
 package com.veterinaria.clinica_veternica.controller;
 
-import com.veterinaria.clinica_veternica.patterns.structural.facade.ClinicaFacade;
+import com.veterinaria.clinica_veternica.dto.response.facade.DashboardResponseDTO;
+import com.veterinaria.clinica_veternica.dto.response.facade.EstadisticasGeneralesDTO;
+import com.veterinaria.clinica_veternica.patterns.structural.facade.DashboardFacadeService;
 import com.veterinaria.clinica_veternica.security.jwt.JwtAuthenticationFilter;
 import com.veterinaria.clinica_veternica.security.jwt.JwtProperties;
 import com.veterinaria.clinica_veternica.security.jwt.JwtUtils;
@@ -15,12 +17,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Map;
+import java.util.Collections;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = DashboardFacadeController.class, excludeAutoConfiguration = {
         org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
@@ -32,7 +35,7 @@ class DashboardFacadeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ClinicaFacade clinicaFacade;
+    private DashboardFacadeService dashboardFacadeService;
 
     @MockitoBean
     private JwtUtils jwtUtils;
@@ -46,68 +49,58 @@ class DashboardFacadeControllerTest {
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    private Map<String, Object> dashboardData;
-    private Map<String, Object> estadisticasData;
-    private Map<String, Object> inventarioData;
+    private DashboardResponseDTO dashboardData;
+    private EstadisticasGeneralesDTO estadisticasData;
 
     @BeforeEach
     void setUp() {
-        dashboardData = Map.of(
-                "citasHoy", 5,
-                "stockBajo", 3,
-                "notificacionesPendientes", 2
-        );
+        dashboardData = DashboardResponseDTO.builder()
+                .citasHoy(Collections.emptyList())
+                .totalCitasHoy(0)
+                .citasProgramadas(Collections.emptyList())
+                .totalCitasProgramadas(0)
+                .stockBajo(Collections.emptyList())
+                .totalStockBajo(0)
+                .notificacionesRecientes(Collections.emptyList())
+                .totalNotificacionesRecientes(0)
+                .build();
 
-        estadisticasData = Map.of(
-                "totalMascotas", 100,
-                "totalPropietarios", 80,
-                "citasMes", 150
-        );
-
-        inventarioData = Map.of(
-                "totalInsumos", 50,
-                "stockBajo", 5,
-                "stockAgotado", 2
-        );
+        estadisticasData = EstadisticasGeneralesDTO.builder()
+                .totalMascotas(100L)
+                .totalPropietarios(80L)
+                .totalVeterinarios(15L)
+                .totalCitasProgramadas(25L)
+                .totalCitasHoy(5L)
+                .insumosStockBajo(3)
+                .build();
     }
 
     @Test
     @DisplayName("GET - Debe obtener dashboard completo")
     @WithMockUser(roles = {"VETERINARIO"})
     void debeObtenerDashboard() throws Exception {
-        when(clinicaFacade.obtenerDashboard()).thenReturn(dashboardData);
+        dashboardData.setTotalCitasHoy(5);
+        when(dashboardFacadeService.obtenerDashboard()).thenReturn(dashboardData);
 
         mockMvc.perform(get("/api/facade/dashboard"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.citasHoy").value(5));
+                .andExpect(jsonPath("$.citasHoy").isArray())
+                .andExpect(jsonPath("$.totalCitasHoy").value(5));
 
-        verify(clinicaFacade).obtenerDashboard();
+        verify(dashboardFacadeService).obtenerDashboard();
     }
 
     @Test
     @DisplayName("GET - Debe obtener estadísticas generales")
     @WithMockUser(roles = {"ADMIN"})
     void debeObtenerEstadisticas() throws Exception {
-        when(clinicaFacade.obtenerEstadisticasGenerales()).thenReturn(estadisticasData);
+        when(dashboardFacadeService.obtenerEstadisticasGenerales()).thenReturn(estadisticasData);
 
         mockMvc.perform(get("/api/facade/dashboard/estadisticas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalMascotas").value(100));
 
-        verify(clinicaFacade).obtenerEstadisticasGenerales();
-    }
-
-    @Test
-    @DisplayName("GET - Debe obtener resumen de inventario")
-    @WithMockUser(roles = {"VETERINARIO"})
-    void debeObtenerResumenInventario() throws Exception {
-        when(clinicaFacade.obtenerResumenInventario()).thenReturn(inventarioData);
-
-        mockMvc.perform(get("/api/facade/dashboard/inventario"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalInsumos").value(50));
-
-        verify(clinicaFacade).obtenerResumenInventario();
+        verify(dashboardFacadeService).obtenerEstadisticasGenerales();
     }
 }
 

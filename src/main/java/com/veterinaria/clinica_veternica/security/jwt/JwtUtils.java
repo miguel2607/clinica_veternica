@@ -97,8 +97,8 @@ public class JwtUtils {
             log.error("Token JWT no soportado: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string está vacío: {}", e.getMessage());
-        } catch (Exception e) {
-            log.error("Error validando token JWT: {}", e.getMessage());
+        } catch (io.jsonwebtoken.security.SecurityException e) {
+            log.error("Error de seguridad en token JWT: {}", e.getMessage());
         }
         return false;
     }
@@ -141,11 +141,11 @@ public class JwtUtils {
         try {
             Date expiration = getExpirationDateFromToken(token);
             return expiration.before(new Date());
-        } catch (JwtException | IllegalArgumentException e) {
-            log.debug("Error al verificar expiración del token: {}", e.getMessage());
+        } catch (JwtException e) {
+            log.debug("Error JWT al verificar expiración del token: {}", e.getMessage());
             return true;
-        } catch (Exception e) {
-            log.warn("Error inesperado al verificar expiración del token: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.debug("Argumento inválido al verificar expiración del token: {}", e.getMessage());
             return true;
         }
     }

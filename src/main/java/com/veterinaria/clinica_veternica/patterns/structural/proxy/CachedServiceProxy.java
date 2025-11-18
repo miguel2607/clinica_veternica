@@ -1,9 +1,7 @@
 package com.veterinaria.clinica_veternica.patterns.structural.proxy;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -170,11 +168,11 @@ public class CachedServiceProxy {
         }
     }
 
-
-
-     // NOTA: Este método_elimina todas las entradas del caché
-
-
+    /**
+     * Limpia  el caché.
+     *
+     * PROPÓSITO: Elimina todas las entradas del caché.
+     */
     public void clear() {
         int size = memoryCache.size();
         memoryCache.clear();

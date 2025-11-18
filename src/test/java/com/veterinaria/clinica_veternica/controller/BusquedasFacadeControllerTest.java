@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.controller;
 
-import com.veterinaria.clinica_veternica.patterns.structural.facade.ClinicaFacade;
+import com.veterinaria.clinica_veternica.dto.response.facade.BusquedaGlobalDTO;
+import com.veterinaria.clinica_veternica.patterns.structural.facade.BusquedaFacadeService;
 import com.veterinaria.clinica_veternica.security.jwt.JwtAuthenticationFilter;
 import com.veterinaria.clinica_veternica.security.jwt.JwtProperties;
 import com.veterinaria.clinica_veternica.security.jwt.JwtUtils;
@@ -15,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Map;
+import java.util.Collections;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +33,7 @@ class BusquedasFacadeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ClinicaFacade clinicaFacade;
+    private BusquedaFacadeService busquedaFacadeService;
 
     @MockitoBean
     private JwtUtils jwtUtils;
@@ -46,28 +47,34 @@ class BusquedasFacadeControllerTest {
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    private Map<String, Object> responseData;
+    private BusquedaGlobalDTO responseData;
 
     @BeforeEach
     void setUp() {
-        responseData = Map.of(
-                "mascotas", java.util.List.of(),
-                "propietarios", java.util.List.of(),
-                "veterinarios", java.util.List.of()
-        );
+        responseData = BusquedaGlobalDTO.builder()
+                .terminoBusqueda("test")
+                .mascotas(Collections.emptyList())
+                .totalMascotas(0)
+                .propietarios(Collections.emptyList())
+                .totalPropietarios(0)
+                .veterinarios(Collections.emptyList())
+                .totalVeterinarios(0)
+                .totalResultados(0)
+                .build();
     }
 
     @Test
     @DisplayName("GET - Debe realizar búsqueda global")
     @WithMockUser(roles = {"VETERINARIO"})
     void debeRealizarBusquedaGlobal() throws Exception {
-        when(clinicaFacade.busquedaGlobal("test")).thenReturn(responseData);
+        when(busquedaFacadeService.busquedaGlobal("test")).thenReturn(responseData);
 
         mockMvc.perform(get("/api/facade/busquedas/global")
                         .param("termino", "test"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalResultados").value(0));
 
-        verify(clinicaFacade).busquedaGlobal("test");
+        verify(busquedaFacadeService).busquedaGlobal("test");
     }
 }
 

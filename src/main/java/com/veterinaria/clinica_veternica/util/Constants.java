@@ -462,6 +462,16 @@ public final class Constants {
      */
     public static final String ROLE_VETERINARIO_STRING = "ROLE_VETERINARIO";
 
+    /**
+     * Rol RECEPCIONISTA para validaciones.
+     */
+    public static final String ROLE_RECEPCIONISTA_STRING = "ROLE_RECEPCIONISTA";
+
+    /**
+     * Rol AUXILIAR_VETERINARIO para validaciones.
+     */
+    public static final String ROLE_AUXILIAR_VETERINARIO_STRING = "ROLE_AUXILIAR_VETERINARIO";
+
     // ===================================================================
     // MÉTODOS HELPER PARA BOOLEANOS
     // ===================================================================
