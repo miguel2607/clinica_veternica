@@ -168,7 +168,8 @@ public class CitaServiceImpl implements ICitaService {
         Veterinario veterinario = veterinarioRepository.findById(idVeterinario)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", idVeterinario));
 
-        List<Cita> citas = citaRepository.findByVeterinario(veterinario);
+        // Usar el método que carga las relaciones necesarias
+        List<Cita> citas = citaRepository.findByVeterinarioWithRelations(veterinario);
         return citaMapper.toResponseDTOList(citas);
     }
 

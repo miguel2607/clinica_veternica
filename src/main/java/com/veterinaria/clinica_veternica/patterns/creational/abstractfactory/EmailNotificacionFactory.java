@@ -1,5 +1,7 @@
 package com.veterinaria.clinica_veternica.patterns.creational.abstractfactory;
 
+import com.veterinaria.clinica_veternica.service.EmailService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +20,10 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class EmailNotificacionFactory implements NotificacionFactory {
+
+    private final EmailService emailService;
 
     private static final String CANAL = "EMAIL";
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -81,14 +86,47 @@ public class EmailNotificacionFactory implements NotificacionFactory {
                     log.info("Enviando EMAIL a: {} - Asunto: {}",
                             mensaje.getDestinatario(), mensaje.getAsunto());
 
-                    // Simulación de envío (en producción, aquí iría la integración con SMTP/SendGrid/etc)
-                    // NOTA: Para producción, integrar con servicio real de email (SendGrid, AWS SES, etc.)
+                    // Determinar si el contenido ya es HTML o es texto plano
+                    boolean esHtml = mensaje.getContenido() != null && 
+                                    (mensaje.getContenido().contains("<html") || 
+                                     mensaje.getContenido().contains("<div") ||
+                                     mensaje.getContenido().contains("<p>"));
 
-                    this.idExterno = "EMAIL-" + UUID.randomUUID();
-                    this.estadoEnvio = "ENVIADO";
+                    boolean enviado;
+                    if (esHtml) {
+                        // Si ya es HTML, enviar directamente
+                        enviado = emailService.enviarEmailHtml(
+                                mensaje.getDestinatario(),
+                                mensaje.getAsunto(),
+                                mensaje.getContenido()
+                        );
+                    } else {
+                        // Si es texto plano, usar template HTML
+                        // Convertir saltos de línea a <br> y párrafos a <p>
+                        String contenidoHtml = mensaje.getContenido()
+                                .replace("\n\n", "</p><p>")
+                                .replace("\n", "<br>");
+                        contenidoHtml = "<p>" + contenidoHtml + "</p>";
+                        
+                        enviado = emailService.enviarEmailTemplate(
+                                mensaje.getDestinatario(),
+                                mensaje.getAsunto(),
+                                mensaje.getAsunto(), // Título igual al asunto
+                                contenidoHtml,
+                                "info"
+                        );
+                    }
 
-                    log.info("EMAIL enviado exitosamente. ID: {}", idExterno);
-                    return true;
+                    if (enviado) {
+                        this.idExterno = "EMAIL-" + UUID.randomUUID();
+                        this.estadoEnvio = "ENVIADO";
+                        log.info("EMAIL enviado exitosamente. ID: {}", idExterno);
+                        return true;
+                    } else {
+                        this.estadoEnvio = "ERROR";
+                        this.mensajeError = "No se pudo enviar el correo";
+                        return false;
+                    }
 
                 } catch (IllegalArgumentException | IllegalStateException e) {
                     log.error("Error de validación al enviar EMAIL: {}", e.getMessage(), e);
@@ -98,7 +136,7 @@ public class EmailNotificacionFactory implements NotificacionFactory {
                 } catch (RuntimeException e) {
                     log.error("Error al enviar EMAIL: {}", e.getMessage(), e);
                     this.estadoEnvio = "ERROR";
-                    this.mensajeError = "Error al procesar el envío de email";
+                    this.mensajeError = "Error al procesar el envío de email: " + e.getMessage();
                     return false;
                 }
             }

@@ -120,12 +120,35 @@ public class OperacionesFacadeService {
         var mascota = mascotaService.crear(mascotaRequestDTO);
         log.debug("Mascota creada con ID: {}", mascota.getIdMascota());
 
-        // 3. Crear historia clínica inicial (si se proporciona)
+        // 3. Manejar historia clínica inicial (si se proporciona)
+        // Nota: La mascota ya tiene una historia clínica creada automáticamente,
+        // por lo que si se proporciona información adicional, se actualiza la existente
         HistoriaClinicaResponseDTO historiaClinica = null;
         if (historiaClinicaRequestDTO != null) {
-            historiaClinicaRequestDTO.setIdMascota(mascota.getIdMascota());
-            historiaClinica = historiaClinicaService.crear(historiaClinicaRequestDTO);
-            log.debug("Historia clínica inicial creada con ID: {}", historiaClinica.getIdHistoriaClinica());
+            try {
+                // Intentar obtener la historia clínica existente (creada automáticamente)
+                historiaClinica = historiaClinicaService.buscarPorMascota(mascota.getIdMascota());
+                log.debug("Historia clínica existente encontrada con ID: {}", historiaClinica.getIdHistoriaClinica());
+                
+                // Actualizar la historia clínica con los datos proporcionados
+                historiaClinicaRequestDTO.setIdMascota(mascota.getIdMascota());
+                historiaClinica = historiaClinicaService.actualizar(historiaClinica.getIdHistoriaClinica(), historiaClinicaRequestDTO);
+                log.debug("Historia clínica actualizada con ID: {}", historiaClinica.getIdHistoriaClinica());
+            } catch (ResourceNotFoundException e) {
+                // Si no existe (caso poco probable), crearla
+                log.debug("Historia clínica no encontrada, creando nueva");
+                historiaClinicaRequestDTO.setIdMascota(mascota.getIdMascota());
+                historiaClinica = historiaClinicaService.crear(historiaClinicaRequestDTO);
+                log.debug("Historia clínica inicial creada con ID: {}", historiaClinica.getIdHistoriaClinica());
+            }
+        } else {
+            // Si no se proporciona información adicional, obtener la historia clínica creada automáticamente
+            try {
+                historiaClinica = historiaClinicaService.buscarPorMascota(mascota.getIdMascota());
+                log.debug("Historia clínica automática obtenida con ID: {}", historiaClinica.getIdHistoriaClinica());
+            } catch (ResourceNotFoundException e) {
+                log.debug("No se encontró historia clínica para mascota ID: {}", mascota.getIdMascota());
+            }
         }
 
         log.info("Registro completo exitoso: propietario {}, mascota {}, historia {}",

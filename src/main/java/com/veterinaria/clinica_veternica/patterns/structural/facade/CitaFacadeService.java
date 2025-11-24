@@ -51,7 +51,9 @@ public class CitaFacadeService {
         // Crear la cita (ya incluye validaciones y notificaciones vía Mediator)
         CitaResponseDTO cita = citaService.crear(requestDTO);
 
-        log.info("Cita {} creada exitosamente con notificación enviada", cita.getIdCita());
+        if (cita != null) {
+            log.info("Cita {} creada exitosamente con notificación enviada", cita.getIdCita());
+        }
         return cita;
     }
 
@@ -64,6 +66,9 @@ public class CitaFacadeService {
      * @return ResultadoCitaConNotificacionDTO con resultado de la operación
      */
     public ResultadoCitaConNotificacionDTO cancelarCitaConNotificacion(Long idCita, String motivo, String usuario) {
+        if (idCita == null) {
+            throw new IllegalArgumentException("ID de cita no puede ser nulo");
+        }
         log.info("CitaFacadeService: Cancelando cita ID {} con notificación", idCita);
 
         // Cancelar la cita (ya incluye notificación vía Mediator)

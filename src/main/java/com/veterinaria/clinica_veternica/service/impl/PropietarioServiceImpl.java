@@ -1,30 +1,41 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
 import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
 import com.veterinaria.clinica_veternica.exception.BusinessException;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
-import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.paciente.PropietarioMapper;
+import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
+import com.veterinaria.clinica_veternica.patterns.structural.proxy.CachedServiceProxy;
 import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IPropietarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class PropietarioServiceImpl implements IPropietarioService {
 
+    private static final String CACHE_PATTERN_PROPIETARIOS = "propietarios:*";
+
     private final PropietarioRepository propietarioRepository;
     private final PropietarioMapper propietarioMapper;
     private final ValidationHelper validationHelper;
+    private final CachedServiceProxy cachedServiceProxy;
+    private final EmailNotificacionFactory emailFactory;
+    private final UsuarioRepository usuarioRepository;
 
     @Override
     public PropietarioResponseDTO crear(PropietarioRequestDTO requestDTO) {
@@ -37,13 +48,11 @@ public class PropietarioServiceImpl implements IPropietarioService {
         );
 
         // Validar email único
-        if (requestDTO.getEmail() != null && propietarioRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new ValidationException(
-                "Ya existe un propietario con el email " + requestDTO.getEmail(),
-                "email",
-                "El email ya está registrado"
-            );
-        }
+        validationHelper.validateEmailUnique(
+            requestDTO.getEmail(),
+            null,
+            () -> propietarioRepository.existsByEmail(requestDTO.getEmail())
+        );
 
         Propietario propietario = propietarioMapper.toEntity(requestDTO);
 
@@ -52,6 +61,19 @@ public class PropietarioServiceImpl implements IPropietarioService {
         }
 
         Propietario propietarioGuardado = propietarioRepository.save(propietario);
+
+        // Enviar notificación al propietario sobre su registro
+        try {
+            enviarNotificacionPropietarioCreado(propietarioGuardado);
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de creación de propietario ID: {}", 
+                    propietarioGuardado.getIdPropietario(), e);
+            // No lanzamos excepción para no interrumpir la creación del propietario
+        }
+
+        // Invalidar caché después de crear
+        cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
+
         return propietarioMapper.toResponseDTO(propietarioGuardado);
     }
 
@@ -71,18 +93,18 @@ public class PropietarioServiceImpl implements IPropietarioService {
         }
 
         // Validar email único (si cambió)
-        if (requestDTO.getEmail() != null &&
-            !requestDTO.getEmail().equals(propietario.getEmail()) &&
-            propietarioRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new ValidationException(
-                "Ya existe otro propietario con el email " + requestDTO.getEmail(),
-                "email",
-                "El email ya está registrado"
-            );
-        }
+        validationHelper.validateEmailUnique(
+            requestDTO.getEmail(),
+            propietario.getEmail(),
+            () -> propietarioRepository.existsByEmail(requestDTO.getEmail())
+        );
 
         propietarioMapper.updateEntityFromDTO(requestDTO, propietario);
         Propietario propietarioActualizado = propietarioRepository.save(propietario);
+
+        // Invalidar caché después de actualizar
+        cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
+
         return propietarioMapper.toResponseDTO(propietarioActualizado);
     }
 
@@ -97,15 +119,29 @@ public class PropietarioServiceImpl implements IPropietarioService {
     @Override
     @Transactional(readOnly = true)
     public List<PropietarioResponseDTO> listarTodos() {
-        List<Propietario> propietarios = propietarioRepository.findAll();
-        return propietarioMapper.toResponseDTOList(propietarios);
+        // Usar CachedServiceProxy para mejorar rendimiento
+        return cachedServiceProxy.executeWithCache(
+            "propietarios:todos",
+            () -> {
+                List<Propietario> propietarios = propietarioRepository.findAll();
+                return propietarioMapper.toResponseDTOList(propietarios);
+            },
+            Constants.CACHE_TTL_DEFAULT_MS
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PropietarioResponseDTO> listarActivos() {
-        List<Propietario> propietarios = propietarioRepository.findByActivoTrue();
-        return propietarioMapper.toResponseDTOList(propietarios);
+        // Usar CachedServiceProxy para mejorar rendimiento
+        return cachedServiceProxy.executeWithCache(
+            "propietarios:activos",
+            () -> {
+                List<Propietario> propietarios = propietarioRepository.findByActivoTrue();
+                return propietarioMapper.toResponseDTOList(propietarios);
+            },
+            Constants.CACHE_TTL_DEFAULT_MS
+        );
     }
 
     @Override
@@ -155,6 +191,9 @@ public class PropietarioServiceImpl implements IPropietarioService {
 
         propietario.setActivo(false);
         propietarioRepository.save(propietario);
+
+        // Invalidar caché después de eliminar
+        cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
     }
 
     @Override
@@ -168,6 +207,10 @@ public class PropietarioServiceImpl implements IPropietarioService {
 
         propietario.setActivo(true);
         Propietario propietarioActivado = propietarioRepository.save(propietario);
+
+        // Invalidar caché después de activar
+        cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
+
         return propietarioMapper.toResponseDTO(propietarioActivado);
     }
 
@@ -187,5 +230,139 @@ public class PropietarioServiceImpl implements IPropietarioService {
             return false;
         }
         return propietarioRepository.existsByEmail(email.trim());
+    }
+
+    @Override
+    @Transactional
+    public PropietarioResponseDTO obtenerOCrearPropietarioPorEmail(String email) {
+        log.info("Obteniendo o creando propietario para email: {}", email);
+        
+        // Buscar propietario existente
+        Optional<Propietario> propietarioExistente = propietarioRepository.findByEmail(email);
+        if (propietarioExistente.isPresent()) {
+            log.info("Propietario encontrado para email: {}", email);
+            return propietarioMapper.toResponseDTO(propietarioExistente.get());
+        }
+        
+        // Si no existe, buscar el usuario para obtener datos básicos
+        Usuario usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + email));
+        
+        log.info("Propietario no encontrado. Creando nuevo propietario para usuario: {}", usuario.getUsername());
+        
+        // Crear propietario con datos básicos del usuario
+        // Usar el username como documento temporal si no hay documento
+        String documento = usuario.getUsername() + "_TEMP";
+        String tipoDocumento = "CC"; // Por defecto
+        
+        // Extraer nombres y apellidos del username si es posible
+        String[] partesNombre = usuario.getUsername().split("[._-]");
+        String nombres = partesNombre.length > 0 ? capitalizar(partesNombre[0]) : usuario.getUsername();
+        String apellidos = partesNombre.length > 1 ? capitalizar(partesNombre[1]) : "Usuario";
+        
+        // Crear el propietario
+        Propietario nuevoPropietario = Propietario.builder()
+            .documento(documento)
+            .tipoDocumento(tipoDocumento)
+            .nombres(nombres)
+            .apellidos(apellidos)
+            .email(email)
+            .telefono("0000000000") // Teléfono temporal, debe ser actualizado
+            .activo(true)
+            .observaciones("Propietario creado automáticamente desde usuario. Por favor, complete su información.")
+            .build();
+        
+        Propietario propietarioGuardado = propietarioRepository.save(nuevoPropietario);
+        
+        log.info("Propietario creado automáticamente con ID: {} para email: {}", 
+                propietarioGuardado.getIdPropietario(), email);
+        
+        // Invalidar caché
+        cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
+        
+        // No enviar notificación en este caso ya que es una creación automática
+        // El usuario deberá completar su información después
+        
+        return propietarioMapper.toResponseDTO(propietarioGuardado);
+    }
+    
+    /**
+     * Capitaliza la primera letra de una cadena.
+     */
+    private String capitalizar(String texto) {
+        if (texto == null || texto.isEmpty()) {
+            return texto;
+        }
+        return texto.substring(0, 1).toUpperCase() + texto.substring(1).toLowerCase();
+    }
+
+    /**
+     * Envía una notificación al propietario cuando se crea su registro.
+     */
+    private void enviarNotificacionPropietarioCreado(Propietario propietario) {
+        try {
+            if (propietario.getEmail() == null || propietario.getEmail().isBlank()) {
+                log.warn("No se puede enviar notificación de creación de propietario {}: no tiene email", 
+                        propietario.getIdPropietario());
+                return;
+            }
+
+            String asunto = "Bienvenido a Clínica Veterinaria - Registro Exitoso";
+            String mensaje = String.format("""
+                    <p>Estimado/a <strong>%s</strong>,</p>
+                    
+                    <p>¡Bienvenido/a a nuestra clínica veterinaria! Le informamos que su registro ha sido creado exitosamente.</p>
+                    
+                    <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #065f46;">Detalles de su registro:</h3>
+                        <table style="width: 100%%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Nombre:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Documento:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s %s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Email:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Teléfono:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <p><strong>Ya puede registrar sus mascotas y programar citas en nuestra clínica.</strong></p>
+                    
+                    <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+                    
+                    <p>Atentamente,<br><strong>Clínica Veterinaria</strong></p>
+                    """,
+                    propietario.getNombreCompleto(),
+                    propietario.getNombreCompleto(),
+                    propietario.getTipoDocumento() != null ? propietario.getTipoDocumento() : "N/A",
+                    propietario.getDocumento(),
+                    propietario.getEmail(),
+                    propietario.getTelefono() != null ? propietario.getTelefono() : "No especificado"
+            );
+
+            var mensajeNotificacion = emailFactory.crearMensaje(propietario.getEmail(), asunto, mensaje);
+            var enviador = emailFactory.crearEnviador();
+            boolean enviado = enviador.enviar(mensajeNotificacion);
+
+            if (enviado) {
+                log.info("Notificación de creación de propietario {} enviada a: {}", 
+                        propietario.getIdPropietario(), propietario.getEmail());
+            } else {
+                log.warn("Error al enviar notificación de creación de propietario {} a: {}", 
+                        propietario.getIdPropietario(), propietario.getEmail());
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de creación de propietario {}: {}", 
+                    propietario.getIdPropietario(), e.getMessage(), e);
+        }
     }
 }

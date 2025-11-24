@@ -1,0 +1,74 @@
+-- --------------------------------------------------------
+-- Script para vaciar todas las tablas de clinica_veterinaria_dev
+-- Este script elimina todos los datos pero mantiene la estructura
+-- --------------------------------------------------------
+
+USE `clinica_veterinaria_dev`;
+
+-- Desactivar verificación de claves foráneas
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Vaciar todas las tablas usando DELETE (compatible con todas las versiones)
+-- Orden: primero las tablas dependientes, luego las tablas padre
+
+-- Tablas con múltiples dependencias
+DELETE FROM `comunicaciones`;
+DELETE FROM `vacunaciones`;
+DELETE FROM `evoluciones_clinicas`;
+
+-- Tablas con dependencias intermedias
+DELETE FROM `historias_clinicas`;
+DELETE FROM `citas`;
+DELETE FROM `horarios`;
+
+-- Tablas de inventario
+DELETE FROM `inventario_consolidado`;
+DELETE FROM `insumos`;
+
+-- Tablas de mascotas y especies
+DELETE FROM `mascotas`;
+DELETE FROM `razas`;
+DELETE FROM `especies`;
+
+-- Servicios y tipos
+DELETE FROM `servicios`;
+DELETE FROM `tipos_insumo`;
+
+-- Proveedores y propietarios
+DELETE FROM `proveedores`;
+DELETE FROM `propietarios`;
+
+-- Personal y sus tipos
+DELETE FROM `veterinarios`;
+DELETE FROM `recepcionistas`;
+DELETE FROM `auxiliares_veterinarios`;
+DELETE FROM `administradores`;
+DELETE FROM `personal`;
+
+-- Usuarios (tabla base)
+DELETE FROM `usuarios`;
+
+-- Reactivar verificación de claves foráneas
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Reiniciar los AUTO_INCREMENT de las tablas que lo tienen
+ALTER TABLE `usuarios` AUTO_INCREMENT = 1;
+ALTER TABLE `personal` AUTO_INCREMENT = 1;
+ALTER TABLE `propietarios` AUTO_INCREMENT = 1;
+ALTER TABLE `especies` AUTO_INCREMENT = 1;
+ALTER TABLE `razas` AUTO_INCREMENT = 1;
+ALTER TABLE `mascotas` AUTO_INCREMENT = 1;
+ALTER TABLE `historias_clinicas` AUTO_INCREMENT = 1;
+ALTER TABLE `servicios` AUTO_INCREMENT = 1;
+ALTER TABLE `citas` AUTO_INCREMENT = 1;
+ALTER TABLE `evoluciones_clinicas` AUTO_INCREMENT = 1;
+ALTER TABLE `vacunaciones` AUTO_INCREMENT = 1;
+ALTER TABLE `tipos_insumo` AUTO_INCREMENT = 1;
+ALTER TABLE `proveedores` AUTO_INCREMENT = 1;
+ALTER TABLE `insumos` AUTO_INCREMENT = 1;
+ALTER TABLE `inventario_consolidado` AUTO_INCREMENT = 1;
+ALTER TABLE `horarios` AUTO_INCREMENT = 1;
+ALTER TABLE `comunicaciones` AUTO_INCREMENT = 1;
+
+-- Mensaje de confirmación
+SELECT 'Base de datos reiniciada exitosamente. Todas las tablas están vacías.' AS Resultado;

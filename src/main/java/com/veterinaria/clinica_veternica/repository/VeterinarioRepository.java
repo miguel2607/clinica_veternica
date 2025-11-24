@@ -92,6 +92,32 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     @Query("SELECT COUNT(v) > 0 FROM Veterinario v WHERE v.usuario.idUsuario = :idUsuario")
     boolean existsByUsuarioId(@Param("idUsuario") Long idUsuario);
 
+    /**
+     * Busca un veterinario por su usuario asociado.
+     *
+     * @param idUsuario ID del usuario
+     * @return Optional con el veterinario si existe
+     */
+    @Query("SELECT v FROM Veterinario v WHERE v.usuario.idUsuario = :idUsuario")
+    Optional<Veterinario> findByUsuarioId(@Param("idUsuario") Long idUsuario);
+
+    /**
+     * Busca un veterinario por su usuario asociado, cargando la relación usuario.
+     *
+     * @param idUsuario ID del usuario
+     * @return Optional con el veterinario si existe
+     */
+    @Query("SELECT v FROM Veterinario v JOIN FETCH v.usuario WHERE v.usuario.idUsuario = :idUsuario")
+    Optional<Veterinario> findByUsuarioIdWithUsuario(@Param("idUsuario") Long idUsuario);
+
+    /**
+     * Lista todos los veterinarios cargando la relación usuario.
+     *
+     * @return Lista de veterinarios con usuario cargado
+     */
+    @Query("SELECT DISTINCT v FROM Veterinario v LEFT JOIN FETCH v.usuario")
+    List<Veterinario> findAllWithUsuario();
+
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
     // ===================================================================

@@ -38,6 +38,9 @@ class PropietarioServiceTest {
     @Mock
     private ValidationHelper validationHelper;
 
+    @Mock
+    private com.veterinaria.clinica_veternica.patterns.structural.proxy.CachedServiceProxy cachedServiceProxy;
+
     @InjectMocks
     private PropietarioServiceImpl propietarioService;
 

@@ -35,12 +35,13 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     Optional<Propietario> findByDocumento(String documento);
 
     /**
-     * Busca un propietario por email.
+     * Busca un propietario por email (case-insensitive).
      *
      * @param email Email del propietario
      * @return Optional con el propietario si existe
      */
-    Optional<Propietario> findByEmail(String email);
+    @Query("SELECT p FROM Propietario p WHERE LOWER(p.email) = LOWER(:email)")
+    Optional<Propietario> findByEmail(@Param("email") String email);
 
     /**
      * Busca propietarios por teléfono.

@@ -1,7 +1,9 @@
 package com.veterinaria.clinica_veternica.controller;
 
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IPropietarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.List;
 public class PropietarioController {
 
     private final IPropietarioService propietarioService;
+    private final UsuarioRepository usuarioRepository;
 
     @Operation(summary = "Crear nuevo propietario")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA')")
@@ -74,6 +79,22 @@ public class PropietarioController {
     @GetMapping("/email")
     public ResponseEntity<PropietarioResponseDTO> buscarPorEmail(@RequestParam String email) {
         return ResponseEntity.ok(propietarioService.buscarPorEmail(email));
+    }
+
+    @Operation(summary = "Obtener o crear propietario por email", 
+               description = "Obtiene el propietario por email. Si no existe, lo crea automáticamente con datos básicos del usuario autenticado.")
+    @GetMapping("/mi-perfil")
+    @PreAuthorize("hasRole('PROPIETARIO')")
+    public ResponseEntity<PropietarioResponseDTO> obtenerOCrearMiPerfil() {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // Buscar el usuario en la base de datos
+        Usuario usuario = usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new com.veterinaria.clinica_veternica.exception.ResourceNotFoundException("Usuario no encontrado"));
+        
+        return ResponseEntity.ok(propietarioService.obtenerOCrearPropietarioPorEmail(usuario.getEmail()));
     }
 
     @Operation(summary = "Buscar propietarios por teléfono")

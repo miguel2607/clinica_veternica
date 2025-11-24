@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,13 +25,15 @@ public class UsuarioController {
 
     private final IUsuarioService usuarioService;
 
-    @Operation(summary = "Crear nuevo usuario")
+    @Operation(summary = "Crear nuevo usuario", description = "Solo administradores pueden crear usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody UsuarioRequestDTO requestDTO) {
         return new ResponseEntity<>(usuarioService.crear(requestDTO), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Actualizar usuario")
+    @Operation(summary = "Actualizar usuario", description = "Solo administradores pueden actualizar usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> actualizar(
             @PathVariable Long id,
@@ -83,7 +86,8 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Resetear contraseña (admin)")
+    @Operation(summary = "Resetear contraseña (admin)", description = "Solo administradores pueden resetear contraseñas")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/resetear-password")
     public ResponseEntity<Void> resetearPassword(
             @PathVariable Long id,
@@ -92,7 +96,8 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Bloquear usuario")
+    @Operation(summary = "Bloquear usuario", description = "Solo administradores pueden bloquear usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/bloquear")
     public ResponseEntity<Void> bloquearUsuario(
             @PathVariable Long id,
@@ -104,24 +109,35 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Desbloquear usuario")
+    @Operation(summary = "Desbloquear usuario", description = "Solo administradores pueden desbloquear usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desbloquear")
     public ResponseEntity<Void> desbloquearUsuario(@PathVariable Long id) {
         usuarioService.desbloquearUsuario(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Activar usuario")
+    @Operation(summary = "Activar usuario", description = "Solo administradores pueden activar usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/activar")
     public ResponseEntity<Void> activarUsuario(@PathVariable Long id) {
         usuarioService.activarUsuario(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Desactivar usuario")
+    @Operation(summary = "Desactivar usuario", description = "Solo administradores pueden desactivar usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/desactivar")
     public ResponseEntity<Void> desactivarUsuario(@PathVariable Long id) {
         usuarioService.desactivarUsuario(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Eliminar usuario", description = "Solo administradores pueden eliminar usuarios. Nota: Se desactiva en lugar de eliminar físicamente por seguridad.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        usuarioService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
 }

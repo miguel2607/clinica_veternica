@@ -54,6 +54,15 @@ public class HorarioServiceImpl implements IHorarioService {
             horario.setActivo(true);
         }
 
+        // Establecer valores por defecto si no están presentes
+        if (horario.getDuracionCitaMinutos() == null) {
+            horario.setDuracionCitaMinutos(30); // Valor por defecto: 30 minutos
+        }
+
+        if (horario.getMaxCitasSimultaneas() == null) {
+            horario.setMaxCitasSimultaneas(1); // Valor por defecto: 1 cita simultánea
+        }
+
         Horario horarioGuardado = horarioRepository.save(horario);
         log.info("Horario creado exitosamente con ID: {}", horarioGuardado.getIdHorario());
         return horarioMapper.toResponseDTO(horarioGuardado);

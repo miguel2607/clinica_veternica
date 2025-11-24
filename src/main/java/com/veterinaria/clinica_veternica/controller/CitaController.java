@@ -41,7 +41,7 @@ public class CitaController {
     }
 
     @Operation(summary = "Actualizar cita", description = "Actualiza una cita existente si está en estado modificable")
-    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO', 'RECEPCIONISTA')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO', 'RECEPCIONISTA', 'PROPIETARIO')")
     @PutMapping("/{id}")
     public ResponseEntity<CitaResponseDTO> actualizar(
             @Parameter(description = "ID de la cita") @PathVariable Long id,

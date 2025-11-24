@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
 
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.usuario.VeterinarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.VeterinarioResponseDTO;
@@ -13,6 +14,8 @@ import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IVeterinarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,7 +91,7 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
     @Override
     @Transactional(readOnly = true)
     public List<VeterinarioResponseDTO> listarTodos() {
-        List<Veterinario> veterinarios = veterinarioRepository.findAll();
+        List<Veterinario> veterinarios = veterinarioRepository.findAllWithUsuario();
         return veterinarioMapper.toResponseDTOList(veterinarios);
     }
 
@@ -174,5 +177,24 @@ public class VeterinarioServiceImpl implements IVeterinarioService {
             return false;
         }
         return veterinarioRepository.existsByRegistroProfesional(registroProfesional.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VeterinarioResponseDTO obtenerPorUsuarioAutenticado() {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
+        // Buscar el usuario en la base de datos
+        Usuario usuario = usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        // Buscar el veterinario asociado al usuario (con usuario cargado)
+        Veterinario veterinario = veterinarioRepository.findByUsuarioIdWithUsuario(usuario.getIdUsuario())
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "No se encontró un veterinario asociado al usuario: " + username));
+        
+        return veterinarioMapper.toResponseDTO(veterinario);
     }
 }

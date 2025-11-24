@@ -71,8 +71,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.debug("Usuario autenticado: {}", username);
             }
         } catch (JwtException | IllegalArgumentException e) {
-            log.error("No se puede establecer la autenticación del usuario: {}", e.getMessage());
-        } catch (Exception e) {
+            log.error("No se puede establecer la autenticación del usuario: {}", e.getMessage(), e);
+        } catch (SecurityException e) {
+            log.error("Error de seguridad durante la autenticación: {}", e.getMessage(), e);
+        } catch (RuntimeException e) {
             log.error("Error inesperado durante la autenticación: {}", e.getMessage(), e);
         }
 

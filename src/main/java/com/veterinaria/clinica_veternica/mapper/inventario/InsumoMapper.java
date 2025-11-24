@@ -40,8 +40,6 @@ public interface InsumoMapper {
      */
     @Mapping(target = "idTipoInsumo", source = "tipoInsumo.idTipoInsumo")
     @Mapping(target = "nombreTipoInsumo", source = "tipoInsumo.nombre")
-    @Mapping(target = "idProveedor", ignore = true)
-    @Mapping(target = "nombreProveedor", ignore = true)
     @Mapping(target = "esStockBajo", expression = "java(insumo.esStockBajo())")
     @Mapping(target = "estaSinStock", expression = "java(insumo.estaSinStock())")
     @Mapping(target = "estaProximoAVencer", expression = "java(insumo.estaProximoAVencer())")

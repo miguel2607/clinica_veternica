@@ -5,10 +5,12 @@ import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
 import com.veterinaria.clinica_veternica.dto.request.clinico.HistoriaClinicaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.clinico.HistoriaClinicaResponseDTO;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
+import com.veterinaria.clinica_veternica.exception.UnauthorizedException;
 import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.clinico.HistoriaClinicaMapper;
 import com.veterinaria.clinica_veternica.patterns.behavioral.memento.HistoriaClinicaCaretaker;
 import com.veterinaria.clinica_veternica.patterns.creational.builder.HistoriaClinicaBuilder;
+import com.veterinaria.clinica_veternica.patterns.structural.proxy.HistoriaClinicaProxy;
 import com.veterinaria.clinica_veternica.repository.HistoriaClinicaRepository;
 import com.veterinaria.clinica_veternica.repository.MascotaRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IHistoriaClinicaService;
@@ -25,6 +27,7 @@ import java.util.List;
  * Utiliza los patrones:
  * - Builder: Para construir historias clínicas complejas
  * - Memento: Para guardar y restaurar estados previos
+ * - Proxy: Para control de acceso y auditoría
  *
  * @author Clínica Veterinaria Team
  * @version 1.0
@@ -40,6 +43,7 @@ public class HistoriaClinicaServiceImpl implements IHistoriaClinicaService {
     private final MascotaRepository mascotaRepository;
     private final HistoriaClinicaMapper historiaClinicaMapper;
     private final HistoriaClinicaCaretaker historiaClinicaCaretaker;
+    private final HistoriaClinicaProxy historiaClinicaProxy;
 
     @Override
     public HistoriaClinicaResponseDTO crear(HistoriaClinicaRequestDTO requestDTO) {
@@ -110,6 +114,11 @@ public class HistoriaClinicaServiceImpl implements IHistoriaClinicaService {
         HistoriaClinica historiaClinica = historiaClinicaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_HISTORIA_CLINICA, "id", id));
 
+        // Usar Proxy para verificar permisos de modificación
+        if (!historiaClinicaProxy.tienePermisoEscritura(historiaClinica)) {
+            throw new UnauthorizedException("No tiene permisos para modificar esta historia clínica");
+        }
+
         // Guardar memento antes de actualizar (Memento pattern)
         historiaClinicaCaretaker.guardarMemento(historiaClinica);
 
@@ -125,6 +134,12 @@ public class HistoriaClinicaServiceImpl implements IHistoriaClinicaService {
     public HistoriaClinicaResponseDTO buscarPorId(Long id) {
         HistoriaClinica historiaClinica = historiaClinicaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_HISTORIA_CLINICA, "id", id));
+
+        // Usar Proxy para control de acceso y auditoría
+        if (!historiaClinicaProxy.tienePermisoLectura(historiaClinica)) {
+            throw new UnauthorizedException("No tiene permisos para acceder a esta historia clínica");
+        }
+
         return historiaClinicaMapper.toResponseDTO(historiaClinica);
     }
 
@@ -136,6 +151,11 @@ public class HistoriaClinicaServiceImpl implements IHistoriaClinicaService {
 
         HistoriaClinica historiaClinica = historiaClinicaRepository.findByMascota(mascota)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_HISTORIA_CLINICA, "mascota", idMascota));
+
+        // Usar Proxy para control de acceso y auditoría
+        if (!historiaClinicaProxy.tienePermisoLectura(historiaClinica)) {
+            throw new UnauthorizedException("No tiene permisos para acceder a esta historia clínica");
+        }
 
         return historiaClinicaMapper.toResponseDTO(historiaClinica);
     }

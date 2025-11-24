@@ -37,6 +37,20 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     List<Cita> findByVeterinario(Veterinario veterinario);
 
     /**
+     * Busca citas por veterinario cargando las relaciones necesarias (mascota, propietario, servicio).
+     *
+     * @param veterinario Veterinario
+     * @return Lista de citas con relaciones cargadas
+     */
+    @Query("SELECT DISTINCT c FROM Cita c " +
+           "LEFT JOIN FETCH c.mascota m " +
+           "LEFT JOIN FETCH m.propietario p " +
+           "LEFT JOIN FETCH c.servicio s " +
+           "WHERE c.veterinario = :veterinario " +
+           "ORDER BY c.fechaCita, c.horaCita")
+    List<Cita> findByVeterinarioWithRelations(@Param("veterinario") Veterinario veterinario);
+
+    /**
      * Busca citas por mascota.
      *
      * @param mascota Mascota

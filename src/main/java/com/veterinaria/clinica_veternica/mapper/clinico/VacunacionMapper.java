@@ -16,6 +16,8 @@ public interface VacunacionMapper {
     @Mapping(target = "idVacunacion", ignore = true)
     @Mapping(target = "historiaClinica", ignore = true)
     @Mapping(target = "veterinario", ignore = true)
+    @Mapping(target = "insumo", ignore = true)
+    @Mapping(target = "mascota", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
     Vacunacion toEntity(VacunacionRequestDTO requestDTO);
 

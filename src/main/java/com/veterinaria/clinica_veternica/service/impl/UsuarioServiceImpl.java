@@ -9,10 +9,12 @@ import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
 import com.veterinaria.clinica_veternica.exception.UnauthorizedException;
 import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.usuario.UsuarioMapper;
+import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IUsuarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,9 +31,29 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmailNotificacionFactory emailFactory;
 
     @Override
     public UsuarioResponseDTO crear(UsuarioRequestDTO requestDTO) {
+        // Validar que el rol sea válido
+        if (requestDTO.getRol() == null || requestDTO.getRol().trim().isEmpty()) {
+            throw new ValidationException(
+                "El rol es obligatorio",
+                "rol",
+                "Debe especificar un rol válido: ADMIN, VETERINARIO, RECEPCIONISTA, AUXILIAR, PROPIETARIO"
+            );
+        }
+
+        try {
+            RolUsuario.valueOf(requestDTO.getRol().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException(
+                "Rol inválido: " + requestDTO.getRol(),
+                "rol",
+                "El rol debe ser uno de: ADMIN, VETERINARIO, RECEPCIONISTA, AUXILIAR, PROPIETARIO"
+            );
+        }
+
         // Validar username único
         if (usuarioRepository.existsByUsername(requestDTO.getUsername())) {
             throw new ValidationException(
@@ -62,6 +85,16 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setIntentosFallidos(0);
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        
+        // Enviar notificación al usuario sobre su cuenta creada
+        try {
+            enviarNotificacionUsuarioCreado(usuarioGuardado);
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de creación de usuario ID: {}", 
+                    usuarioGuardado.getIdUsuario(), e);
+            // No lanzamos excepción para no interrumpir la creación del usuario
+        }
+        
         return usuarioMapper.toResponseDTO(usuarioGuardado);
     }
 
@@ -243,6 +276,21 @@ public class UsuarioServiceImpl implements IUsuarioService {
     }
 
     @Override
+    public void eliminar(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
+
+        // Validar que no se elimine a sí mismo (si se implementa en el futuro)
+        // Por ahora, solo desactivamos en lugar de eliminar físicamente por seguridad
+        log.warn("Eliminación de usuario solicitada para ID: {}. Se desactivará en lugar de eliminar.", id);
+        usuario.setEstado(false);
+        usuarioRepository.save(usuario);
+        
+        // Si realmente se quiere eliminar físicamente, descomentar:
+        // usuarioRepository.delete(usuario);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean existePorUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
@@ -266,5 +314,69 @@ public class UsuarioServiceImpl implements IUsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
         return passwordEncoder.matches(password, usuario.getPassword());
+    }
+
+    /**
+     * Envía una notificación al usuario cuando se crea su cuenta.
+     */
+    private void enviarNotificacionUsuarioCreado(Usuario usuario) {
+        try {
+            if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
+                log.warn("No se puede enviar notificación de creación de usuario {}: no tiene email", 
+                        usuario.getIdUsuario());
+                return;
+            }
+
+            String asunto = "Bienvenido a Clínica Veterinaria - Cuenta Creada";
+            String mensaje = String.format("""
+                    <p>Estimado/a <strong>%s</strong>,</p>
+                    
+                    <p>¡Bienvenido/a! Le informamos que su cuenta ha sido creada exitosamente en nuestro sistema.</p>
+                    
+                    <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #065f46;">Detalles de su cuenta:</h3>
+                        <table style="width: 100%%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Usuario:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Email:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Rol:</td>
+                                <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <p><strong>Ya puede iniciar sesión en el sistema con sus credenciales.</strong></p>
+                    
+                    <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+                    
+                    <p>Atentamente,<br><strong>Clínica Veterinaria</strong></p>
+                    """,
+                    usuario.getUsername(),
+                    usuario.getUsername(),
+                    usuario.getEmail(),
+                    usuario.getRol() != null ? usuario.getRol().name() : "No especificado"
+            );
+
+            var mensajeNotificacion = emailFactory.crearMensaje(usuario.getEmail(), asunto, mensaje);
+            var enviador = emailFactory.crearEnviador();
+            boolean enviado = enviador.enviar(mensajeNotificacion);
+
+            if (enviado) {
+                log.info("Notificación de creación de usuario {} enviada a: {}", 
+                        usuario.getIdUsuario(), usuario.getEmail());
+            } else {
+                log.warn("Error al enviar notificación de creación de usuario {} a: {}", 
+                        usuario.getIdUsuario(), usuario.getEmail());
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de creación de usuario {}: {}", 
+                    usuario.getIdUsuario(), e.getMessage(), e);
+        }
     }
 }

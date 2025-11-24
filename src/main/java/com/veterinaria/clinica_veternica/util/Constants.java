@@ -10,6 +10,10 @@ import java.math.BigDecimal;
  *
  * ANTIPATRÓN EVITADO: Magic Numbers y Hard Coding
  *
+ * Nota: @SuppressWarnings("unused") es necesario porque las constantes
+ * se usan en runtime y el IDE puede no detectar todos los usos.
+ * Las constantes están activamente utilizadas en múltiples módulos del sistema.
+ *
  * @author Clínica Veterinaria Team
  * @version 1.0
  * @since 2025-11-02
@@ -324,6 +328,11 @@ public final class Constants {
      */
     public static final int DIAS_POR_MES = 30;
 
+    /**
+     * Tiempo de vida (TTL) por defecto para caché en milisegundos (5 minutos).
+     */
+    public static final long CACHE_TTL_DEFAULT_MS = 300000L; // 5 minutos
+
     // ===================================================================
     // CONSTANTES DE PORCENTAJES Y DIVISORES
     // ===================================================================
@@ -401,11 +410,6 @@ public final class Constants {
      * Nombre de la entidad Tipo de Insumo.
      */
     public static final String ENTIDAD_TIPO_INSUMO = "Tipo de Insumo";
-
-    /**
-     * Nombre de la entidad Proveedor.
-     */
-    public static final String ENTIDAD_PROVEEDOR = "Proveedor";
 
     /**
      * Nombre de la entidad Recepcionista.

@@ -30,6 +30,9 @@ public class VacunacionRequestDTO {
     @NotBlank @Size(max = 200)
     private String nombreVacuna;
 
+    @Size(max = 30)
+    private String tipoVacuna;
+
     @NotBlank @Size(max = 100)
     private String laboratorio;
 
@@ -42,11 +45,28 @@ public class VacunacionRequestDTO {
     @NotNull
     private LocalDate fechaProximaDosis;
 
-    @Size(max = 100)
+    @Size(max = 30)
     private String viaAdministracion;
+
+    @Size(max = 500)
+    private String enfermedadesPrevenidas;
 
     @Size(max = 500)
     private String observaciones;
 
     private Boolean esquemaCompleto;
+
+    /**
+     * ID del insumo (vacuna) utilizado del inventario.
+     * Si se proporciona, se asociará el insumo y se decrementará su stock.
+     */
+    @Positive
+    private Long idInsumo;
+
+    /**
+     * Cantidad de insumo utilizada (por defecto 1).
+     * Solo aplica si se proporciona un idInsumo.
+     */
+    @Min(value = 1, message = "La cantidad utilizada debe ser al menos 1")
+    private Integer cantidadUsada;
 }

@@ -37,4 +37,6 @@ public interface IVeterinarioService {
     VeterinarioResponseDTO activar(Long id);
 
     boolean existePorRegistroProfesional(String registroProfesional);
+
+    VeterinarioResponseDTO obtenerPorUsuarioAutenticado();
 }

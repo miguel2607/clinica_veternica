@@ -21,40 +21,60 @@ public class DataInitializer {
     CommandLineRunner initAdmin(UsuarioRepository usuarioRepository, 
                                 org.springframework.core.env.Environment environment) {
         return args -> {
-            // Obtener valores de properties o usar valores por defecto solo para desarrollo
-            final String USERNAME = environment.getProperty("app.admin.username", "admin");
-            final String EMAIL = environment.getProperty("app.admin.email", "admin@veterinaria.com");
-            // En producción, la contraseña debe venir de variables de entorno
-            // NOSONAR: Valor por defecto solo para desarrollo, en producción usar ADMIN_PASSWORD
-            final String RAW_PASS = environment.getProperty("app.admin.password", 
-                environment.getProperty("ADMIN_PASSWORD", "Admin123!")); // NOSONAR
+            try {
+                log.info("🔄 Iniciando creación/verificación de usuario administrador...");
+                
+                // Obtener valores de properties o usar valores por defecto solo para desarrollo
+                final String USERNAME = environment.getProperty("app.admin.username", "admin");
+                final String EMAIL = environment.getProperty("app.admin.email", "admin@veterinaria.com");
 
-            Usuario u = usuarioRepository.findByUsername(USERNAME).orElse(null);
+                /*
+                 * IMPORTANTE: En producción, la contraseña DEBE venir de variables de entorno.
+                 * El valor por defecto "Admin123!" es SOLO para entornos de desarrollo local.
+                 * Configura la variable ADMIN_PASSWORD en producción para sobrescribir este valor.
+                 */
+                final String RAW_PASS = environment.getProperty("app.admin.password",
+                    environment.getProperty("ADMIN_PASSWORD", "Admin123!"));
 
-            if (u == null) {
-                u = new Usuario();
-                u.setUsername(USERNAME);
-                u.setEmail(EMAIL);
-                u.setPassword(passwordEncoder.encode(RAW_PASS));
-                u.setRol(RolUsuario.ADMIN);
-                u.setEstado(true);
-                u.setBloqueado(false);
-                u.setIntentosFallidos(0);
-                usuarioRepository.save(u);
-                log.info("✅ Usuario admin creado: {}", USERNAME);
-            } else {
-                // Solo actualizar contraseña si se proporciona una nueva
-                String newPassword = environment.getProperty("app.admin.password", 
-                    environment.getProperty("ADMIN_PASSWORD"));
-                if (newPassword != null && !newPassword.isEmpty()) {
-                    u.setPassword(passwordEncoder.encode(newPassword));
+                // Verificar que el repositorio esté disponible
+                Usuario u = usuarioRepository.findByUsername(USERNAME).orElse(null);
+
+                if (u == null) {
+                    log.info("📝 Usuario admin no existe, creando nuevo usuario...");
+                    u = new Usuario();
+                    u.setUsername(USERNAME);
+                    u.setEmail(EMAIL);
+                    u.setPassword(passwordEncoder.encode(RAW_PASS));
+                    u.setRol(RolUsuario.ADMIN);
+                    u.setEstado(true);
+                    u.setBloqueado(false);
+                    u.setIntentosFallidos(0);
+                    usuarioRepository.save(u);
+                    log.info("✅ Usuario admin creado exitosamente: {} (email: {})", USERNAME, EMAIL);
+                } else {
+                    log.info("👤 Usuario admin ya existe, verificando estado...");
+                    // Solo actualizar contraseña si se proporciona una nueva
+                    String newPassword = environment.getProperty("app.admin.password", 
+                        environment.getProperty("ADMIN_PASSWORD"));
+                    if (newPassword != null && !newPassword.isEmpty() && !newPassword.equals("Admin123!")) {
+                        u.setPassword(passwordEncoder.encode(newPassword));
+                        log.info("🔑 Contraseña del admin actualizada");
+                    }
+                    u.setBloqueado(false);
+                    u.setIntentosFallidos(0);
+                    u.setEstado(true);
+                    u.setRol(RolUsuario.ADMIN);
+                    usuarioRepository.save(u);
+                    log.info("✅ Usuario admin verificado y actualizado: {} (email: {})", USERNAME, EMAIL);
                 }
-                u.setBloqueado(false);
-                u.setIntentosFallidos(0);
-                u.setEstado(true);
-                u.setRol(RolUsuario.ADMIN);
-                usuarioRepository.save(u);
-                log.info("✅ Usuario admin actualizado y desbloqueado: {}", USERNAME);
+            } catch (Exception e) {
+                log.error("❌ ERROR al inicializar usuario administrador: {}", e.getMessage(), e);
+                log.error("⚠️  Verifica que:");
+                log.error("   1. MySQL esté corriendo");
+                log.error("   2. La base de datos 'clinica_veterinaria_dev' exista");
+                log.error("   3. Las tablas se hayan creado correctamente");
+                log.error("   4. Las credenciales de conexión sean correctas");
+                // No lanzamos la excepción para que la aplicación pueda continuar
             }
         };
     }

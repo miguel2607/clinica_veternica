@@ -63,8 +63,13 @@ public class NotificacionesFacadeService {
                 // Por ahora, solo registramos el intento
                 log.debug("Enviando recordatorio para cita ID: {}", cita.getIdCita());
                 exitosos++;
-            } catch (Exception e) {
-                log.error("Error enviando recordatorio para cita {}: {}", cita.getIdCita(), e.getMessage());
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                log.error("Error de validación/estado enviando recordatorio para cita {}: {}", 
+                        cita.getIdCita(), e.getMessage(), e);
+                fallidos++;
+            } catch (RuntimeException e) {
+                log.error("Error inesperado enviando recordatorio para cita {}: {}", 
+                        cita.getIdCita(), e.getMessage(), e);
                 fallidos++;
             }
         }
@@ -102,8 +107,13 @@ public class NotificacionesFacadeService {
                 // Por ahora, solo registramos el intento
                 log.debug("Enviando notificación de stock bajo: {} insumos afectados", stockBajo.size());
                 exitosos = 1; // Una notificación consolidada a admins
-            } catch (Exception e) {
-                log.error("Error enviando notificación de stock bajo: {}", e.getMessage());
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                log.error("Error de validación/estado enviando notificación de stock bajo: {}", 
+                        e.getMessage(), e);
+                fallidos = 1;
+            } catch (RuntimeException e) {
+                log.error("Error inesperado enviando notificación de stock bajo: {}", 
+                        e.getMessage(), e);
                 fallidos = 1;
             }
         }

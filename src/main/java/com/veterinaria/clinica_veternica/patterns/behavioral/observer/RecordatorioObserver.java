@@ -5,6 +5,7 @@ import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
 import com.veterinaria.clinica_veternica.domain.comunicacion.Comunicacion;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.NotificacionFactory;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
+import com.veterinaria.clinica_veternica.patterns.creational.singleton.ConfigurationManager;
 import com.veterinaria.clinica_veternica.repository.ComunicacionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,13 +50,16 @@ public class RecordatorioObserver implements CitaObserver {
     private final ComunicacionRepository comunicacionRepository;
     private final EmailNotificacionFactory emailFactory;
     private final RecordatorioObserver self;
+    private final ConfigurationManager configurationManager;
 
     public RecordatorioObserver(ComunicacionRepository comunicacionRepository,
                                 EmailNotificacionFactory emailFactory,
-                                @Lazy RecordatorioObserver self) {
+                                @Lazy RecordatorioObserver self,
+                                ConfigurationManager configurationManager) {
         this.comunicacionRepository = comunicacionRepository;
         this.emailFactory = emailFactory;
         this.self = self;
+        this.configurationManager = configurationManager;
     }
 
     /**
@@ -118,17 +122,28 @@ public class RecordatorioObserver implements CitaObserver {
     public void programarRecordatorios(Cita cita) {
         log.info("Programando recordatorios para cita: {}", cita.getIdCita());
 
+        // Verificar si los recordatorios automáticos están habilitados
+        Boolean recordatoriosHabilitados = configurationManager.getRecordatoriosAutomaticos();
+        if (recordatoriosHabilitados == null || !recordatoriosHabilitados) {
+            log.info("Recordatorios automáticos deshabilitados en configuración");
+            return;
+        }
+
         LocalDateTime fechaHoraCita = LocalDateTime.of(cita.getFechaCita(), cita.getHoraCita());
         LocalDateTime ahora = LocalDateTime.now();
 
         // Calcular tiempo hasta la cita
         long horasHastaCita = ChronoUnit.HOURS.between(ahora, fechaHoraCita);
 
-        // Recordatorio 24 horas antes
-        if (horasHastaCita >= 24) {
-            LocalDateTime fechaRecordatorio24h = fechaHoraCita.minusHours(24);
-            crearRecordatorio(cita, fechaRecordatorio24h, "Recordatorio de cita - 24 horas antes");
-            log.debug("Recordatorio programado para 24h antes: {}", fechaRecordatorio24h);
+        // Obtener horas de anticipación desde configuración (por defecto 24 horas)
+        Integer horasAnticipacion = configurationManager.getHorasAnticipacionRecordatorio();
+
+        // Recordatorio principal (configurado en sistema, por defecto 24 horas antes)
+        if (horasHastaCita >= horasAnticipacion) {
+            LocalDateTime fechaRecordatorioPrincipal = fechaHoraCita.minusHours(horasAnticipacion);
+            crearRecordatorio(cita, fechaRecordatorioPrincipal,
+                String.format("Recordatorio de cita - %d horas antes", horasAnticipacion));
+            log.debug("Recordatorio principal programado para {}h antes: {}", horasAnticipacion, fechaRecordatorioPrincipal);
         }
 
         // Recordatorio 2 horas antes
@@ -145,7 +160,7 @@ public class RecordatorioObserver implements CitaObserver {
             log.debug("Recordatorio programado para 1h antes: {}", fechaRecordatorio1h);
         }
 
-        log.info("Recordatorios programados exitosamente para cita: {}", cita.getIdCita());
+        log.info("Recordatorios programados exitosamente para cita: {} (usando ConfigurationManager)", cita.getIdCita());
     }
 
     /**

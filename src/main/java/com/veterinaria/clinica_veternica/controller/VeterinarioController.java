@@ -38,6 +38,14 @@ public class VeterinarioController {
         return ResponseEntity.ok(veterinarioService.actualizar(id, requestDTO));
     }
 
+    @Operation(summary = "Obtener mi perfil de veterinario", 
+               description = "Obtiene el perfil del veterinario asociado al usuario autenticado")
+    @GetMapping("/mi-perfil")
+    @PreAuthorize("hasRole('VETERINARIO')")
+    public ResponseEntity<VeterinarioResponseDTO> obtenerMiPerfil() {
+        return ResponseEntity.ok(veterinarioService.obtenerPorUsuarioAutenticado());
+    }
+
     @Operation(summary = "Buscar veterinario por ID")
     @GetMapping("/{id}")
     public ResponseEntity<VeterinarioResponseDTO> buscarPorId(@PathVariable Long id) {

@@ -43,6 +43,9 @@ class HistoriaClinicaServiceTest {
     @Mock
     private HistoriaClinicaCaretaker historiaClinicaCaretaker;
 
+    @Mock
+    private com.veterinaria.clinica_veternica.patterns.structural.proxy.HistoriaClinicaProxy historiaClinicaProxy;
+
     @InjectMocks
     private HistoriaClinicaServiceImpl historiaClinicaService;
 
@@ -118,6 +121,7 @@ class HistoriaClinicaServiceTest {
     @DisplayName("READ - Debe buscar historia clínica por ID exitosamente")
     void testBuscarHistoriaClinicaPorIdExitoso() {
         when(historiaClinicaRepository.findById(1L)).thenReturn(Optional.of(historiaClinica));
+        when(historiaClinicaProxy.tienePermisoLectura(any())).thenReturn(true);
         when(historiaClinicaMapper.toResponseDTO(historiaClinica)).thenReturn(responseDTO);
 
         HistoriaClinicaResponseDTO resultado = historiaClinicaService.buscarPorId(1L);
@@ -139,6 +143,7 @@ class HistoriaClinicaServiceTest {
     @DisplayName("UPDATE - Debe actualizar una historia clínica exitosamente")
     void testActualizarHistoriaClinicaExitoso() {
         when(historiaClinicaRepository.findById(1L)).thenReturn(Optional.of(historiaClinica));
+        when(historiaClinicaProxy.tienePermisoEscritura(any())).thenReturn(true);
         when(historiaClinicaRepository.save(any(HistoriaClinica.class))).thenReturn(historiaClinica);
         when(historiaClinicaMapper.toResponseDTO(historiaClinica)).thenReturn(responseDTO);
         doNothing().when(historiaClinicaCaretaker).guardarMemento(historiaClinica);

@@ -6,6 +6,7 @@ import com.veterinaria.clinica_veternica.dto.response.facade.ReporteCitasDTO;
 import com.veterinaria.clinica_veternica.dto.response.facade.ReporteInventarioDTO;
 import com.veterinaria.clinica_veternica.dto.response.facade.ReporteVeterinariosDTO;
 import com.veterinaria.clinica_veternica.dto.response.inventario.InventarioResponseDTO;
+import com.veterinaria.clinica_veternica.patterns.creational.builder.ReporteBuilder;
 import com.veterinaria.clinica_veternica.service.interfaces.ICitaService;
 import com.veterinaria.clinica_veternica.service.interfaces.IInventarioService;
 import lombok.RequiredArgsConstructor;
@@ -60,13 +61,22 @@ public class ReporteFacadeService {
 
         List<CitaResponseDTO> citas = citaService.listarPorRangoFechas(inicio, fin);
 
+        // Debug: Log de estados encontrados
+        if (citas != null && !citas.isEmpty()) {
+            log.debug("Estados encontrados en citas: {}", 
+                    citas.stream()
+                            .map(c -> c.getEstado())
+                            .distinct()
+                            .collect(java.util.stream.Collectors.toList()));
+        }
+
         // Contar citas por estado
         long citasAtendidas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA);
         long citasProgramadas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA);
         long citasCanceladas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_CANCELADA);
 
         log.info("Reporte generado: {} citas totales ({} atendidas, {} programadas, {} canceladas)",
-                citas.size(), citasAtendidas, citasProgramadas, citasCanceladas);
+                citas != null ? citas.size() : 0, citasAtendidas, citasProgramadas, citasCanceladas);
 
         return ReporteCitasDTO.builder()
                 .fechaInicio(fechaInicio)
@@ -89,6 +99,15 @@ public class ReporteFacadeService {
 
         List<InventarioResponseDTO> todoInventario = inventarioService.listarTodos();
         List<InventarioResponseDTO> stockBajo = inventarioService.listarConStockBajo();
+
+        if (todoInventario == null) {
+            log.warn("ReporteFacadeService: La lista de inventario es null, inicializando lista vacía");
+            todoInventario = new ArrayList<>();
+        }
+        if (stockBajo == null) {
+            log.warn("ReporteFacadeService: La lista de stock bajo es null, inicializando lista vacía");
+            stockBajo = new ArrayList<>();
+        }
 
         // Calcular valor total del inventario
         BigDecimal valorTotal = calcularValorTotalInventario(todoInventario);
@@ -120,9 +139,16 @@ public class ReporteFacadeService {
 
         List<CitaResponseDTO> citas = citaService.listarPorRangoFechas(inicio, fin);
 
+        if (citas == null) {
+            log.warn("ReporteFacadeService: La lista de citas es null, inicializando lista vacía");
+            citas = new ArrayList<>();
+        }
+
+        log.debug("ReporteFacadeService: {} citas encontradas en el rango de fechas", citas.size());
+
         // Agrupar citas por veterinario
         Map<Long, List<CitaResponseDTO>> citasPorVeterinario = citas.stream()
-                .filter(c -> c.getVeterinario() != null)
+                .filter(c -> c != null && c.getVeterinario() != null && c.getVeterinario().getIdPersonal() != null)
                 .collect(Collectors.groupingBy(c -> c.getVeterinario().getIdPersonal()));
 
         // Generar estadísticas por veterinario
@@ -130,10 +156,12 @@ public class ReporteFacadeService {
 
         citasPorVeterinario.forEach((idVet, citasVet) -> {
             long atendidas = citasVet.stream()
-                    .filter(c -> com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA.equals(c.getEstado()))
+                    .filter(c -> c != null && c.getEstado() != null && 
+                            com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA.equalsIgnoreCase(c.getEstado()))
                     .count();
             long programadas = citasVet.stream()
-                    .filter(c -> com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA.equals(c.getEstado()))
+                    .filter(c -> c != null && c.getEstado() != null && 
+                            com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA.equalsIgnoreCase(c.getEstado()))
                     .count();
 
             // Obtener nombre del veterinario de la primera cita
@@ -173,8 +201,11 @@ public class ReporteFacadeService {
      * @return Cantidad de citas con ese estado
      */
     private long contarCitasPorEstado(List<CitaResponseDTO> citas, String estado) {
+        if (citas == null || estado == null) {
+            return 0;
+        }
         return citas.stream()
-                .filter(c -> estado.equals(c.getEstado()))
+                .filter(c -> c != null && c.getEstado() != null && estado.equalsIgnoreCase(c.getEstado()))
                 .count();
     }
 
@@ -188,5 +219,112 @@ public class ReporteFacadeService {
         return inventarios.stream()
                 .map(inv -> inv.getValorTotal() != null ? inv.getValorTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // ===================================================================
+    // MÉTODOS CON REPORTE BUILDER (PATRÓN BUILDER + BRIDGE)
+    // ===================================================================
+
+    /**
+     * Genera reporte de citas usando ReporteBuilder con opciones avanzadas.
+     * Este método usa el patrón Builder para construcción flexible y el patrón Bridge
+     * para soportar diferentes formatos de salida (PDF, Excel, JSON).
+     *
+     * @param fechaInicio Fecha de inicio
+     * @param fechaFin Fecha de fin
+     * @param formato Formato del reporte
+     * @param incluirGraficos Si debe incluir gráficos
+     * @return Reporte construido con Builder
+     */
+    public ReporteBuilder.Reporte generarReporteCitasConBuilder(
+            LocalDate fechaInicio,
+            LocalDate fechaFin,
+            ReporteBuilder.FormatoReporte formato,
+            boolean incluirGraficos) {
+
+        log.info("ReporteFacadeService: Generando reporte de citas con Builder - Formato: {}", formato);
+
+        // Usar ReporteBuilder para construcción flexible
+        ReporteBuilder.Reporte reporte = new ReporteBuilder()
+                .tipoReporte(ReporteBuilder.TipoReporte.CITAS)
+                .conRangoFechas(fechaInicio, fechaFin)
+                .conFormato(formato)
+                .conTitulo(String.format("Reporte de Citas (%s - %s)", fechaInicio, fechaFin))
+                .incluirGraficos(incluirGraficos)
+                .incluirResumen(true)
+                .incluirDetalles(true)
+                .agregarColumna("Fecha")
+                .agregarColumna("Hora")
+                .agregarColumna("Mascota")
+                .agregarColumna("Veterinario")
+                .agregarColumna("Estado")
+                .conOrdenamiento("fecha", true)
+                .build();
+
+        log.info("Reporte de citas generado con Builder exitosamente - Formato: {}", formato);
+        return reporte;
+    }
+
+    /**
+     * Genera reporte de inventario usando ReporteBuilder.
+     *
+     * @param formato Formato del reporte
+     * @param incluirGraficos Si debe incluir gráficos
+     * @return Reporte construido con Builder
+     */
+    public ReporteBuilder.Reporte generarReporteInventarioConBuilder(
+            ReporteBuilder.FormatoReporte formato,
+            boolean incluirGraficos) {
+
+        log.info("ReporteFacadeService: Generando reporte de inventario con Builder - Formato: {}", formato);
+
+        ReporteBuilder.Reporte reporte = new ReporteBuilder()
+                .tipoReporte(ReporteBuilder.TipoReporte.INVENTARIO)
+                .conFormato(formato)
+                .conTitulo("Reporte de Inventario")
+                .incluirGraficos(incluirGraficos)
+                .incluirResumen(true)
+                .agregarColumna("Insumo")
+                .agregarColumna("Cantidad")
+                .agregarColumna("Stock Mínimo")
+                .agregarColumna("Valor Total")
+                .conOrdenamiento("cantidad", false)
+                .build();
+
+        log.info("Reporte de inventario generado con Builder exitosamente - Formato: {}", formato);
+        return reporte;
+    }
+
+    /**
+     * Genera reporte consolidado de actividad de la clínica usando ReporteBuilder.
+     * Este reporte incluye citas, inventario y estadísticas generales.
+     *
+     * @param fechaInicio Fecha de inicio
+     * @param fechaFin Fecha de fin
+     * @param formato Formato del reporte
+     * @return Reporte consolidado construido con Builder
+     */
+    public ReporteBuilder.Reporte generarReporteConsolidadoConBuilder(
+            LocalDate fechaInicio,
+            LocalDate fechaFin,
+            ReporteBuilder.FormatoReporte formato) {
+
+        log.info("ReporteFacadeService: Generando reporte consolidado con Builder");
+
+        ReporteBuilder.Reporte reporte = new ReporteBuilder()
+                .tipoReporte(ReporteBuilder.TipoReporte.CONSOLIDADO)
+                .conRangoFechas(fechaInicio, fechaFin)
+                .conFormato(formato)
+                .conTitulo(String.format("Reporte Consolidado de Actividad (%s - %s)", fechaInicio, fechaFin))
+                .incluirGraficos(true)
+                .incluirResumen(true)
+                .incluirDetalles(true)
+                .agregarColumna("Sección")
+                .agregarColumna("Métrica")
+                .agregarColumna("Valor")
+                .build();
+
+        log.info("Reporte consolidado generado con Builder exitosamente");
+        return reporte;
     }
 }

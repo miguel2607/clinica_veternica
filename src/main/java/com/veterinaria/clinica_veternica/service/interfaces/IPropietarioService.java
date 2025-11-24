@@ -39,4 +39,13 @@ public interface IPropietarioService {
     boolean existePorDocumento(String tipoDocumento, String numeroDocumento);
 
     boolean existePorEmail(String email);
+
+    /**
+     * Obtiene o crea automáticamente un propietario basado en el usuario autenticado.
+     * Si el propietario no existe, lo crea con datos básicos del usuario.
+     *
+     * @param email Email del usuario autenticado
+     * @return PropietarioResponseDTO del propietario encontrado o creado
+     */
+    PropietarioResponseDTO obtenerOCrearPropietarioPorEmail(String email);
 }

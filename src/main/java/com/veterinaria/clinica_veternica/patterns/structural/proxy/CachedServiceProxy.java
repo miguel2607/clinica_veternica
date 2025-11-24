@@ -1,5 +1,7 @@
 package com.veterinaria.clinica_veternica.patterns.structural.proxy;
 
+import com.veterinaria.clinica_veternica.patterns.creational.singleton.ConfigurationManager;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
@@ -43,13 +45,21 @@ import java.util.function.Supplier;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CachedServiceProxy {
+
+    private final ConfigurationManager configurationManager;
 
     // Caché en memoria para operaciones simples
     private final ConcurrentHashMap<String, CacheEntry> memoryCache = new ConcurrentHashMap<>();
-    
-    // Tiempo de expiración por defecto (5 minutos)
-    private static final long DEFAULT_TTL = 5L * 60 * 1000; // 5 minutos en milisegundos
+
+    /**
+     * Obtiene el TTL por defecto desde la configuración.
+     * Si no está configurado, usa 5 minutos por defecto.
+     */
+    private long getDefaultTTL() {
+        return configurationManager.getConfigurationAsInteger("cache.ttl.default.seconds", 300) * 1000L;
+    }
 
     /**
      * Ejecuta una operación con caché. Si el resultado está en caché y no ha expirado,
@@ -63,7 +73,7 @@ public class CachedServiceProxy {
      * @return Resultado de la operación (desde caché o ejecutado)
      */
     public <T> T executeWithCache(String key, Supplier<T> operation) {
-        return executeWithCache(key, operation, DEFAULT_TTL);
+        return executeWithCache(key, operation, getDefaultTTL());
     }
 
     /**
@@ -116,7 +126,7 @@ public class CachedServiceProxy {
      */
     @SuppressWarnings("unchecked")
     public <T> T executeAndCache(String key, Supplier<T> operation) {
-        return executeAndCache(key, operation, DEFAULT_TTL);
+        return executeAndCache(key, operation, getDefaultTTL());
     }
 
     /**

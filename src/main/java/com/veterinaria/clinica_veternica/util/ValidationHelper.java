@@ -176,4 +176,23 @@ public class ValidationHelper {
                     "La raza no corresponde a la especie seleccionada");
         }
     }
+
+    /**
+     * Valida que un email sea único al crear o actualizar un propietario.
+     * Elimina código duplicado (Cut & Paste Programming antipattern).
+     *
+     * @param email Email a validar
+     * @param currentEmail Email actual del propietario (null si es creación)
+     * @param existsChecker BooleanSupplier que verifica si el email ya existe
+     * @throws ValidationException si el email ya existe
+     */
+    public void validateEmailUnique(String email, String currentEmail, BooleanSupplier existsChecker) {
+        if (email != null && (currentEmail == null || !email.equals(currentEmail)) && existsChecker.getAsBoolean()) {
+            String message = currentEmail == null
+                    ? String.format("Ya existe un propietario con el email %s", email)
+                    : String.format("Ya existe otro propietario con el email %s", email);
+            log.warn("Validación de unicidad de email falló: {}", email);
+            throw new ValidationException(message, "email", "El email ya está registrado");
+        }
+    }
 }

@@ -29,8 +29,6 @@ public class InsumoResponseDTO {
     private String descripcion;
     private Long idTipoInsumo;
     private String nombreTipoInsumo;
-    private Long idProveedor;
-    private String nombreProveedor;
     private String unidadMedida;
     private Integer cantidadStock;
     private Integer stockMinimo;

@@ -2,9 +2,12 @@ package com.veterinaria.clinica_veternica.patterns.behavioral.observer;
 
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.inventario.Inventario;
+import com.veterinaria.clinica_veternica.domain.usuario.RolUsuario;
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.NotificacionFactory;
 import com.veterinaria.clinica_veternica.repository.InventarioRepository;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IInventarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Patrón Observer: InventarioObserver
@@ -50,6 +54,7 @@ public class InventarioObserver {
     private final InventarioRepository inventarioRepository;
     private final EmailNotificacionFactory emailFactory;
     private final IInventarioService inventarioService;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Observa cambios en el inventario cuando se crea una cita.
@@ -182,14 +187,32 @@ public class InventarioObserver {
      */
     private void enviarAlertaStockBajo(Inventario inventario) {
         String mensaje = String.format("""
-                ALERTA: Stock bajo detectado
+                <p>Alerta: <strong>Stock bajo detectado</strong></p>
                 
-                Insumo: %s
-                Stock disponible: %d
-                Stock mínimo: %d
-                Stock máximo: %s
+                <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #92400e;">Detalles del Insumo:</h3>
+                    <table style="width: 100%%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Insumo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock disponible:</td>
+                            <td style="padding: 8px 0; color: #dc2626; font-weight: 600;">%d</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock mínimo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%d</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock máximo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                        </tr>
+                    </table>
+                </div>
                 
-                Por favor, considere realizar una compra para reponer el inventario.""",
+                <p><strong>Por favor, considere realizar una compra para reponer el inventario.</strong></p>
+                """,
                 inventario.getInsumo().getNombre(),
                 inventario.getCantidadActual(),
                 inventario.getInsumo().getStockMinimo(),
@@ -208,13 +231,28 @@ public class InventarioObserver {
      */
     private void enviarAlertaStockCritico(Inventario inventario) {
         String mensaje = String.format("""
-                ALERTA CRÍTICA: Stock muy bajo
+                <p><strong style="color: #dc2626; font-size: 18px;">⚠️ ALERTA CRÍTICA: Stock muy bajo</strong></p>
                 
-                Insumo: %s
-                Stock disponible: %d
-                Stock mínimo: %d
+                <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #991b1b;">Detalles del Insumo:</h3>
+                    <table style="width: 100%%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Insumo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock disponible:</td>
+                            <td style="padding: 8px 0; color: #dc2626; font-weight: 700; font-size: 18px;">%d</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock mínimo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%d</td>
+                        </tr>
+                    </table>
+                </div>
                 
-                URGENTE: Se requiere reposición inmediata.""",
+                <p style="color: #dc2626; font-weight: 600; font-size: 16px;">🚨 URGENTE: Se requiere reposición inmediata.</p>
+                """,
                 inventario.getInsumo().getNombre(),
                 inventario.getCantidadActual(),
                 inventario.getInsumo().getStockMinimo()
@@ -232,13 +270,28 @@ public class InventarioObserver {
      */
     private void enviarAlertaStockAgotado(Inventario inventario) {
         String mensaje = String.format("""
-                ALERTA URGENTE: Stock agotado
+                <p><strong style="color: #dc2626; font-size: 20px;">🚨 ALERTA URGENTE: Stock Agotado</strong></p>
                 
-                Insumo: %s
-                Stock disponible: 0
-                Stock mínimo: %d
+                <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #991b1b;">Detalles del Insumo:</h3>
+                    <table style="width: 100%%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Insumo:</td>
+                            <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock disponible:</td>
+                            <td style="padding: 8px 0; color: #dc2626; font-weight: 700; font-size: 20px;">0</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #4b5563; font-weight: 600;">Stock mínimo:</td>
+                            <td style="padding: 8px 0; color: #1f2937;">%d</td>
+                        </tr>
+                    </table>
+                </div>
                 
-                URGENTE: El insumo se ha agotado. Se requiere reposición inmediata.""",
+                <p style="color: #dc2626; font-weight: 700; font-size: 18px;">⚠️ URGENTE: El insumo se ha agotado. Se requiere reposición inmediata.</p>
+                """,
                 inventario.getInsumo().getNombre(),
                 inventario.getInsumo().getStockMinimo()
         );
@@ -248,6 +301,7 @@ public class InventarioObserver {
 
     /**
      * Envía una notificación usando el Abstract Factory.
+     * Envía correos a todos los administradores y auxiliares activos.
      *
      * PROPÓSITO: Centraliza el envío de notificaciones de inventario.
      *
@@ -256,14 +310,46 @@ public class InventarioObserver {
      */
     private void enviarNotificacion(String asunto, String mensaje) {
         try {
-            // En producción, se obtendría el email del administrador o responsable de compras
-            String emailDestino = "admin@clinicaveterinaria.com"; // Configurable
+            // Obtener emails de administradores y auxiliares activos
+            List<Usuario> usuariosNotificar = usuarioRepository.findByRolAndEstado(RolUsuario.ADMIN, true);
+            usuariosNotificar.addAll(usuarioRepository.findByRolAndEstado(RolUsuario.AUXILIAR, true));
             
-            var mensajeNotificacion = emailFactory.crearMensaje(emailDestino, asunto, mensaje);
-            var enviador = emailFactory.crearEnviador();
-            enviador.enviar(mensajeNotificacion);
+            if (usuariosNotificar.isEmpty()) {
+                log.warn("No hay usuarios activos para notificar sobre stock bajo");
+                return;
+            }
             
-            log.info("Notificación de inventario enviada: {}", asunto);
+            // Enviar correo a cada usuario
+            int enviados = 0;
+            int fallidos = 0;
+            
+            for (Usuario usuario : usuariosNotificar) {
+                if (usuario.getEmail() != null && !usuario.getEmail().isBlank()) {
+                    try {
+                        var mensajeNotificacion = emailFactory.crearMensaje(
+                                usuario.getEmail(), 
+                                asunto, 
+                                mensaje
+                        );
+                        var enviador = emailFactory.crearEnviador();
+                        boolean enviado = enviador.enviar(mensajeNotificacion);
+                        
+                        if (enviado) {
+                            enviados++;
+                            log.info("Notificación de inventario enviada a: {}", usuario.getEmail());
+                        } else {
+                            fallidos++;
+                            log.warn("Error al enviar notificación a: {}", usuario.getEmail());
+                        }
+                    } catch (Exception e) {
+                        fallidos++;
+                        log.error("Error al enviar notificación a {}: {}", usuario.getEmail(), e.getMessage());
+                    }
+                }
+            }
+            
+            log.info("Notificaciones de inventario enviadas: {} exitosas, {} fallidas - Asunto: {}", 
+                    enviados, fallidos, asunto);
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.error("Error de validación al enviar notificación de inventario: {}", e.getMessage(), e);
         } catch (RuntimeException e) {

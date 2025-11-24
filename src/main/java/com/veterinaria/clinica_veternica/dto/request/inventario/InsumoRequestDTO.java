@@ -50,11 +50,6 @@ public class InsumoRequestDTO {
     private Long idTipoInsumo;
 
     /**
-     * ID del proveedor principal.
-     */
-    private Long idProveedor;
-
-    /**
      * Unidad de medida (Unidad, Caja, Kg, Litro, etc.).
      */
     @NotBlank(message = "La unidad de medida es obligatoria")

@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
 import com.veterinaria.clinica_veternica.domain.agenda.CategoriaServicio;
+import com.veterinaria.clinica_veternica.domain.agenda.TipoServicio;
 import com.veterinaria.clinica_veternica.domain.agenda.Servicio;
 import com.veterinaria.clinica_veternica.dto.request.agenda.ServicioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.ServicioResponseDTO;
@@ -58,6 +59,13 @@ public class ServicioServiceImpl implements IServicioService {
             servicio.setActivo(true);
         }
 
+        // Si la categoría es EMERGENCIA o el tipo es EMERGENCIA, habilitar disponibilidad para emergencias
+        if (servicio.getCategoria() == CategoriaServicio.EMERGENCIA ||
+            servicio.getTipoServicio() == TipoServicio.EMERGENCIA) {
+            servicio.setDisponibleEmergencias(true);
+            log.info("Servicio de emergencia detectado, habilitando disponibilidad para emergencias");
+        }
+
         Servicio servicioGuardado = servicioRepository.save(servicio);
         log.info("Servicio creado exitosamente con ID: {}", servicioGuardado.getIdServicio());
         return servicioMapper.toResponseDTO(servicioGuardado);
@@ -97,6 +105,14 @@ public class ServicioServiceImpl implements IServicioService {
         }
 
         servicioMapper.updateEntityFromDTO(requestDTO, servicio);
+        
+        // Si la categoría es EMERGENCIA o el tipo es EMERGENCIA, habilitar disponibilidad para emergencias
+        if (servicio.getCategoria() == CategoriaServicio.EMERGENCIA ||
+            servicio.getTipoServicio() == TipoServicio.EMERGENCIA) {
+            servicio.setDisponibleEmergencias(true);
+            log.info("Servicio de emergencia detectado, habilitando disponibilidad para emergencias");
+        }
+        
         Servicio servicioActualizado = servicioRepository.save(servicio);
         log.info("Servicio actualizado exitosamente");
         return servicioMapper.toResponseDTO(servicioActualizado);

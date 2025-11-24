@@ -47,6 +47,7 @@ public interface CitaMapper {
     @Mapping(target = "veterinario", source = "veterinario", qualifiedByName = "mapVeterinarioSimple")
     @Mapping(target = "servicio", source = "servicio", qualifiedByName = "mapServicioSimple")
     @Mapping(target = "fechaHora", source = "cita", qualifiedByName = "combinarFechaHora")
+    @Mapping(target = "estado", source = "estado", qualifiedByName = "mapEstado")
     CitaResponseDTO toResponseDTO(Cita cita);
 
     /**
@@ -113,5 +114,11 @@ public interface CitaMapper {
             return null;
         }
         return LocalDateTime.of(cita.getFechaCita(), cita.getHoraCita());
+    }
+
+    @Named("mapEstado")
+    default String mapEstado(com.veterinaria.clinica_veternica.domain.agenda.EstadoCita estado) {
+        if (estado == null) return null;
+        return estado.name(); // Convierte el enum a String (ej: "CANCELADA", "ATENDIDA", etc.)
     }
 }
