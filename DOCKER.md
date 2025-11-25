@@ -12,14 +12,14 @@ Este documento explica cómo usar Docker para ejecutar la aplicación Clínica V
 
 - `Dockerfile.backend`: Imagen del backend Spring Boot
 - `Dockerfile.frontend`: Imagen del frontend React
-- `docker-compose.yml`: Configuración para producción
+- `docker-compose.yml`: Configuración principal
 - `docker-compose.dev.yml`: Configuración para desarrollo
 - `nginx.conf`: Configuración de Nginx para el frontend
 - `.dockerignore`: Archivos a excluir del build
 
 ## Uso Rápido
 
-### Producción
+### Uso Principal
 
 ```bash
 # Construir y levantar todos los servicios
@@ -52,8 +52,8 @@ docker compose -f docker-compose.dev.yml down
 
 ### MySQL (Base de Datos)
 - **Puerto**: 3306
-- **Usuario root**: `root` (producción) / sin contraseña (desarrollo)
-- **Base de datos**: `clinica_veterinaria` (producción) / `clinica_veterinaria_dev` (desarrollo)
+- **Usuario root**: `root` / sin contraseña (desarrollo)
+- **Base de datos**: `clinica_veterinaria` / `clinica_veterinaria_dev` (desarrollo)
 - **Volumen**: `mysql_data` (persistencia de datos)
 
 ### Backend (Spring Boot)
@@ -63,8 +63,8 @@ docker compose -f docker-compose.dev.yml down
 - **Health Check**: http://localhost:8080/actuator/health
 
 ### Frontend (React + Nginx)
-- **Puerto**: 80 (producción) / 3000 (desarrollo)
-- **URL**: http://localhost (producción) / http://localhost:3000 (desarrollo)
+- **Puerto**: 80 / 3000 (desarrollo)
+- **URL**: http://localhost / http://localhost:3000 (desarrollo)
 
 ## Variables de Entorno
 
@@ -188,30 +188,6 @@ docker compose build --no-cache
 # Reconstruir y levantar
 docker compose up -d --build
 ```
-
-## Producción
-
-Para producción, considera:
-
-1. **Seguridad**:
-   - Cambiar todas las contraseñas por defecto
-   - Usar variables de entorno para secretos
-   - Configurar SSL/TLS
-   - Deshabilitar Swagger en producción
-
-2. **Rendimiento**:
-   - Ajustar recursos de contenedores
-   - Configurar límites de memoria y CPU
-   - Usar un reverse proxy (Nginx/Traefik)
-
-3. **Monitoreo**:
-   - Configurar logs centralizados
-   - Implementar health checks
-   - Configurar alertas
-
-4. **Backup**:
-   - Configurar backups automáticos de MySQL
-   - Usar volúmenes persistentes
 
 ## Notas
 

@@ -192,7 +192,7 @@ mvn test -Dtest=PropietarioServiceTest
 - Todos los patrones están **justificados** por necesidades reales del sistema
 - La arquitectura es **escalable** y **mantenible**
 - Se evitan **antipatrones** comunes
-- El código es **production-ready**
+- El código está listo para uso
 
 ## 👥 Autores
 
