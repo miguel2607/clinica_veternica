@@ -1,0 +1,37 @@
+# Dockerignore específico para frontend
+
+# Backend (no necesario en frontend)
+src/
+pom.xml
+mvnw
+target/
+.mvn/
+
+# Node modules (se instalan en el contenedor)
+node_modules/
+
+# Archivos de desarrollo
+.vscode/
+.idea/
+*.iml
+
+# Documentación
+*.md
+docs/
+
+# Scripts
+scripts/
+test_endpoints.ps1
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore*
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+

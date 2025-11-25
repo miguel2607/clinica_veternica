@@ -10,18 +10,29 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, hasAnyRole, loading } = useAuth();
+  const { isAuthenticated, hasAnyRole, loading, user } = useAuth();
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
+  console.log('🔒 ProtectedRoute - Usuario:', user);
+  console.log('🔒 ProtectedRoute - Autenticado:', isAuthenticated());
+  console.log('🔒 ProtectedRoute - Roles permitidos:', allowedRoles);
+  console.log('🔒 ProtectedRoute - Rol del usuario:', user?.rol);
+
   if (!isAuthenticated()) {
+    console.log('❌ No autenticado en ProtectedRoute, redirigiendo a login');
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !hasAnyRole(allowedRoles)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const tieneRol = hasAnyRole(allowedRoles);
+    console.log('🔒 ProtectedRoute - Tiene rol permitido:', tieneRol);
+    if (!tieneRol) {
+      console.log('❌ Usuario no tiene rol permitido, redirigiendo a unauthorized');
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return children;
@@ -29,13 +40,25 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 // Componente para redirigir según el rol
 const RoleRedirect = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  console.log('🔄 RoleRedirect - Usuario:', user);
+  console.log('🔄 RoleRedirect - Autenticado:', isAuthenticated());
+  console.log('🔄 RoleRedirect - Rol:', user?.rol);
 
   if (!isAuthenticated()) {
+    console.log('❌ No autenticado, redirigiendo a login');
     return <Navigate to="/login" replace />;
   }
 
-  switch (user?.rol) {
+  const rolNormalizado = user?.rol?.toUpperCase();
+  console.log('🔄 RoleRedirect - Rol normalizado:', rolNormalizado);
+
+  switch (rolNormalizado) {
     case 'ADMIN':
       return <Navigate to="/admin/dashboard" replace />;
     case 'VETERINARIO':
@@ -45,8 +68,10 @@ const RoleRedirect = () => {
     case 'AUXILIAR':
       return <Navigate to="/auxiliar/dashboard" replace />;
     case 'PROPIETARIO':
+      console.log('✅ Redirigiendo a dashboard de propietario');
       return <Navigate to="/propietario/dashboard" replace />;
     default:
+      console.log('❌ Rol no reconocido:', rolNormalizado);
       return <Navigate to="/login" replace />;
   }
 };

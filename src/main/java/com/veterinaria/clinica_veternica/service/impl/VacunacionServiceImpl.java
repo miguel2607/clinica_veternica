@@ -134,6 +134,14 @@ public class VacunacionServiceImpl implements IVacunacionService {
         return vacunacionMapper.toResponseDTOList(vacunaciones);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<VacunacionResponseDTO> listarTodas() {
+        log.info("Listando todas las vacunaciones");
+        List<Vacunacion> vacunaciones = vacunacionRepository.findAll();
+        return vacunacionMapper.toResponseDTOList(vacunaciones);
+    }
+
     private Insumo prepararInsumoParaVacunacion(VacunacionRequestDTO requestDTO) {
         if (requestDTO.getIdInsumo() != null) {
             return insumoRepository.findById(requestDTO.getIdInsumo())

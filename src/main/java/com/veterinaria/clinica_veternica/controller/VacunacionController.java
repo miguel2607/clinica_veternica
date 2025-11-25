@@ -48,8 +48,17 @@ public class VacunacionController {
         return new ResponseEntity<>(vacunacionService.crear(idHistoriaClinica, requestDTO), HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Listar todas las vacunaciones",
+               description = "Lista todas las vacunaciones del sistema")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO')")
+    @GetMapping
+    public ResponseEntity<List<VacunacionResponseDTO>> listarTodas() {
+        return ResponseEntity.ok(vacunacionService.listarTodas());
+    }
+
     @Operation(summary = "Listar vacunaciones por historia clínica",
                description = "Lista todas las vacunaciones de una historia clínica específica")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO', 'PROPIETARIO', 'AUXILIAR')")
     @GetMapping("/historia-clinica/{idHistoriaClinica}")
     public ResponseEntity<List<VacunacionResponseDTO>> listarPorHistoriaClinica(
             @Parameter(description = "ID de la historia clínica") @PathVariable Long idHistoriaClinica) {

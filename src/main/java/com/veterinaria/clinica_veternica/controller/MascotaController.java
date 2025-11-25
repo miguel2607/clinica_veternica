@@ -22,8 +22,10 @@ public class MascotaController {
 
     private final IMascotaService mascotaService;
 
-    @Operation(summary = "Crear nueva mascota")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'VETERINARIO')")
+    @Operation(summary = "Crear nueva mascota", 
+               description = "Los propietarios solo pueden crear mascotas para sí mismos. " +
+                           "ADMIN, RECEPCIONISTA y VETERINARIO pueden crear mascotas para cualquier propietario.")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCIONISTA', 'VETERINARIO', 'PROPIETARIO')")
     @PostMapping
     public ResponseEntity<MascotaResponseDTO> crear(@Valid @RequestBody MascotaRequestDTO requestDTO) {
         return new ResponseEntity<>(mascotaService.crear(requestDTO), HttpStatus.CREATED);

@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+// Usar variable de entorno si está disponible, sino usar localhost
+// En Docker, usar /api ya que Nginx hace proxy al backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : '/api');
 
 // Crear instancia de axios
 const api = axios.create({
@@ -14,8 +17,14 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && token !== 'undefined' && token !== 'null') {
       config.headers.Authorization = `Bearer ${token}`;
+      // Log solo para peticiones importantes (evitar spam)
+      if (config.url?.includes('/mi-perfil') || config.url?.includes('/dashboard')) {
+        console.log('📤 Petición con token:', config.url);
+      }
+    } else {
+      console.warn('⚠️ Petición sin token:', config.url);
     }
     return config;
   },
@@ -24,14 +33,77 @@ api.interceptors.request.use(
   }
 );
 
+// Variable para evitar múltiples redirecciones
+let isRedirecting = false;
+
 // Interceptor para manejar errores de respuesta
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const requestUrl = error.config?.url || '';
+      const currentPath = window.location.pathname;
+      const token = localStorage.getItem('token');
+      
+      console.error('❌ Error 401 - No autorizado:', error.response?.data);
+      console.error('❌ URL de la petición:', requestUrl);
+      console.error('❌ Ruta actual:', currentPath);
+      console.error('❌ Token actual:', token ? 'Presente' : 'Ausente');
+      
+      // NO redirigir si es una petición de login (el error ya se maneja en el componente)
+      if (requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register')) {
+        console.log('⚠️ Error 401 en login/register, no redirigiendo (se maneja en el componente)');
+        return Promise.reject(error);
+      }
+      
+      // Solo redirigir si:
+      // 1. No estamos ya en login/register
+      // 2. No hay token válido (o el token es inválido)
+      // 3. No estamos ya redirigiendo
+      if (!currentPath.includes('/login') && !currentPath.includes('/register') && !isRedirecting) {
+        // Verificar si el token existe y es válido
+        if (!token || token === 'undefined' || token === 'null') {
+          console.log('⚠️ No hay token válido, limpiando y redirigiendo');
+          isRedirecting = true;
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
+          setTimeout(() => {
+            isRedirecting = false;
+            if (!window.location.pathname.includes('/login')) {
+              window.location.href = '/login';
+            }
+          }, 100);
+        } else {
+          // Hay token pero la petición falló - podría ser:
+          // 1. Token expirado
+          // 2. Problema de permisos
+          // 3. Token inválido
+          console.warn('⚠️ Token presente pero petición falló con 401.');
+          console.warn('⚠️ Esto podría indicar que el token expiró o es inválido.');
+          
+          // Verificar si el mensaje del error indica token expirado
+          const errorMessage = error.response?.data?.message || '';
+          if (errorMessage.toLowerCase().includes('token') || 
+              errorMessage.toLowerCase().includes('expired') ||
+              errorMessage.toLowerCase().includes('invalid')) {
+            console.log('⚠️ Token parece estar expirado o inválido, limpiando y redirigiendo');
+            isRedirecting = true;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            setTimeout(() => {
+              isRedirecting = false;
+              if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+              }
+            }, 100);
+          } else {
+            // No redirigir, dejar que el componente maneje el error
+            console.log('⚠️ Dejando que el componente maneje el error 401');
+          }
+        }
+      }
     }
     return Promise.reject(error);
   }
@@ -41,6 +113,8 @@ api.interceptors.response.use(
 export const authService = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
+  resetPasswordByUsername: (data) => api.post('/auth/reset-password', data),
+  registerPropietario: (data) => api.post('/auth/register-propietario', data),
 };
 
 export const usuarioService = {
@@ -49,6 +123,7 @@ export const usuarioService = {
   create: (data) => api.post('/usuarios', data),
   update: (id, data) => api.put(`/usuarios/${id}`, data),
   delete: (id) => api.delete(`/usuarios/${id}`),
+  cambiarPassword: (id, data) => api.patch(`/usuarios/${id}/cambiar-password`, data),
 };
 
 export const mascotaService = {
@@ -162,6 +237,12 @@ export const evolucionClinicaService = {
   getByHistoriaClinica: (idHistoriaClinica) => api.get(`/evoluciones-clinicas/historia-clinica/${idHistoriaClinica}`),
 };
 
+export const vacunacionService = {
+  getAll: () => api.get('/vacunaciones'),
+  create: (idHistoriaClinica, data) => api.post(`/vacunaciones?idHistoriaClinica=${idHistoriaClinica}`, data),
+  getByHistoriaClinica: (idHistoriaClinica) => api.get(`/vacunaciones/historia-clinica/${idHistoriaClinica}`),
+};
+
 export const notificacionService = {
   getAll: () => api.get('/notificaciones'),
   getById: (id) => api.get(`/notificaciones/${id}`),
@@ -226,6 +307,7 @@ export const horarioService = {
 
 export const tipoInsumoService = {
   getAll: () => api.get('/inventario/tipos-insumo'),
+  getActivos: () => api.get('/inventario/tipos-insumo/activos'),
   getById: (id) => api.get(`/inventario/tipos-insumo/${id}`),
   create: (data) => api.post('/inventario/tipos-insumo', data),
   update: (id, data) => api.put(`/inventario/tipos-insumo/${id}`, data),

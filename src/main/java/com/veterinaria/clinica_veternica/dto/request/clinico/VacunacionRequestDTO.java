@@ -21,8 +21,7 @@ import java.time.LocalDate;
 @Builder
 public class VacunacionRequestDTO {
 
-    @NotNull @Positive
-    private Long idHistoriaClinica;
+    // idHistoriaClinica se pasa como @RequestParam en el controlador, no en el body
 
     @NotNull @Positive
     private Long idVeterinario;
@@ -58,15 +57,16 @@ public class VacunacionRequestDTO {
 
     /**
      * ID del insumo (vacuna) utilizado del inventario.
-     * Si se proporciona, se asociará el insumo y se decrementará su stock.
+     * Se asociará el insumo y se decrementará su stock.
      */
-    @Positive
+    @NotNull(message = "El ID del insumo es obligatorio")
+    @Positive(message = "El ID del insumo debe ser un número positivo")
     private Long idInsumo;
 
     /**
-     * Cantidad de insumo utilizada (por defecto 1).
-     * Solo aplica si se proporciona un idInsumo.
+     * Cantidad de insumo utilizada.
      */
+    @NotNull(message = "La cantidad utilizada es obligatoria")
     @Min(value = 1, message = "La cantidad utilizada debe ser al menos 1")
     private Integer cantidadUsada;
 }

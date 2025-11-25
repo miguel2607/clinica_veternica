@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { notificacionService, usuarioService } from '../../services/api';
 import { Plus, Search, Mail, MessageSquare, Bell, Send } from 'lucide-react';
 import Modal from '../../components/Modal';
@@ -6,6 +7,7 @@ import Modal from '../../components/Modal';
 const CANALES = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH'];
 
 export default function NotificacionesPage() {
+  const { user } = useAuth();
   const [notificaciones, setNotificaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,17 +23,38 @@ export default function NotificacionesPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
-      const [notificacionesRes, usuariosRes] = await Promise.all([
-        notificacionService.getAll(),
-        usuarioService.getAll(),
-      ]);
-      setNotificaciones(notificacionesRes.data);
-      setUsuarios(usuariosRes.data);
+      setLoading(true);
+      let notificacionesRes;
+      
+      // Si es ADMIN, mostrar todas las notificaciones
+      // Si es VETERINARIO, mostrar solo las suyas
+      if (user?.rol === 'ADMIN') {
+        notificacionesRes = await notificacionService.getAll();
+      } else if (user?.rol === 'VETERINARIO' && user?.idUsuario) {
+        notificacionesRes = await notificacionService.getByUsuario(user.idUsuario);
+      } else {
+        // Para otros roles, intentar obtener por usuario
+        if (user?.idUsuario) {
+          notificacionesRes = await notificacionService.getByUsuario(user.idUsuario);
+        } else {
+          notificacionesRes = { data: [] };
+        }
+      }
+      
+      setNotificaciones(notificacionesRes.data || []);
+      
+      // Solo cargar usuarios si es ADMIN (para el formulario de envío)
+      if (user?.rol === 'ADMIN') {
+        const usuariosRes = await usuarioService.getAll();
+        setUsuarios(usuariosRes.data);
+      }
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setError('Error al cargar datos');
@@ -78,7 +101,8 @@ export default function NotificacionesPage() {
 
   const filteredNotificaciones = notificaciones.filter(
     (n) =>
-      n.destinatarioNombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.nombreUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.emailUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       n.motivo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       n.canal?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -125,13 +149,15 @@ export default function NotificacionesPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Gestión de Notificaciones</h2>
-        <button
-          onClick={handleOpenModal}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center transition-smooth animate-scaleIn"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Enviar Notificación
-        </button>
+        {user?.rol === 'ADMIN' && (
+          <button
+            onClick={handleOpenModal}
+            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center transition-smooth animate-scaleIn"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Enviar Notificación
+          </button>
+        )}
       </div>
 
       {error && (
@@ -183,8 +209,12 @@ export default function NotificacionesPage() {
                 filteredNotificaciones.map((notificacion) => (
                   <tr key={notificacion.idComunicacion} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{notificacion.destinatarioNombre}</div>
-                      <div className="text-sm text-gray-500">{notificacion.destinatarioEmail}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {notificacion.nombreUsuario || 'N/A'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {notificacion.emailUsuario || 'N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center w-fit ${getCanalColor(notificacion.canal)}`}>
@@ -202,7 +232,23 @@ export default function NotificacionesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {notificacion.fechaEnvio ? new Date(notificacion.fechaEnvio).toLocaleDateString() : 'N/A'}
+                      {notificacion.fechaCreacion 
+                        ? new Date(notificacion.fechaCreacion).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : notificacion.fechaEnvio 
+                        ? new Date(notificacion.fechaEnvio).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : 'N/A'}
                     </td>
                   </tr>
                 ))

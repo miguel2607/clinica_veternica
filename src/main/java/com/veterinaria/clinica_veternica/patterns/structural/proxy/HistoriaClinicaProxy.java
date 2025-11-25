@@ -1,7 +1,11 @@
 package com.veterinaria.clinica_veternica.patterns.structural.proxy;
 
 import com.veterinaria.clinica_veternica.domain.clinico.HistoriaClinica;
+import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.patterns.creational.singleton.AuditLogger;
+import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Patrón Proxy: HistoriaClinicaProxy
@@ -48,6 +53,8 @@ import java.util.Collection;
 public class HistoriaClinicaProxy {
 
     private final AuditLogger auditLogger;
+    private final UsuarioRepository usuarioRepository;
+    private final PropietarioRepository propietarioRepository;
 
     /**
      * Verifica si el usuario actual tiene permisos para leer una historia clínica.
@@ -77,6 +84,40 @@ public class HistoriaClinicaProxy {
                            role.equals(Constants.ROLE_RECEPCIONISTA_STRING) ||
                            role.equals(Constants.ROLE_AUXILIAR_VETERINARIO_STRING);
                 });
+
+        // Si no tiene permiso con roles estándar, verificar si es PROPIETARIO
+        if (!tienePermiso) {
+            boolean esPropietario = authorities.stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_" + Constants.ROLE_PROPIETARIO) || 
+                                  a.getAuthority().equals(Constants.ROLE_PROPIETARIO));
+            
+            if (esPropietario) {
+                // Verificar que la mascota de la historia clínica pertenezca al propietario
+                try {
+                    Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(usuario);
+                    if (usuarioOpt.isPresent()) {
+                        Usuario usuarioEntity = usuarioOpt.get();
+                        Optional<Propietario> propietarioOpt = propietarioRepository.findByEmail(usuarioEntity.getEmail());
+                        
+                        if (propietarioOpt.isPresent()) {
+                            Propietario propietario = propietarioOpt.get();
+                            // Verificar que la mascota de la historia clínica pertenezca a este propietario
+                            if (historiaClinica.getMascota() != null && 
+                                historiaClinica.getMascota().getPropietario() != null &&
+                                historiaClinica.getMascota().getPropietario().getIdPropietario().equals(propietario.getIdPropietario())) {
+                                tienePermiso = true;
+                                log.debug("Acceso autorizado a historia clínica {} por propietario {} (mascota propia)", 
+                                        historiaClinica.getIdHistoriaClinica(), usuario);
+                            } else {
+                                log.warn("Propietario {} intentó acceder a historia clínica de mascota que no le pertenece", usuario);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error al verificar permisos de propietario: {}", e.getMessage(), e);
+                }
+            }
+        }
 
         if (tienePermiso) {
             // Registrar acceso autorizado

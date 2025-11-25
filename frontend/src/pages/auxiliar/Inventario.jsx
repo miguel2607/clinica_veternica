@@ -41,27 +41,39 @@ export default function InventarioPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {inventario.map((item) => (
-                <tr key={item.idInventario} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.insumo?.nombre}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.cantidadActual}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.insumo?.stockMinimo}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {item.cantidadActual <= item.insumo?.stockMinimo ? (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Stock Bajo
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Normal
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {inventario.map((item) => {
+                const nombreInsumo = item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
+                const cantidadActual = item.cantidadActual || 0;
+                const stockMinimo = item.stockMinimo || item.insumo?.stockMinimo || 0;
+                const esStockBajo = cantidadActual > 0 && cantidadActual <= stockMinimo;
+                
+                return (
+                  <tr key={item.idInventario} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {nombreInsumo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cantidadActual}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{stockMinimo}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {cantidadActual === 0 ? (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Agotado
+                        </span>
+                      ) : esStockBajo ? (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Stock Bajo
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Normal
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

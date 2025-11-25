@@ -5,10 +5,12 @@ import com.veterinaria.clinica_veternica.domain.paciente.Especie;
 import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
 import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
 import com.veterinaria.clinica_veternica.domain.paciente.Raza;
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.dto.request.paciente.MascotaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.MascotaResponseDTO;
 import com.veterinaria.clinica_veternica.exception.BusinessException;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
+import com.veterinaria.clinica_veternica.exception.UnauthorizedException;
 import org.springframework.dao.DataAccessException;
 
 import com.veterinaria.clinica_veternica.mapper.paciente.MascotaMapper;
@@ -20,15 +22,21 @@ import com.veterinaria.clinica_veternica.repository.HistoriaClinicaRepository;
 import com.veterinaria.clinica_veternica.repository.MascotaRepository;
 import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.RazaRepository;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IMascotaService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -43,6 +51,7 @@ public class MascotaServiceImpl implements IMascotaService {
     private final EspecieRepository especieRepository;
     private final RazaRepository razaRepository;
     private final HistoriaClinicaRepository historiaClinicaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final MascotaMapper mascotaMapper;
     private final ValidationHelper validationHelper;
     private final CachedServiceProxy cachedServiceProxy;
@@ -50,9 +59,52 @@ public class MascotaServiceImpl implements IMascotaService {
 
     @Override
     public MascotaResponseDTO crear(MascotaRequestDTO requestDTO) {
-        // Validar que el propietario existe
-        Propietario propietario = propietarioRepository.findById(requestDTO.getIdPropietario())
-            .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", requestDTO.getIdPropietario()));
+        // Obtener el usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Propietario propietario;
+        
+        // Verificar si el usuario es propietario
+        if (authentication != null && authentication.isAuthenticated()) {
+            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+            boolean esPropietario = authorities.stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PROPIETARIO"));
+            
+            if (esPropietario) {
+                // Si es propietario, obtener su propio perfil y usar su ID
+                String username = authentication.getName();
+                Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
+                
+                propietario = propietarioRepository.findByEmail(usuario.getEmail())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró un perfil de propietario asociado a tu usuario. Por favor, completa tu perfil primero."));
+                
+                // Asegurar que el propietario solo pueda crear mascotas para sí mismo
+                if (requestDTO.getIdPropietario() != null && 
+                    !requestDTO.getIdPropietario().equals(propietario.getIdPropietario())) {
+                    throw new UnauthorizedException("No puedes crear mascotas para otros propietarios");
+                }
+                
+                // Asignar automáticamente el ID del propietario autenticado
+                requestDTO.setIdPropietario(propietario.getIdPropietario());
+                log.info("Propietario autenticado creando mascota para su propio perfil (ID: {})", 
+                        propietario.getIdPropietario());
+            } else {
+                // Para otros roles (ADMIN, RECEPCIONISTA, VETERINARIO), el ID del propietario es obligatorio
+                if (requestDTO.getIdPropietario() == null) {
+                    throw new BusinessException("El ID del propietario es obligatorio");
+                }
+                propietario = propietarioRepository.findById(requestDTO.getIdPropietario())
+                    .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", requestDTO.getIdPropietario()));
+            }
+        } else {
+            // Si no hay autenticación, el ID del propietario es obligatorio (aunque esto no debería pasar por @PreAuthorize)
+            if (requestDTO.getIdPropietario() == null) {
+                throw new BusinessException("El ID del propietario es obligatorio");
+            }
+            propietario = propietarioRepository.findById(requestDTO.getIdPropietario())
+                .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", requestDTO.getIdPropietario()));
+        }
 
         // Validar que la especie existe
         Especie especie = especieRepository.findById(requestDTO.getIdEspecie())
@@ -73,6 +125,14 @@ public class MascotaServiceImpl implements IMascotaService {
             );
         }
 
+        // Establecer valores por defecto si no se proporcionan
+        if (requestDTO.getEsterilizado() == null) {
+            requestDTO.setEsterilizado(false);
+        }
+        if (requestDTO.getActivo() == null) {
+            requestDTO.setActivo(true);
+        }
+        
         Mascota mascota = mascotaMapper.toEntity(requestDTO);
         mascota.setPropietario(propietario);
         mascota.setEspecie(especie);
@@ -164,6 +224,36 @@ public class MascotaServiceImpl implements IMascotaService {
     public MascotaResponseDTO buscarPorId(Long id) {
         Mascota mascota = mascotaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_MASCOTA, "id", id));
+        
+        // Validar que si el usuario es propietario, solo pueda ver sus propias mascotas
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+            boolean esPropietario = authorities.stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PROPIETARIO"));
+            
+            if (esPropietario) {
+                // Obtener el usuario autenticado
+                String username = authentication.getName();
+                Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
+                
+                // Buscar el propietario asociado al usuario
+                Optional<Propietario> propietarioOpt = propietarioRepository.findByEmail(usuario.getEmail());
+                
+                if (propietarioOpt.isPresent()) {
+                    Propietario propietario = propietarioOpt.get();
+                    // Verificar que la mascota pertenezca al propietario
+                    if (mascota.getPropietario() == null || 
+                        !mascota.getPropietario().getIdPropietario().equals(propietario.getIdPropietario())) {
+                        throw new UnauthorizedException("No tienes permiso para ver esta mascota");
+                    }
+                } else {
+                    throw new UnauthorizedException("No se encontró un perfil de propietario asociado a tu usuario");
+                }
+            }
+        }
+        
         return mascotaMapper.toResponseDTO(mascota);
     }
 

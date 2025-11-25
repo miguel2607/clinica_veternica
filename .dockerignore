@@ -1,0 +1,71 @@
+# Archivos y directorios a ignorar en Docker
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentación
+*.md
+docs/
+README.md
+HELP.md
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Node modules (se instalan en el contenedor)
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+target/
+dist/
+build/
+frontend/dist/
+frontend/build/
+
+# Logs
+*.log
+logs/
+app_log.txt
+app_start*.log
+spring_boot_full.log
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Archivos de configuración local
+.env
+.env.local
+.env.*.local
+
+# Scripts de desarrollo
+scripts/
+test_endpoints.ps1
+
+# Archivos de análisis
+ANALISIS_*.md
+PLAN_*.md
+REVISION_*.md
+CONFIGURACION_*.md
+INSTRUCCIONES_*.md
+
+# Docker
+docker-compose.yml
+Dockerfile*
+.dockerignore
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+

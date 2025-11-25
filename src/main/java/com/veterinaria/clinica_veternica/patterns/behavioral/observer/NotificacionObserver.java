@@ -2,11 +2,15 @@ package com.veterinaria.clinica_veternica.patterns.behavioral.observer;
 
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
+import com.veterinaria.clinica_veternica.domain.comunicacion.Comunicacion;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
+import com.veterinaria.clinica_veternica.repository.ComunicacionRepository;
 import com.veterinaria.clinica_veternica.service.EmailService;
+import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 
@@ -24,6 +28,7 @@ public class NotificacionObserver implements CitaObserver {
 
     private final EmailNotificacionFactory emailFactory;
     private final EmailService emailService;
+    private final ComunicacionRepository comunicacionRepository;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -120,7 +125,20 @@ public class NotificacionObserver implements CitaObserver {
             String htmlFinal = emailService.generarTemplateHtml(asunto, contenido, "success");
             var mensajeNotificacion = emailFactory.crearMensaje(emailPropietario, asunto, htmlFinal);
             var enviador = emailFactory.crearEnviador();
-            enviador.enviar(mensajeNotificacion);
+            boolean enviado = enviador.enviar(mensajeNotificacion);
+            
+            // Guardar notificación en la base de datos
+            guardarNotificacionEnBD(
+                cita.getMascota().getPropietario().getNombreCompleto(),
+                emailPropietario,
+                cita.getMascota().getPropietario().getTelefono(),
+                asunto,
+                contenido,
+                cita,
+                enviado,
+                enviador.getIdExterno()
+            );
+            
             log.info("Notificación de confirmación enviada: {}", emailPropietario);
         } catch (Exception e) {
             log.error("Error al enviar notificación de confirmación: {}", e.getMessage(), e);
@@ -187,7 +205,20 @@ public class NotificacionObserver implements CitaObserver {
             String htmlFinal = emailService.generarTemplateHtml(asunto, contenido, "info");
             var mensajeNotificacion = emailFactory.crearMensaje(emailPropietario, asunto, htmlFinal);
             var enviador = emailFactory.crearEnviador();
-            enviador.enviar(mensajeNotificacion);
+            boolean enviado = enviador.enviar(mensajeNotificacion);
+            
+            // Guardar notificación en la base de datos
+            guardarNotificacionEnBD(
+                cita.getMascota().getPropietario().getNombreCompleto(),
+                emailPropietario,
+                cita.getMascota().getPropietario().getTelefono(),
+                asunto,
+                contenido,
+                cita,
+                enviado,
+                enviador.getIdExterno()
+            );
+            
             log.info("Notificación de atención enviada: {}", emailPropietario);
         } catch (Exception e) {
             log.error("Error al enviar notificación de atención: {}", e.getMessage(), e);
@@ -270,6 +301,18 @@ public class NotificacionObserver implements CitaObserver {
                 var mensajeNotificacion = emailFactory.crearMensaje(emailPropietario, asunto, htmlFinal);
                 var enviador = emailFactory.crearEnviador();
                 boolean enviado = enviador.enviar(mensajeNotificacion);
+                
+                // Guardar notificación en la base de datos
+                guardarNotificacionEnBD(
+                    cita.getMascota().getPropietario().getNombreCompleto(),
+                    emailPropietario,
+                    cita.getMascota().getPropietario().getTelefono(),
+                    asunto,
+                    contenido,
+                    cita,
+                    enviado,
+                    enviado ? enviador.getIdExterno() : null
+                );
                 
                 if (enviado) {
                     log.info("Notificación de creación de cita {} enviada al propietario: {}", 
@@ -363,6 +406,18 @@ public class NotificacionObserver implements CitaObserver {
                 var enviador = emailFactory.crearEnviador();
                 boolean enviado = enviador.enviar(mensajeNotificacion);
                 
+                // Guardar notificación en la base de datos
+                guardarNotificacionEnBD(
+                    cita.getVeterinario().getNombreCompleto(),
+                    emailVeterinario,
+                    null,
+                    asunto,
+                    contenido,
+                    cita,
+                    enviado,
+                    enviado ? enviador.getIdExterno() : null
+                );
+                
                 if (enviado) {
                     log.info("Notificación de creación de cita {} enviada al veterinario: {}", 
                             cita.getIdCita(), emailVeterinario);
@@ -446,7 +501,20 @@ public class NotificacionObserver implements CitaObserver {
                 String htmlFinal = emailService.generarTemplateHtml(asunto, contenido, "error");
                 var mensajeNotificacion = emailFactory.crearMensaje(emailPropietario, asunto, htmlFinal);
                 var enviador = emailFactory.crearEnviador();
-                enviador.enviar(mensajeNotificacion);
+                boolean enviado = enviador.enviar(mensajeNotificacion);
+                
+                // Guardar notificación en la base de datos
+                guardarNotificacionEnBD(
+                    cita.getMascota().getPropietario().getNombreCompleto(),
+                    emailPropietario,
+                    cita.getMascota().getPropietario().getTelefono(),
+                    asunto,
+                    contenido,
+                    cita,
+                    enviado,
+                    enviado ? enviador.getIdExterno() : null
+                );
+                
                 log.info("Notificación de cancelación enviada al propietario: {}", emailPropietario);
             }
             
@@ -515,12 +583,74 @@ public class NotificacionObserver implements CitaObserver {
                 String htmlFinal = emailService.generarTemplateHtml(asunto, contenido, "warning");
                 var mensajeNotificacion = emailFactory.crearMensaje(emailVeterinario, asunto, htmlFinal);
                 var enviador = emailFactory.crearEnviador();
-                enviador.enviar(mensajeNotificacion);
+                boolean enviado = enviador.enviar(mensajeNotificacion);
+                
+                // Guardar notificación en la base de datos
+                guardarNotificacionEnBD(
+                    cita.getVeterinario().getNombreCompleto(),
+                    emailVeterinario,
+                    null,
+                    asunto,
+                    contenido,
+                    cita,
+                    enviado,
+                    enviado ? enviador.getIdExterno() : null
+                );
+                
                 log.info("Notificación de cancelación enviada al veterinario: {}", emailVeterinario);
             }
         } catch (Exception e) {
             log.error("Error al enviar notificación de cancelación de cita {}: {}", 
                     cita.getIdCita(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Guarda una notificación en la base de datos.
+     * 
+     * @param nombreDestinatario Nombre del destinatario
+     * @param emailDestinatario Email del destinatario
+     * @param telefonoDestinatario Teléfono del destinatario (opcional)
+     * @param asunto Asunto de la notificación
+     * @param mensaje Mensaje de la notificación
+     * @param cita Cita relacionada (opcional)
+     * @param enviado Si fue enviada exitosamente
+     * @param idExterno ID externo del proveedor (opcional)
+     */
+    @Transactional
+    private void guardarNotificacionEnBD(String nombreDestinatario, String emailDestinatario, 
+                                         String telefonoDestinatario, String asunto, String mensaje,
+                                         Cita cita, boolean enviado, String idExterno) {
+        try {
+            // Limitar el mensaje a 2000 caracteres si es muy largo
+            String mensajeLimitado = mensaje != null && mensaje.length() > 2000 
+                ? mensaje.substring(0, 1997) + "..." 
+                : mensaje;
+            
+            Comunicacion comunicacion = Comunicacion.builder()
+                .tipo(Constants.ENTIDAD_NOTIFICACION)
+                .canal("EMAIL")
+                .destinatarioNombre(nombreDestinatario != null ? nombreDestinatario : "Usuario")
+                .destinatarioEmail(emailDestinatario)
+                .destinatarioTelefono(telefonoDestinatario)
+                .asunto(asunto)
+                .mensaje(mensajeLimitado)
+                .cita(cita)
+                .enviada(enviado)
+                .build();
+            
+            if (enviado && idExterno != null) {
+                comunicacion.marcarComoEnviada(idExterno);
+            } else if (!enviado) {
+                comunicacion.registrarFalloEnvio("Error al enviar notificación");
+            }
+            
+            comunicacionRepository.save(comunicacion);
+            log.debug("Notificación guardada en BD: ID={}, Asunto={}", 
+                    comunicacion.getIdComunicacion(), asunto);
+        } catch (Exception e) {
+            log.error("Error al guardar notificación en BD: {}", e.getMessage(), e);
+            // No propagamos la excepción para no interrumpir el flujo principal
         }
     }
 }

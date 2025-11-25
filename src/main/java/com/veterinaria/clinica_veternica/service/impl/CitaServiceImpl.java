@@ -126,6 +126,33 @@ public class CitaServiceImpl implements ICitaService {
             );
         }
 
+        // Guardar valores originales para validación
+        LocalDate fechaOriginal = cita.getFechaCita();
+        java.time.LocalTime horaOriginal = cita.getHoraCita();
+        
+        // Validar que la nueva fecha y hora sean diferentes a las actuales
+        // Si se proporciona una nueva fecha, debe ser diferente a la actual
+        if (requestDTO.getFechaCita() != null && fechaOriginal != null) {
+            if (fechaOriginal.equals(requestDTO.getFechaCita())) {
+                throw new ValidationException(
+                        "La nueva fecha debe ser diferente a la fecha actual de la cita",
+                        "fechaCita",
+                        "Para actualizar la cita, debe cambiar la fecha"
+                );
+            }
+        }
+        
+        // Si se proporciona una nueva hora, debe ser diferente a la actual
+        if (requestDTO.getHoraCita() != null && horaOriginal != null) {
+            if (horaOriginal.equals(requestDTO.getHoraCita())) {
+                throw new ValidationException(
+                        "La nueva hora debe ser diferente a la hora actual de la cita",
+                        "horaCita",
+                        "Para actualizar la cita, debe cambiar la hora"
+                );
+            }
+        }
+
         // Actualizar campos permitidos
         if (requestDTO.getFechaCita() != null) {
             cita.setFechaCita(requestDTO.getFechaCita());

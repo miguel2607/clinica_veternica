@@ -47,11 +47,18 @@ export default function InsumosPage() {
         tipoInsumoService.getAll(),
       ]);
       setInsumos(insumosRes.data || []);
-      setTiposInsumo(tiposRes.data || []);
-      setError('');
+      const tipos = tiposRes.data || [];
+      setTiposInsumo(tipos);
+      
+      if (tipos.length === 0) {
+        setError('No hay tipos de insumo disponibles. Por favor, cree al menos un tipo de insumo antes de crear insumos.');
+      } else {
+        setError('');
+      }
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      setError('Error al cargar datos');
+      const errorMessage = error.response?.data?.message || 'Error al cargar datos';
+      setError(`Error al cargar datos: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -120,14 +127,26 @@ export default function InsumosPage() {
     setError('');
     setSuccess('');
 
+    // Validar que haya un tipo de insumo seleccionado
+    if (!formData.idTipoInsumo || formData.idTipoInsumo === '') {
+      setError('Debe seleccionar un tipo de insumo');
+      return;
+    }
+
+    // Validar que haya tipos de insumo disponibles
+    if (tiposInsumo.length === 0) {
+      setError('No hay tipos de insumo disponibles. Por favor, cree al menos un tipo de insumo primero.');
+      return;
+    }
+
     try {
       const data = {
         ...formData,
         idTipoInsumo: parseInt(formData.idTipoInsumo),
-        cantidadStock: parseInt(formData.cantidadStock),
-        stockMinimo: parseInt(formData.stockMinimo),
+        cantidadStock: formData.cantidadStock ? parseInt(formData.cantidadStock) : 0,
+        stockMinimo: formData.stockMinimo ? parseInt(formData.stockMinimo) : 0,
         stockMaximo: formData.stockMaximo ? parseInt(formData.stockMaximo) : null,
-        precioCompra: parseFloat(formData.precioCompra),
+        precioCompra: formData.precioCompra ? parseFloat(formData.precioCompra) : null,
         precioVenta: formData.precioVenta ? parseFloat(formData.precioVenta) : null,
         fechaVencimiento: formData.fechaVencimiento || null,
       };
@@ -143,7 +162,10 @@ export default function InsumosPage() {
       setTimeout(() => handleCloseModal(), 1500);
     } catch (error) {
       console.error('Error al guardar insumo:', error);
-      setError(error.response?.data?.message || 'Error al guardar insumo');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'Error al guardar insumo';
+      setError(errorMessage);
     }
   };
 
@@ -343,15 +365,30 @@ export default function InsumosPage() {
                 required
                 value={formData.idTipoInsumo}
                 onChange={(e) => setFormData({ ...formData, idTipoInsumo: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                disabled={tiposInsumo.length === 0}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  tiposInsumo.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
               >
-                <option value="">Seleccione un tipo</option>
+                <option value="">
+                  {tiposInsumo.length === 0 ? 'No hay tipos disponibles' : 'Seleccione un tipo'}
+                </option>
                 {tiposInsumo.map((tipo) => (
                   <option key={tipo.idTipoInsumo} value={tipo.idTipoInsumo}>
                     {tipo.nombre}
                   </option>
                 ))}
               </select>
+              {tiposInsumo.length === 0 && (
+                <p className="mt-1 text-sm text-red-600">
+                  Debe crear al menos un tipo de insumo primero. Vaya a la sección de Tipos de Insumo.
+                </p>
+              )}
+              {tiposInsumo.length === 0 && (
+                <p className="mt-1 text-sm text-red-600">
+                  Debe crear al menos un tipo de insumo primero
+                </p>
+              )}
             </div>
 
             <div>

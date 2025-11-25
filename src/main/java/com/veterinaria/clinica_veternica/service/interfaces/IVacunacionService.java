@@ -31,5 +31,12 @@ public interface IVacunacionService {
      * @return Lista de vacunaciones
      */
     List<VacunacionResponseDTO> listarPorHistoriaClinica(Long idHistoriaClinica);
+
+    /**
+     * Lista todas las vacunaciones.
+     *
+     * @return Lista de todas las vacunaciones
+     */
+    List<VacunacionResponseDTO> listarTodas();
 }
 

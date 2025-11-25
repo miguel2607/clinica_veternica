@@ -80,8 +80,9 @@ public class MascotaRequestDTO {
 
     /**
      * ID del propietario de la mascota.
+     * Opcional para propietarios autenticados (se asigna automáticamente).
+     * Obligatorio para ADMIN, RECEPCIONISTA y VETERINARIO.
      */
-    @NotNull(message = "El ID del propietario es obligatorio")
     @Positive(message = "El ID del propietario debe ser positivo")
     private Long idPropietario;
 

@@ -114,20 +114,26 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Stock Bajo</h2>
           <div className="space-y-3">
             {dashboard?.stockBajo && Array.isArray(dashboard.stockBajo) && dashboard.stockBajo.length > 0 ? (
-              dashboard.stockBajo.slice(0, 5).map((inventario, index) => (
-                <div
-                  key={inventario.idInventario || index}
-                  className="border-b pb-3 hover:bg-red-50 p-2 rounded transition-colors duration-200"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <p className="font-medium text-red-600">
-                    {inventario.insumo?.nombre || 'Sin nombre'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Stock: {inventario.cantidadActual || 0} / {inventario.stockMinimo || 0}
-                  </p>
-                </div>
-              ))
+              dashboard.stockBajo.slice(0, 5).map((inventario, index) => {
+                const nombreInsumo = inventario.insumo?.nombre || inventario.nombre || 'Insumo sin nombre';
+                const cantidadActual = inventario.cantidadActual || 0;
+                const stockMinimo = inventario.stockMinimo || inventario.insumo?.stockMinimo || 0;
+                
+                return (
+                  <div
+                    key={inventario.idInventario || index}
+                    className="border-b pb-3 hover:bg-red-50 p-2 rounded transition-colors duration-200"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <p className="font-medium text-red-600">
+                      {nombreInsumo}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Stock actual: <span className="font-bold text-red-600">{cantidadActual}</span> | Mínimo: {stockMinimo}
+                    </p>
+                  </div>
+                );
+              })
             ) : (
               <p className="text-gray-500">No hay alertas de stock bajo</p>
             )}

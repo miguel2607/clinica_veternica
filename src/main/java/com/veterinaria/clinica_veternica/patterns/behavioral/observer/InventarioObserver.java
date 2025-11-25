@@ -1,12 +1,16 @@
 package com.veterinaria.clinica_veternica.patterns.behavioral.observer;
 
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
+import com.veterinaria.clinica_veternica.domain.comunicacion.Comunicacion;
 import com.veterinaria.clinica_veternica.domain.inventario.Inventario;
+import com.veterinaria.clinica_veternica.domain.usuario.Personal;
 import com.veterinaria.clinica_veternica.domain.usuario.RolUsuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.NotificacionFactory;
+import com.veterinaria.clinica_veternica.repository.ComunicacionRepository;
 import com.veterinaria.clinica_veternica.repository.InventarioRepository;
+import com.veterinaria.clinica_veternica.repository.PersonalRepository;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IInventarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
@@ -14,8 +18,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +61,8 @@ public class InventarioObserver {
     private final EmailNotificacionFactory emailFactory;
     private final IInventarioService inventarioService;
     private final UsuarioRepository usuarioRepository;
+    private final ComunicacionRepository comunicacionRepository;
+    private final PersonalRepository personalRepository;
 
     /**
      * Observa cambios en el inventario cuando se crea una cita.
@@ -319,7 +327,7 @@ public class InventarioObserver {
                 return;
             }
             
-            // Enviar correo a cada usuario
+            // Enviar correo a cada usuario y guardar en BD
             int enviados = 0;
             int fallidos = 0;
             
@@ -333,6 +341,18 @@ public class InventarioObserver {
                         );
                         var enviador = emailFactory.crearEnviador();
                         boolean enviado = enviador.enviar(mensajeNotificacion);
+                        
+                        // Guardar notificación en la base de datos
+                        String nombreDestinatario = obtenerNombreDestinatario(usuario);
+                        guardarNotificacionStockEnBD(
+                            nombreDestinatario,
+                            usuario.getEmail(),
+                            obtenerTelefonoDestinatario(usuario),
+                            asunto,
+                            mensaje,
+                            enviado,
+                            enviado ? enviador.getIdExterno() : null
+                        );
                         
                         if (enviado) {
                             enviados++;
@@ -354,6 +374,72 @@ public class InventarioObserver {
             log.error("Error de validación al enviar notificación de inventario: {}", e.getMessage(), e);
         } catch (RuntimeException e) {
             log.error("Error al enviar notificación de inventario: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Obtiene el nombre del destinatario desde Personal o Usuario.
+     */
+    private String obtenerNombreDestinatario(Usuario usuario) {
+        Optional<Personal> personal = personalRepository.findByUsuario(usuario);
+        if (personal.isPresent()) {
+            return personal.get().getNombreCompleto();
+        }
+        return usuario.getUsername();
+    }
+    
+    /**
+     * Obtiene el teléfono del destinatario desde Personal.
+     */
+    private String obtenerTelefonoDestinatario(Usuario usuario) {
+        Optional<Personal> personal = personalRepository.findByUsuario(usuario);
+        return personal.map(Personal::getTelefono).orElse(null);
+    }
+    
+    /**
+     * Guarda una notificación de stock en la base de datos.
+     * 
+     * @param nombreDestinatario Nombre del destinatario
+     * @param emailDestinatario Email del destinatario
+     * @param telefonoDestinatario Teléfono del destinatario (opcional)
+     * @param asunto Asunto de la notificación
+     * @param mensaje Mensaje de la notificación
+     * @param enviado Si fue enviada exitosamente
+     * @param idExterno ID externo del proveedor (opcional)
+     */
+    @Transactional
+    private void guardarNotificacionStockEnBD(String nombreDestinatario, String emailDestinatario, 
+                                              String telefonoDestinatario, String asunto, String mensaje,
+                                              boolean enviado, String idExterno) {
+        try {
+            // Limitar el mensaje a 2000 caracteres si es muy largo
+            String mensajeLimitado = mensaje != null && mensaje.length() > 2000 
+                ? mensaje.substring(0, 1997) + "..." 
+                : mensaje;
+            
+            Comunicacion comunicacion = Comunicacion.builder()
+                .tipo(Constants.ENTIDAD_NOTIFICACION)
+                .canal("EMAIL")
+                .destinatarioNombre(nombreDestinatario != null ? nombreDestinatario : "Usuario")
+                .destinatarioEmail(emailDestinatario)
+                .destinatarioTelefono(telefonoDestinatario)
+                .asunto(asunto)
+                .mensaje(mensajeLimitado)
+                .enviada(enviado)
+                .build();
+            
+            if (enviado && idExterno != null) {
+                comunicacion.marcarComoEnviada(idExterno);
+            } else if (!enviado) {
+                comunicacion.registrarFalloEnvio("Error al enviar notificación");
+            }
+            
+            comunicacionRepository.save(comunicacion);
+            log.debug("Notificación de stock guardada en BD: ID={}, Asunto={}", 
+                    comunicacion.getIdComunicacion(), asunto);
+        } catch (Exception e) {
+            log.error("Error al guardar notificación de stock en BD: {}", e.getMessage(), e);
+            // No propagamos la excepción para no interrumpir el flujo principal
         }
     }
 
