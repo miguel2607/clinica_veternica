@@ -96,6 +96,20 @@ export default function RecepcionistaDashboard() {
     );
   }
 
+  const getEstadoBadgeClassName = (estado) => {
+    switch (estado) {
+      case 'CONFIRMADA':
+        return 'bg-green-100 text-green-800';
+      case 'PROGRAMADA':
+        return 'bg-blue-100 text-blue-800';
+      case 'COMPLETADA':
+      case 'ATENDIDA':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   const statsCards = [
     {
       title: 'Citas Hoy',
@@ -138,8 +152,8 @@ export default function RecepcionistaDashboard() {
 
       {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {statsCards.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+        {statsCards.map((stat) => (
+          <div key={stat.title} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -171,10 +185,10 @@ export default function RecepcionistaDashboard() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{cita.mascota?.nombre || 'N/A'}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">Propietario:</span> {cita.propietario?.nombres || 'N/A'}
+                        <span className="font-medium">Propietario:</span> {cita.mascota?.propietarioNombre || 'N/A'}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Veterinario:</span> {cita.veterinario?.nombres || 'N/A'}
+                        <span className="font-medium">Veterinario:</span> {cita.veterinario?.nombreCompleto || 'N/A'}
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Servicio:</span> {cita.servicio?.nombre || 'N/A'}
@@ -182,12 +196,7 @@ export default function RecepcionistaDashboard() {
                     </div>
                     <div className="text-right ml-4">
                       <p className="text-sm font-bold text-primary-600">{cita.horaCita}</p>
-                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                        cita.estado === 'CONFIRMADA' ? 'bg-green-100 text-green-800' :
-                        cita.estado === 'PROGRAMADA' ? 'bg-blue-100 text-blue-800' :
-                        cita.estado === 'COMPLETADA' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${getEstadoBadgeClassName(cita.estado)}`}>
                         {cita.estado}
                       </span>
                     </div>
@@ -220,18 +229,16 @@ export default function RecepcionistaDashboard() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{cita.mascota?.nombre || 'N/A'}</h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">Propietario:</span> {cita.propietario?.nombres || 'N/A'}
+                        <span className="font-medium">Propietario:</span> {cita.mascota?.propietarioNombre || 'N/A'}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Veterinario:</span> {cita.veterinario?.nombres || 'N/A'}
+                        <span className="font-medium">Veterinario:</span> {cita.veterinario?.nombreCompleto || 'N/A'}
                       </p>
                     </div>
                     <div className="text-right ml-4">
                       <p className="text-xs text-gray-500">{cita.fechaCita}</p>
                       <p className="text-sm font-bold text-primary-600">{cita.horaCita}</p>
-                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                        cita.estado === 'CONFIRMADA' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${getEstadoBadgeClassName(cita.estado)}`}>
                         {cita.estado}
                       </span>
                     </div>
@@ -262,7 +269,7 @@ export default function RecepcionistaDashboard() {
                       <div>
                         <span className="font-medium">{cita.mascota?.nombre}</span> - {cita.fechaCita} a las {cita.horaCita}
                         <p className="text-gray-600 text-xs mt-1">
-                          Propietario: {cita.propietario?.nombres} - Tel: {cita.propietario?.telefono || 'N/A'}
+                          Propietario: {cita.mascota?.propietarioNombre || 'N/A'} - Tel: {cita.mascota?.propietarioTelefono || 'N/A'}
                         </p>
                       </div>
                       <Phone className="w-4 h-4 text-yellow-600" />

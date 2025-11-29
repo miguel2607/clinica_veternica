@@ -17,7 +17,14 @@ export default function HorariosPage() {
     JUEVES: 'Jueves',
     VIERNES: 'Viernes',
     SABADO: 'Sábado',
-    DOMINGO: 'Domingo'
+    DOMINGO: 'Domingo',
+    MONDAY: 'Lunes',
+    TUESDAY: 'Martes',
+    WEDNESDAY: 'Miércoles',
+    THURSDAY: 'Jueves',
+    FRIDAY: 'Viernes',
+    SATURDAY: 'Sábado',
+    SUNDAY: 'Domingo'
   };
 
   useEffect(() => {
@@ -43,14 +50,20 @@ export default function HorariosPage() {
       // Ordenar horarios por veterinario y día de la semana
       const horariosOrdenados = (horariosRes.data || []).sort((a, b) => {
         // Primero ordenar por veterinario
-        const nombreA = a.veterinario?.nombres || '';
-        const nombreB = b.veterinario?.nombres || '';
+        const nombreA = a.veterinario?.nombreCompleto || '';
+        const nombreB = b.veterinario?.nombreCompleto || '';
         if (nombreA !== nombreB) {
           return nombreA.localeCompare(nombreB);
         }
         // Luego por día de la semana
-        const ordenDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
-        return ordenDias.indexOf(a.diaSemana) - ordenDias.indexOf(b.diaSemana);
+        const ordenDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO', 
+                           'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+        const indexA = ordenDias.indexOf(a.diaSemana);
+        const indexB = ordenDias.indexOf(b.diaSemana);
+        // Si no se encuentra en el orden, ponerlo al final
+        const finalIndexA = indexA === -1 ? 999 : indexA;
+        const finalIndexB = indexB === -1 ? 999 : indexB;
+        return finalIndexA - finalIndexB;
       });
 
       setHorarios(horariosOrdenados);
@@ -78,11 +91,7 @@ export default function HorariosPage() {
     }
 
     // Filtrar por estado activo
-    if (soloActivos && !horario.activo) {
-      return false;
-    }
-
-    return true;
+    return !soloActivos || horario.activo;
   });
 
   // Agrupar horarios por veterinario para la vista de tarjetas
@@ -124,10 +133,11 @@ export default function HorariosPage() {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="veterinario-filter-select" className="block text-sm font-medium text-gray-700 mb-2">
               Veterinario
             </label>
             <select
+              id="veterinario-filter-select"
               value={veterinarioSeleccionado}
               onChange={(e) => setVeterinarioSeleccionado(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -142,10 +152,11 @@ export default function HorariosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="dia-semana-filter-select" className="block text-sm font-medium text-gray-700 mb-2">
               Día de la semana
             </label>
             <select
+              id="dia-semana-filter-select"
               value={diaSeleccionado}
               onChange={(e) => setDiaSeleccionado(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -158,8 +169,9 @@ export default function HorariosPage() {
           </div>
 
           <div className="flex items-end">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label htmlFor="solo-activos-checkbox" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="solo-activos-checkbox"
                 type="checkbox"
                 checked={soloActivos}
                 onChange={(e) => setSoloActivos(e.target.checked)}
@@ -192,13 +204,13 @@ export default function HorariosPage() {
                   {horariosFiltrados.map((horario) => (
                     <tr key={horario.idHorario} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {horario.veterinario?.nombres} {horario.veterinario?.apellidos}
+                        {horario.veterinario?.nombreCompleto || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {horario.veterinario?.especialidad || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {diasSemana[horario.diaSemana] || horario.diaSemana}
+                        {diasSemana[horario.diaSemana] || horario.diaSemana || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {horario.horaInicio}
@@ -248,13 +260,10 @@ export default function HorariosPage() {
                   <div key={vetId} className="bg-white rounded-lg shadow p-6">
                     <div className="mb-4">
                       <h4 className="font-semibold text-lg text-gray-900">
-                        {data.veterinario?.nombres} {data.veterinario?.apellidos}
+                        {data.veterinario?.nombreCompleto || 'N/A'}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {data.veterinario?.especialidad}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Registro: {data.veterinario?.numeroRegistroProfesional || 'N/A'}
+                        {data.veterinario?.especialidad || 'N/A'}
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -269,7 +278,7 @@ export default function HorariosPage() {
                         >
                           <div>
                             <div className="font-medium text-sm">
-                              {diasSemana[horario.diaSemana]}
+                              {diasSemana[horario.diaSemana] || horario.diaSemana || 'N/A'}
                             </div>
                             <div className="text-xs text-gray-600">
                               {horario.horaInicio} - {horario.horaFin}

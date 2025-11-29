@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { mascotaService, servicioService, veterinarioService, horarioService, citaService, propietarioService } from '../../services/api';
-import { Calendar, Clock, User, PawPrint, Scissors, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, PawPrint, Scissors, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function AgendarCitaPage() {
   const { user } = useAuth();
   const [step, setStep] = useState(1); // 1: Mascota, 2: Servicio, 3: Fecha y Hora, 4: Confirmación
 
   // Datos
-  const [propietario, setPropietario] = useState(null);
   const [misMascotas, setMisMascotas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [veterinarios, setVeterinarios] = useState([]);
@@ -34,32 +33,43 @@ export default function AgendarCitaPage() {
     loadInitialData();
   }, [user]);
 
+  // Función auxiliar para obtener propietario
+  const obtenerPropietario = async () => {
+    const propietarioRes = await propietarioService.obtenerOCrearMiPerfil();
+    return propietarioRes.data;
+  };
+
+  // Función auxiliar para cargar datos en paralelo
+  const cargarDatosParalelos = async (propietarioId) => {
+    const [mascotasRes, serviciosRes, veterinariosRes] = await Promise.all([
+      mascotaService.getByPropietario(propietarioId),
+      servicioService.getActivos(),
+      veterinarioService.getActivos()
+    ]);
+    return {
+      mascotas: mascotasRes.data || [],
+      servicios: serviciosRes.data || [],
+      veterinarios: veterinariosRes.data || []
+    };
+  };
+
+  // Función auxiliar para actualizar estados
+  const actualizarEstadosDatos = (datos) => {
+    setMisMascotas(datos.mascotas);
+    setServicios(datos.servicios);
+    setVeterinarios(datos.veterinarios);
+  };
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
       setError('');
 
-      // Obtener propietario
-      const propietarioRes = await propietarioService.obtenerOCrearMiPerfil();
-      const prop = propietarioRes.data;
-      setPropietario(prop);
+      const prop = await obtenerPropietario();
+      const datos = await cargarDatosParalelos(prop.idPropietario);
+      actualizarEstadosDatos(datos);
 
-      // Obtener mascotas, servicios y veterinarios en paralelo
-      const [mascotasRes, serviciosRes, veterinariosRes] = await Promise.all([
-        mascotaService.getByPropietario(prop.idPropietario),
-        servicioService.getActivos(),
-        veterinarioService.getActivos()
-      ]);
-
-      setMisMascotas(mascotasRes.data || []);
-      setServicios(serviciosRes.data || []);
-      setVeterinarios(veterinariosRes.data || []);
-
-      console.log('✅ Datos cargados:', {
-        mascotas: mascotasRes.data,
-        servicios: serviciosRes.data,
-        veterinarios: veterinariosRes.data
-      });
+      console.log('✅ Datos cargados:', datos);
     } catch (error) {
       console.error('❌ Error al cargar datos:', error);
       setError(`Error al cargar datos: ${error.response?.data?.message || error.message}`);
@@ -97,14 +107,14 @@ export default function AgendarCitaPage() {
     setVeterinarioSeleccionado(veterinario);
     loadHorarios(veterinario.idPersonal);
 
-    // Si no hay fecha seleccionada, sugerir la fecha de hoy
-    if (!fechaSeleccionada) {
+    // Si hay fecha seleccionada, cargar disponibilidad con esa fecha
+    if (fechaSeleccionada) {
+      loadDisponibilidad(veterinario.idPersonal, fechaSeleccionada);
+    } else {
+      // Si no hay fecha seleccionada, sugerir la fecha de hoy
       const hoy = new Date().toISOString().split('T')[0];
       setFechaSeleccionada(hoy);
       loadDisponibilidad(veterinario.idPersonal, hoy);
-    } else {
-      // Si ya hay una fecha seleccionada, cargar disponibilidad
-      loadDisponibilidad(veterinario.idPersonal, fechaSeleccionada);
     }
   };
 
@@ -134,6 +144,46 @@ export default function AgendarCitaPage() {
     return hoy.toISOString().split('T')[0];
   };
 
+  // Función para extraer mensaje de error
+  const extraerMensajeError = (error) => {
+    if (!error.response?.data) {
+      return error.message || 'Error desconocido';
+    }
+
+    const errorData = error.response.data;
+
+    // Si hay errores de validación específicos, mostrarlos primero
+    if (errorData.validationErrors) {
+      const validationErrors = errorData.validationErrors;
+      const errorMessages = Object.entries(validationErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(', ');
+      return `Error de validación: ${errorMessages}`;
+    }
+
+    // Si hay errores en formato array, mostrarlos
+    if (errorData.errors && Array.isArray(errorData.errors)) {
+      return `Error de validación: ${errorData.errors.join(', ')}`;
+    }
+
+    // Intentar obtener el mensaje del campo 'message'
+    if (errorData.message) {
+      return errorData.message;
+    }
+
+    // Si hay un campo 'error', usarlo
+    if (errorData.error) {
+      return errorData.error;
+    }
+
+    // Si es un objeto, convertirlo a string
+    if (typeof errorData === 'object') {
+      return JSON.stringify(errorData);
+    }
+
+    return errorData;
+  };
+
   const handleFechaChange = (fecha) => {
     // Validar que la fecha no sea del pasado
     const fechaMinima = getFechaMinima();
@@ -151,6 +201,248 @@ export default function AgendarCitaPage() {
     if (veterinarioSeleccionado && fecha) {
       loadDisponibilidad(veterinarioSeleccionado.idPersonal, fecha);
     }
+  };
+
+  // Función para renderizar la disponibilidad
+  const renderDisponibilidad = () => {
+    if (loadingDisponibilidad) {
+      return (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="text-base text-blue-700 mt-4 font-medium">Cargando disponibilidad...</p>
+        </div>
+      );
+    }
+
+    if (!disponibilidad) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">❌ No se pudo cargar la disponibilidad. Intenta de nuevo.</p>
+        </div>
+      );
+    }
+
+    return renderContenidoDisponibilidad();
+  };
+
+  // Función para renderizar el contenido de disponibilidad
+  const renderContenidoDisponibilidad = () => {
+    if (!disponibilidad.tieneHorarios) {
+      return (
+        <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 text-center">
+          <p className="text-orange-800 font-semibold text-lg">⚠️ El veterinario no trabaja este día</p>
+          <p className="text-orange-700 text-sm mt-2">Por favor, selecciona otro día de la semana.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {renderHorariosAtencion()}
+        {renderSlotsDisponibles()}
+        {renderCitasOcupadas()}
+      </div>
+    );
+  };
+
+  // Función para renderizar horarios de atención
+  const renderHorariosAtencion = () => {
+    if (!disponibilidad.horarios || disponibilidad.horarios.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="bg-white/70 rounded-lg p-4 border border-blue-200">
+        <p className="text-sm font-semibold text-blue-900 mb-1">
+          📅 Horario de atención: {disponibilidad.diaSemana}
+        </p>
+        <p className="text-base text-blue-700 font-medium">
+          ⏰ {disponibilidad.horarios.map(h =>
+            `${h.horaInicio} - ${h.horaFin}`
+          ).join(', ')}
+        </p>
+      </div>
+    );
+  };
+
+  // Función para renderizar slots disponibles
+  const renderSlotsDisponibles = () => {
+    if (!disponibilidad.slotsDisponibles || disponibilidad.slotsDisponibles.length === 0) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+          <p className="text-yellow-800">⚠️ No hay horarios disponibles para esta fecha. Intenta con otro día.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <p className="text-base font-bold text-blue-900 mb-3">
+          ✨ Selecciona un horario disponible:
+        </p>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
+          {disponibilidad.slotsDisponibles.map((slot) => renderSlotDisponible(slot))}
+        </div>
+        {renderLeyendaSlots()}
+      </div>
+    );
+  };
+
+  // Función para renderizar un slot disponible
+  const renderSlotDisponible = (slot) => {
+    const getSlotId = () => {
+      if (typeof slot.hora === 'string') {
+        return `slot-${slot.hora}`;
+      }
+      const horaPart = `${slot.hora.hour}-${slot.hora.minute}`;
+      return `slot-${horaPart}`;
+    };
+    const slotId = getSlotId();
+
+    const slotHoraStr = getSlotHoraStr(slot.hora);
+    const horaSeleccionadaStr = getHoraSeleccionadaStr();
+    const isSelected = slotHoraStr === horaSeleccionadaStr;
+    const horaDisplay = getHoraDisplay(slot.hora);
+    const estaDisponible = slot.disponible;
+
+    return (
+      <button
+        key={slotId}
+        type="button"
+        onClick={() => estaDisponible && setHoraSeleccionada(slot.hora)}
+        disabled={!estaDisponible}
+        className={`px-4 py-4 text-base font-bold rounded-xl transition-all transform hover:scale-105 ${getButtonClassName(estaDisponible, isSelected)}`}
+        title={estaDisponible ? '✅ Clic para seleccionar' : `❌ ${slot.motivoNoDisponible || 'No disponible (ocupado por otra cita)'}`}
+      >
+        <div className="flex flex-col items-center">
+          <span className="text-lg">{horaDisplay}</span>
+          {isSelected && (
+            <span className="text-xs mt-1">✓ Seleccionado</span>
+          )}
+          {!estaDisponible && (
+            <span className="text-xs mt-1">🔒</span>
+          )}
+        </div>
+      </button>
+    );
+  };
+
+  // Funciones auxiliares para formatear horas
+  const getSlotHoraStr = (hora) => {
+    if (typeof hora === 'string') {
+      return hora;
+    }
+    const hour = String(hora.hour || 0).padStart(2, '0');
+    const minute = String(hora.minute || 0).padStart(2, '0');
+    const second = String(hora.second || 0).padStart(2, '0');
+    return `${hour}:${minute}:${second}`;
+  };
+
+  const getHoraSeleccionadaStr = () => {
+    if (typeof horaSeleccionada === 'string') {
+      return horaSeleccionada;
+    }
+    if (horaSeleccionada?.hour !== undefined) {
+      const hour = String(horaSeleccionada.hour).padStart(2, '0');
+      const minute = String(horaSeleccionada.minute || 0).padStart(2, '0');
+      const second = String(horaSeleccionada.second || 0).padStart(2, '0');
+      return `${hour}:${minute}:${second}`;
+    }
+    return '';
+  };
+
+  const getHoraDisplay = (hora) => {
+    if (typeof hora === 'string') {
+      return hora.substring(0, 5); // "HH:mm:ss" -> "HH:mm"
+    }
+    const hour = String(hora.hour || 0).padStart(2, '0');
+    const minute = String(hora.minute || 0).padStart(2, '0');
+    return `${hour}:${minute}`;
+  };
+
+  const getButtonClassName = (estaDisponible, isSelected) => {
+    if (!estaDisponible) {
+      return 'bg-gray-200 text-gray-500 cursor-not-allowed border-2 border-gray-300 opacity-50';
+    }
+    if (isSelected) {
+      return 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-xl ring-4 ring-primary-300 scale-105';
+    }
+    return 'bg-gradient-to-br from-green-100 to-green-200 text-green-900 hover:from-green-200 hover:to-green-300 border-2 border-green-400 shadow-md';
+  };
+
+  // Función para renderizar leyenda de slots
+  const renderLeyendaSlots = () => {
+    return (
+      <div className="flex flex-wrap gap-4 mt-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-400 rounded"></div>
+          <span className="text-gray-700">Disponible</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded"></div>
+          <span className="text-gray-700">Seleccionado</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-200 border-2 border-gray-300 rounded"></div>
+          <span className="text-gray-700">Ocupado</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Función para renderizar citas ocupadas
+  const renderCitasOcupadas = () => {
+    if (!disponibilidad.citasOcupadas || disponibilidad.citasOcupadas.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="bg-white/70 rounded-lg p-4 border border-red-200">
+        <p className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
+          🔴 Horarios ya ocupados:
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {disponibilidad.citasOcupadas.map((cita) => (
+            <div key={cita.idCita} className="text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+              <span className="font-bold">{cita.hora}</span> - {cita.nombreMascota} ({cita.nombreServicio})
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Función para formatear la hora seleccionada
+  const formatearHora = (hora) => {
+    // Si horaSeleccionada es un objeto (como {hour: 9, minute: 0, second: 0})
+    if (typeof hora === 'object' && hora?.hour !== undefined) {
+      const hour = String(hora.hour).padStart(2, '0');
+      const minute = String(hora.minute || 0).padStart(2, '0');
+      const second = String(hora.second || 0).padStart(2, '0');
+      return `${hour}:${minute}:${second}`;
+    }
+
+    // Si es un string, normalizar el formato
+    if (typeof hora === 'string') {
+      const regexHHMMSS = /^\d{1,2}:\d{2}:\d{2}$/;
+      const regexHHMM = /^\d{1,2}:\d{2}$/;
+      const regexHH = /^\d{1,2}$/;
+      
+      // Si ya tiene formato HH:mm:ss, usarlo directamente
+      if (regexHHMMSS.exec(hora)) {
+        return hora;
+      }
+      // Si es formato HH:mm, agregar :00
+      if (regexHHMM.exec(hora)) {
+        return `${hora}:00`;
+      }
+      // Si es solo un número (H), convertir a HH:00:00
+      if (regexHH.exec(hora)) {
+        return `${hora.padStart(2, '0')}:00:00`;
+      }
+    }
+
+    return hora;
   };
 
   const handleSubmit = async () => {
@@ -182,30 +474,7 @@ export default function AgendarCitaPage() {
       }
 
       // Formatear la hora correctamente - asegurarse de enviar como string en formato HH:mm:ss
-      let horaFormateada = horaSeleccionada;
-
-      // Si horaSeleccionada es un objeto (como {hour: 9, minute: 0, second: 0})
-      if (typeof horaSeleccionada === 'object' && horaSeleccionada.hour !== undefined) {
-        const hour = String(horaSeleccionada.hour).padStart(2, '0');
-        const minute = String(horaSeleccionada.minute || 0).padStart(2, '0');
-        const second = String(horaSeleccionada.second || 0).padStart(2, '0');
-        horaFormateada = `${hour}:${minute}:${second}`;
-      }
-      // Si es un string, normalizar el formato
-      else if (typeof horaSeleccionada === 'string') {
-        // Si ya tiene formato HH:mm:ss, usarlo directamente
-        if (horaSeleccionada.match(/^\d{1,2}:\d{2}:\d{2}$/)) {
-          horaFormateada = horaSeleccionada;
-        }
-        // Si es formato HH:mm, agregar :00
-        else if (horaSeleccionada.match(/^\d{1,2}:\d{2}$/)) {
-          horaFormateada = `${horaSeleccionada}:00`;
-        }
-        // Si es solo un número (H), convertir a HH:00:00
-        else if (horaSeleccionada.match(/^\d{1,2}$/)) {
-          horaFormateada = `${horaSeleccionada.padStart(2, '0')}:00:00`;
-        }
-      }
+      const horaFormateada = formatearHora(horaSeleccionada);
 
       // Crear la cita
       const citaData = {
@@ -245,47 +514,7 @@ export default function AgendarCitaPage() {
       console.error('❌ Error response data:', error.response?.data);
 
       // Extraer el mensaje de error más descriptivo
-      let mensajeError = 'Error desconocido';
-
-      if (error.response?.data) {
-        // Si hay errores de validación específicos, mostrarlos primero
-        if (error.response.data.validationErrors) {
-          const validationErrors = error.response.data.validationErrors;
-          const errorMessages = Object.entries(validationErrors)
-            .map(([field, message]) => `${field}: ${message}`)
-            .join(', ');
-          mensajeError = `Error de validación: ${errorMessages}`;
-        }
-        // Si hay errores en formato array, mostrarlos
-        else if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
-          mensajeError = `Error de validación: ${error.response.data.errors.join(', ')}`;
-        }
-        // Intentar obtener el mensaje del campo 'message'
-        else if (error.response.data.message) {
-          mensajeError = error.response.data.message;
-          // Si también hay validationErrors, agregarlos
-          if (error.response.data.validationErrors) {
-            const validationErrors = error.response.data.validationErrors;
-            const errorMessages = Object.entries(validationErrors)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(', ');
-            mensajeError += ` (${errorMessages})`;
-          }
-        }
-        // Si hay un campo 'error', usarlo
-        else if (error.response.data.error) {
-          mensajeError = error.response.data.error;
-        }
-        // Si es un objeto, convertirlo a string
-        else if (typeof error.response.data === 'object') {
-          mensajeError = JSON.stringify(error.response.data);
-        }
-        else {
-          mensajeError = error.response.data;
-        }
-      } else if (error.message) {
-        mensajeError = error.message;
-      }
+      const mensajeError = extraerMensajeError(error);
 
       setError(`Error al agendar cita: ${mensajeError}`);
     } finally {
@@ -359,10 +588,11 @@ export default function AgendarCitaPage() {
           {misMascotas.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {misMascotas.map((mascota) => (
-                <div
+                <button
                   key={mascota.idMascota}
+                  type="button"
                   onClick={() => handleSelectMascota(mascota)}
-                  className="border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 hover:bg-primary-50 cursor-pointer transition-all"
+                  className="border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 hover:bg-primary-50 cursor-pointer transition-all text-left w-full"
                 >
                   <div className="flex items-start gap-3">
                     <div className="bg-primary-100 p-2 rounded-full">
@@ -379,7 +609,7 @@ export default function AgendarCitaPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -402,10 +632,11 @@ export default function AgendarCitaPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {servicios.map((servicio) => (
-              <div
+              <button
                 key={servicio.idServicio}
+                type="button"
                 onClick={() => handleSelectServicio(servicio)}
-                className="border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 hover:bg-primary-50 cursor-pointer transition-all"
+                className="border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 hover:bg-primary-50 cursor-pointer transition-all text-left w-full"
               >
                 <h4 className="font-semibold text-gray-900">{servicio.nombre}</h4>
                 {servicio.descripcion && (
@@ -417,7 +648,7 @@ export default function AgendarCitaPage() {
                     <span className="font-bold text-primary-600">${servicio.precio}</span>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -443,8 +674,9 @@ export default function AgendarCitaPage() {
           <div className="space-y-6">
             {/* Selección de veterinario */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Veterinario *</label>
+              <label htmlFor="veterinario-select" className="block text-sm font-medium text-gray-700 mb-2">Veterinario *</label>
               <select
+                id="veterinario-select"
                 value={veterinarioSeleccionado?.idPersonal || ''}
                 onChange={(e) => {
                   const vet = veterinarios.find(v => v.idPersonal.toString() === e.target.value);
@@ -508,8 +740,9 @@ export default function AgendarCitaPage() {
 
             {/* Selección de fecha */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de la Cita *</label>
+              <label htmlFor="fecha-cita-input" className="block text-sm font-medium text-gray-700 mb-2">Fecha de la Cita *</label>
               <input
+                id="fecha-cita-input"
                 type="date"
                 value={fechaSeleccionada}
                 onChange={(e) => handleFechaChange(e.target.value)}
@@ -531,137 +764,7 @@ export default function AgendarCitaPage() {
                   Horarios Disponibles para {disponibilidad?.diaSemana || 'este día'}
                 </h4>
 
-                {loadingDisponibilidad ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mx-auto"></div>
-                    <p className="text-base text-blue-700 mt-4 font-medium">Cargando disponibilidad...</p>
-                  </div>
-                ) : disponibilidad ? (
-                  <div className="space-y-4">
-                    {disponibilidad.tieneHorarios ? (
-                      <>
-                        <div className="bg-white/70 rounded-lg p-4 border border-blue-200">
-                          <p className="text-sm font-semibold text-blue-900 mb-1">
-                            📅 Horario de atención: {disponibilidad.diaSemana}
-                          </p>
-                          {disponibilidad.horarios && disponibilidad.horarios.length > 0 && (
-                            <p className="text-base text-blue-700 font-medium">
-                              ⏰ {disponibilidad.horarios.map(h =>
-                                `${h.horaInicio} - ${h.horaFin}`
-                              ).join(', ')}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Slots disponibles - MÁS GRANDES Y CLAROS */}
-                        {disponibilidad.slotsDisponibles && disponibilidad.slotsDisponibles.length > 0 ? (
-                          <div>
-                            <p className="text-base font-bold text-blue-900 mb-3">
-                              ✨ Selecciona un horario disponible:
-                            </p>
-                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
-                              {disponibilidad.slotsDisponibles.map((slot, index) => {
-                                // Normalizar la hora para comparación
-                                const slotHoraStr = typeof slot.hora === 'string'
-                                  ? slot.hora
-                                  : `${String(slot.hora.hour || 0).padStart(2, '0')}:${String(slot.hora.minute || 0).padStart(2, '0')}:${String(slot.hora.second || 0).padStart(2, '0')}`;
-
-                                const horaSeleccionadaStr = typeof horaSeleccionada === 'string'
-                                  ? horaSeleccionada
-                                  : horaSeleccionada?.hour !== undefined
-                                    ? `${String(horaSeleccionada.hour).padStart(2, '0')}:${String(horaSeleccionada.minute || 0).padStart(2, '0')}:${String(horaSeleccionada.second || 0).padStart(2, '0')}`
-                                    : '';
-
-                                const isSelected = slotHoraStr === horaSeleccionadaStr;
-
-                                // Formato de visualización (HH:mm)
-                                const horaDisplay = typeof slot.hora === 'string'
-                                  ? slot.hora.substring(0, 5) // "HH:mm:ss" -> "HH:mm"
-                                  : `${String(slot.hora.hour || 0).padStart(2, '0')}:${String(slot.hora.minute || 0).padStart(2, '0')}`;
-
-                                // Los slots solo se bloquean si están ocupados por otras citas (del backend)
-                                // Los horarios anteriores al seleccionado siempre están disponibles
-                                const estaDisponible = slot.disponible;
-
-                                return (
-                                  <button
-                                    key={index}
-                                    type="button"
-                                    onClick={() => estaDisponible && setHoraSeleccionada(slot.hora)}
-                                    disabled={!estaDisponible}
-                                    className={`px-4 py-4 text-base font-bold rounded-xl transition-all transform hover:scale-105 ${
-                                      estaDisponible
-                                        ? isSelected
-                                          ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-xl ring-4 ring-primary-300 scale-105'
-                                          : 'bg-gradient-to-br from-green-100 to-green-200 text-green-900 hover:from-green-200 hover:to-green-300 border-2 border-green-400 shadow-md'
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed border-2 border-gray-300 opacity-50'
-                                    }`}
-                                    title={estaDisponible ? '✅ Clic para seleccionar' : `❌ ${slot.motivoNoDisponible || 'No disponible (ocupado por otra cita)'}`}
-                                  >
-                                    <div className="flex flex-col items-center">
-                                      <span className="text-lg">{horaDisplay}</span>
-                                      {isSelected && (
-                                        <span className="text-xs mt-1">✓ Seleccionado</span>
-                                      )}
-                                      {!estaDisponible && (
-                                        <span className="text-xs mt-1">🔒</span>
-                                      )}
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Leyenda */}
-                            <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-400 rounded"></div>
-                                <span className="text-gray-700">Disponible</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded"></div>
-                                <span className="text-gray-700">Seleccionado</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-gray-200 border-2 border-gray-300 rounded"></div>
-                                <span className="text-gray-700">Ocupado</span>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
-                            <p className="text-yellow-800">⚠️ No hay horarios disponibles para esta fecha. Intenta con otro día.</p>
-                          </div>
-                        )}
-
-                        {/* Citas ocupadas */}
-                        {disponibilidad.citasOcupadas && disponibilidad.citasOcupadas.length > 0 && (
-                          <div className="bg-white/70 rounded-lg p-4 border border-red-200">
-                            <p className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
-                              🔴 Horarios ya ocupados:
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {disponibilidad.citasOcupadas.map((cita) => (
-                                <div key={cita.idCita} className="text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                                  <span className="font-bold">{cita.hora}</span> - {cita.nombreMascota} ({cita.nombreServicio})
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 text-center">
-                        <p className="text-orange-800 font-semibold text-lg">⚠️ El veterinario no trabaja este día</p>
-                        <p className="text-orange-700 text-sm mt-2">Por favor, selecciona otro día de la semana.</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-700">❌ No se pudo cargar la disponibilidad. Intenta de nuevo.</p>
-                  </div>
-                )}
+                {renderDisponibilidad()}
               </div>
             )}
 
@@ -695,11 +798,12 @@ export default function AgendarCitaPage() {
 
             {/* Motivo (opcional) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="motivo-textarea" className="block text-sm font-medium text-gray-700 mb-2">
                 Motivo <span className="text-red-500">*</span>
                 <span className="text-xs text-gray-500 ml-2">(mínimo 5 caracteres)</span>
               </label>
               <textarea
+                id="motivo-textarea"
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
                 rows="3"
@@ -760,7 +864,7 @@ export default function AgendarCitaPage() {
           </div>
 
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.location.reload()}
             className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
           >
             Agendar Otra Cita
