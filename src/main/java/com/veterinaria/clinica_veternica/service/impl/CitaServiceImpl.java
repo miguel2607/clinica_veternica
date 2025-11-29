@@ -3,10 +3,12 @@ package com.veterinaria.clinica_veternica.service.impl;
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
 import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.agenda.CitaRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.CitaResponseDTO;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
+import com.veterinaria.clinica_veternica.exception.UnauthorizedException;
 import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.agenda.CitaMapper;
 import com.veterinaria.clinica_veternica.patterns.behavioral.mediator.CitaMediator;
@@ -18,11 +20,15 @@ import com.veterinaria.clinica_veternica.patterns.creational.builder.CitaBuilder
 import com.veterinaria.clinica_veternica.repository.CitaRepository;
 import com.veterinaria.clinica_veternica.repository.MascotaRepository;
 import com.veterinaria.clinica_veternica.repository.ServicioRepository;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.ICitaService;
 import com.veterinaria.clinica_veternica.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +59,7 @@ public class CitaServiceImpl implements ICitaService {
     private final CitaRepository citaRepository;
     private final MascotaRepository mascotaRepository;
     private final VeterinarioRepository veterinarioRepository;
+    private final UsuarioRepository usuarioRepository;
     private final ServicioRepository servicioRepository;
     private final CitaMapper citaMapper;
     private final CitaMediator citaMediator;
@@ -195,7 +202,53 @@ public class CitaServiceImpl implements ICitaService {
         Veterinario veterinario = veterinarioRepository.findById(idVeterinario)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", idVeterinario));
 
+        // Si el usuario autenticado es un veterinario, solo puede ver sus propias citas
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isVeterinario = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(auth -> auth.equals("ROLE_VETERINARIO"));
+            
+            if (isVeterinario) {
+                // Obtener el usuario autenticado
+                String username = authentication.getName();
+                Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
+                
+                // Buscar el veterinario asociado al usuario autenticado
+                Veterinario veterinarioAutenticado = veterinarioRepository.findByUsuarioIdWithUsuario(usuario.getIdUsuario())
+                    .orElseThrow(() -> new UnauthorizedException("No se encontró un perfil de veterinario asociado a tu usuario"));
+                
+                // Verificar que el veterinario solicitado sea el mismo que el autenticado
+                if (!veterinario.getIdPersonal().equals(veterinarioAutenticado.getIdPersonal())) {
+                    throw new UnauthorizedException("No tiene permisos para ver las citas de otro veterinario");
+                }
+            }
+        }
+
         // Usar el método que carga las relaciones necesarias
+        List<Cita> citas = citaRepository.findByVeterinarioWithRelations(veterinario);
+        return citaMapper.toResponseDTOList(citas);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> listarMisCitas() {
+        // Obtener el usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Usuario no autenticado");
+        }
+
+        String username = authentication.getName();
+        Usuario usuario = usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
+
+        // Buscar el veterinario asociado al usuario autenticado
+        Veterinario veterinario = veterinarioRepository.findByUsuarioIdWithUsuario(usuario.getIdUsuario())
+            .orElseThrow(() -> new UnauthorizedException("No se encontró un perfil de veterinario asociado a tu usuario"));
+
+        // Obtener las citas del veterinario autenticado
         List<Cita> citas = citaRepository.findByVeterinarioWithRelations(veterinario);
         return citaMapper.toResponseDTOList(citas);
     }

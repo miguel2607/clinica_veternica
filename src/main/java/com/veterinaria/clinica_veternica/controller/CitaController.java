@@ -69,6 +69,13 @@ public class CitaController {
         return ResponseEntity.ok(citaService.listarPorVeterinario(idVeterinario));
     }
 
+    @Operation(summary = "Listar mis citas (veterinario autenticado)")
+    @PreAuthorize("hasRole('VETERINARIO')")
+    @GetMapping("/mis-citas")
+    public ResponseEntity<List<CitaResponseDTO>> listarMisCitas() {
+        return ResponseEntity.ok(citaService.listarMisCitas());
+    }
+
     @Operation(summary = "Listar citas por mascota")
     @GetMapping("/mascota/{idMascota}")
     public ResponseEntity<List<CitaResponseDTO>> listarPorMascota(

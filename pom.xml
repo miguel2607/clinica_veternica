@@ -118,6 +118,13 @@
             <version>${mapstruct.version}</version>
         </dependency>
 
+        <!-- Dotenv para leer variables de .env automáticamente -->
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -103,4 +103,24 @@ public class VeterinarioController {
     public ResponseEntity<VeterinarioResponseDTO> activar(@PathVariable Long id) {
         return ResponseEntity.ok(veterinarioService.activar(id));
     }
+
+    @Operation(summary = "Crear veterinario desde usuario existente",
+               description = "Crea un veterinario para un usuario con rol VETERINARIO que no tiene veterinario asociado")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/desde-usuario/{idUsuario}")
+    public ResponseEntity<VeterinarioResponseDTO> crearDesdeUsuario(@PathVariable Long idUsuario) {
+        return new ResponseEntity<>(veterinarioService.crearDesdeUsuario(idUsuario), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Sincronizar usuarios veterinarios",
+               description = "Crea veterinarios para todos los usuarios con rol VETERINARIO que no tienen veterinario asociado")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/sincronizar")
+    public ResponseEntity<Object> sincronizarUsuariosVeterinarios() {
+        int creados = veterinarioService.sincronizarUsuariosVeterinarios();
+        return ResponseEntity.ok(java.util.Map.of(
+            "mensaje", "Sincronización completada",
+            "veterinariosCreados", creados
+        ));
+    }
 }

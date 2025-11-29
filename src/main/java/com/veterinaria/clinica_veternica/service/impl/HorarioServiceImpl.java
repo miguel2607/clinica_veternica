@@ -1,12 +1,15 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
+import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.agenda.Horario;
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.agenda.HorarioRequestDTO;
+import com.veterinaria.clinica_veternica.dto.response.agenda.DisponibilidadVeterinarioDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.HorarioResponseDTO;
 import com.veterinaria.clinica_veternica.exception.ResourceNotFoundException;
 import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.agenda.HorarioMapper;
+import com.veterinaria.clinica_veternica.repository.CitaRepository;
 import com.veterinaria.clinica_veternica.repository.HorarioRepository;
 import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IHorarioService;
@@ -17,7 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Implementación del servicio para gestión de Horarios.
@@ -34,6 +42,7 @@ public class HorarioServiceImpl implements IHorarioService {
 
     private final HorarioRepository horarioRepository;
     private final VeterinarioRepository veterinarioRepository;
+    private final CitaRepository citaRepository;
     private final HorarioMapper horarioMapper;
 
     @Override
@@ -198,6 +207,129 @@ public class HorarioServiceImpl implements IHorarioService {
             return true; // Excluir el horario que se está actualizando
         }
         return horarioExistente.getActivo() == null || !horarioExistente.getActivo(); // Ignorar horarios inactivos
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DisponibilidadVeterinarioDTO obtenerDisponibilidad(Long idVeterinario, LocalDate fecha) {
+        log.info("Obteniendo disponibilidad para veterinario ID: {} en fecha: {}", idVeterinario, fecha);
+
+        // Obtener veterinario
+        Veterinario veterinario = veterinarioRepository.findById(idVeterinario)
+                .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", idVeterinario));
+
+        // Obtener día de la semana
+        DayOfWeek diaSemana = fecha.getDayOfWeek();
+
+        // Obtener horarios activos del veterinario para este día
+        List<Horario> horariosDelDia = horarioRepository.findByVeterinario(veterinario).stream()
+                .filter(h -> h.getDiaSemana() == diaSemana && Boolean.TRUE.equals(h.getActivo()))
+                .collect(Collectors.toList());
+
+        // Obtener citas del día
+        LocalDateTime inicioDia = fecha.atStartOfDay();
+        LocalDateTime finDia = fecha.atTime(23, 59, 59);
+        List<Cita> citasDelDia = citaRepository.findCitasPorVeterinarioYFecha(veterinario, inicioDia, finDia)
+                .stream()
+                .filter(c -> c.getFechaCita().equals(fecha))
+                .filter(c -> !"CANCELADA".equals(c.getEstado()) && !"NO_ASISTIO".equals(c.getEstado()))
+                .collect(Collectors.toList());
+
+        // Construir DTO de horarios disponibles
+        List<DisponibilidadVeterinarioDTO.HorarioDisponibleDTO> horariosDTO = horariosDelDia.stream()
+                .map(h -> DisponibilidadVeterinarioDTO.HorarioDisponibleDTO.builder()
+                        .idHorario(h.getIdHorario())
+                        .horaInicio(h.getHoraInicio())
+                        .horaFin(h.getHoraFin())
+                        .duracionCitaMinutos(h.getDuracionCitaMinutos())
+                        .activo(h.getActivo())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Construir DTO de citas ocupadas
+        List<DisponibilidadVeterinarioDTO.CitaOcupadaDTO> citasOcupadasDTO = citasDelDia.stream()
+                .map(c -> DisponibilidadVeterinarioDTO.CitaOcupadaDTO.builder()
+                        .idCita(c.getIdCita())
+                        .hora(c.getHoraCita())
+                        .estado(c.getEstado().name())
+                        .nombreMascota(c.getMascota() != null ? c.getMascota().getNombre() : "N/A")
+                        .nombreServicio(c.getServicio() != null ? c.getServicio().getNombre() : "N/A")
+                        .build())
+                .collect(Collectors.toList());
+
+        // Calcular slots disponibles
+        List<DisponibilidadVeterinarioDTO.SlotDisponibleDTO> slotsDisponibles = calcularSlotsDisponibles(
+                horariosDelDia, citasDelDia);
+
+        // Obtener nombre del día en español
+        String nombreDia = switch (diaSemana) {
+            case MONDAY -> "Lunes";
+            case TUESDAY -> "Martes";
+            case WEDNESDAY -> "Miércoles";
+            case THURSDAY -> "Jueves";
+            case FRIDAY -> "Viernes";
+            case SATURDAY -> "Sábado";
+            case SUNDAY -> "Domingo";
+        };
+
+        return DisponibilidadVeterinarioDTO.builder()
+                .idVeterinario(veterinario.getIdPersonal())
+                .nombreVeterinario(veterinario.getNombres() + " " + veterinario.getApellidos())
+                .fecha(fecha)
+                .diaSemana(nombreDia)
+                .tieneHorarios(!horariosDelDia.isEmpty())
+                .horarios(horariosDTO)
+                .slotsDisponibles(slotsDisponibles)
+                .citasOcupadas(citasOcupadasDTO)
+                .build();
+    }
+
+    /**
+     * Calcula los slots de tiempo disponibles basándose en los horarios y citas ocupadas.
+     */
+    private List<DisponibilidadVeterinarioDTO.SlotDisponibleDTO> calcularSlotsDisponibles(
+            List<Horario> horarios, List<Cita> citasOcupadas) {
+        
+        List<DisponibilidadVeterinarioDTO.SlotDisponibleDTO> slots = new ArrayList<>();
+
+        if (horarios.isEmpty()) {
+            return slots;
+        }
+
+        // Para cada horario, generar slots
+        for (Horario horario : horarios) {
+            LocalTime horaActual = horario.getHoraInicio();
+            int duracionMinutos = horario.getDuracionCitaMinutos();
+
+            while (horaActual.plusMinutes(duracionMinutos).isBefore(horario.getHoraFin()) ||
+                   horaActual.plusMinutes(duracionMinutos).equals(horario.getHoraFin())) {
+
+                // Crear variables finales para usar en lambda
+                final LocalTime horaActualFinal = horaActual;
+                final int duracionMinutosFinal = duracionMinutos;
+
+                // Verificar si este slot está ocupado
+                // Solo se bloquea el slot exacto donde comienza la cita, no los anteriores
+                boolean ocupado = citasOcupadas.stream()
+                        .anyMatch(cita -> {
+                            LocalTime horaCita = cita.getHoraCita();
+                            
+                            // Solo bloquear el slot si la cita comienza exactamente en este slot
+                            // No bloquear slots anteriores
+                            return horaCita.equals(horaActualFinal);
+                        });
+
+                slots.add(DisponibilidadVeterinarioDTO.SlotDisponibleDTO.builder()
+                        .hora(horaActual)
+                        .disponible(!ocupado)
+                        .motivoNoDisponible(ocupado ? "OCUPADO" : null)
+                        .build());
+
+                horaActual = horaActual.plusMinutes(duracionMinutos);
+            }
+        }
+
+        return slots;
     }
 }
 

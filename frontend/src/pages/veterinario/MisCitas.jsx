@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { citaService, veterinarioService } from '../../services/api';
+import { citaService } from '../../services/api';
 
 export default function MisCitasPage() {
   const { user } = useAuth();
@@ -21,95 +21,11 @@ export default function MisCitasPage() {
       setLoading(true);
       setError('');
       
-      console.log('🔍 Obteniendo perfil del veterinario...');
+      console.log('🔍 Obteniendo mis citas...');
       console.log('👤 Usuario actual:', user);
-      console.log('📧 Email del usuario:', user?.email);
       
-      let veterinario = null;
-      
-      // Intentar obtener el perfil usando el endpoint mi-perfil
-      try {
-        const veterinarioRes = await veterinarioService.obtenerMiPerfil();
-        veterinario = veterinarioRes.data;
-        console.log('✅ Veterinario obtenido con mi-perfil:', veterinario);
-      } catch (error404) {
-        // Si el endpoint no existe (404), buscar en todos los veterinarios por email o por usuario
-        // Solo mostrar warning si es realmente un 404, no otros errores
-        if (error404.response?.status === 404) {
-          console.warn('⚠️ Endpoint mi-perfil no disponible (404), buscando por email o usuario...');
-        } else {
-          console.warn('⚠️ Error al obtener mi-perfil, buscando por email o usuario...', error404);
-        }
-        try {
-          const todosVeterinarios = await veterinarioService.getAll();
-          console.log('📋 Total de veterinarios encontrados:', todosVeterinarios.data?.length || 0);
-          console.log('📋 Veterinarios completos:', JSON.stringify(todosVeterinarios.data, null, 2));
-          
-          // Buscar por email del veterinario (campo correo)
-          veterinario = todosVeterinarios.data.find(v => {
-            const emailMatch = v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase();
-            console.log(`🔍 Comparando email (correo): "${v.correo}" === "${user?.email}" = ${emailMatch}`);
-            return emailMatch;
-          });
-          
-          // Si no se encuentra por email del veterinario, buscar por email del usuario asociado
-          if (!veterinario) {
-            veterinario = todosVeterinarios.data.find(v => {
-              const emailUsuarioMatch = v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase();
-              console.log(`🔍 Comparando email (usuario.email): "${v.usuario?.email}" === "${user?.email}" = ${emailUsuarioMatch}`);
-              return emailUsuarioMatch;
-            });
-          }
-          
-          // Si no se encuentra por email, buscar por usuario.idUsuario
-          if (!veterinario && user?.idUsuario) {
-            console.log('🔍 Buscando por idUsuario:', user.idUsuario);
-            veterinario = todosVeterinarios.data.find(v => {
-              const usuarioMatch = v.usuario && v.usuario.idUsuario === user.idUsuario;
-              console.log(`🔍 Comparando usuario: v.usuario=${v.usuario ? 'existe' : 'null'}, v.usuario.idUsuario=${v.usuario?.idUsuario} === ${user.idUsuario} = ${usuarioMatch}`);
-              return usuarioMatch;
-            });
-          }
-          
-          // Si aún no se encuentra, intentar buscar por username del usuario asociado
-          if (!veterinario && user?.username) {
-            console.log('🔍 Buscando por username:', user.username);
-            veterinario = todosVeterinarios.data.find(v => {
-              const usernameMatch = v.usuario && v.usuario.username && 
-                v.usuario.username.toLowerCase() === user.username.toLowerCase();
-              console.log(`🔍 Comparando username: v.usuario.username="${v.usuario?.username}" === "${user.username}" = ${usernameMatch}`);
-              return usernameMatch;
-            });
-          }
-          
-          // Si aún no se encuentra, intentar buscar por similitud de nombre (último recurso)
-          if (!veterinario && user?.username) {
-            console.log('🔍 Buscando por similitud de nombre (último recurso)...');
-            const userFirstName = user.username.split(' ')[0]?.toLowerCase();
-            veterinario = todosVeterinarios.data.find(v => {
-              const nameMatch = v.nombres && v.nombres.toLowerCase().includes(userFirstName);
-              console.log(`🔍 Comparando nombre: v.nombres="${v.nombres}" incluye "${userFirstName}" = ${nameMatch}`);
-              return nameMatch;
-            });
-          }
-          
-          console.log('✅ Veterinario encontrado:', veterinario);
-        } catch (error2) {
-          console.error('❌ Error al buscar veterinarios:', error2);
-          throw error2;
-        }
-      }
-      
-      if (!veterinario || !veterinario.idPersonal) {
-        setError('No se encontró un perfil de veterinario asociado a tu usuario. Por favor, contacta al administrador para crear tu perfil de veterinario.');
-        setCitas([]);
-        setTodasLasCitas([]);
-        return;
-      }
-      
-      console.log('🔍 Obteniendo citas del veterinario ID:', veterinario.idPersonal);
-      // Obtener las citas del veterinario usando su idPersonal (que es el ID del veterinario)
-      const response = await citaService.getByVeterinario(veterinario.idPersonal);
+      // Usar el nuevo endpoint que devuelve solo las citas del veterinario autenticado
+      const response = await citaService.getMisCitas();
       console.log('✅ Citas obtenidas:', response.data);
       console.log('📊 Total de citas:', response.data?.length || 0);
       
@@ -184,10 +100,14 @@ export default function MisCitasPage() {
 
   const handleIniciarAtencion = async (idCita) => {
     try {
-      await citaService.iniciarAtencion(idCita);
+      setError(''); // Limpiar errores anteriores
+      console.log('🔄 Iniciando atención de cita ID:', idCita);
+      const response = await citaService.iniciarAtencion(idCita);
+      console.log('✅ Atención iniciada exitosamente:', response.data);
       await loadCitas(); // Recargar las citas después de iniciar atención
     } catch (error) {
-      console.error('Error al iniciar atención:', error);
+      console.error('❌ Error al iniciar atención:', error);
+      console.error('❌ Detalles del error:', error.response?.data);
       setError(`Error al iniciar la atención: ${error.response?.data?.message || error.message}`);
     }
   };

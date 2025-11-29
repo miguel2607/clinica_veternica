@@ -48,4 +48,14 @@ public interface IPropietarioService {
      * @return PropietarioResponseDTO del propietario encontrado o creado
      */
     PropietarioResponseDTO obtenerOCrearPropietarioPorEmail(String email);
+
+    /**
+     * Sincroniza usuarios con rol PROPIETARIO creando registros de propietarios
+     * para aquellos que no tienen uno asociado.
+     *
+     * Útil para migración de datos y corrección de inconsistencias.
+     *
+     * @return Número de propietarios creados durante la sincronización
+     */
+    int sincronizarUsuariosPropietarios();
 }

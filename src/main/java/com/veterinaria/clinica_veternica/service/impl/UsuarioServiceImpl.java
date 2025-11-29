@@ -1,7 +1,9 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
+import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
 import com.veterinaria.clinica_veternica.domain.usuario.RolUsuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
+import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.usuario.UsuarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.usuario.UsuarioResponseDTO;
 import com.veterinaria.clinica_veternica.exception.BusinessException;
@@ -10,9 +12,12 @@ import com.veterinaria.clinica_veternica.exception.UnauthorizedException;
 import com.veterinaria.clinica_veternica.exception.ValidationException;
 import com.veterinaria.clinica_veternica.mapper.usuario.UsuarioMapper;
 import com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory;
+import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
+import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IUsuarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
+import com.veterinaria.clinica_veternica.util.NameParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -29,6 +35,8 @@ import java.util.List;
 public class UsuarioServiceImpl implements IUsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final VeterinarioRepository veterinarioRepository;
+    private final PropietarioRepository propietarioRepository;
     private final UsuarioMapper usuarioMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailNotificacionFactory emailFactory;
@@ -85,7 +93,80 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setIntentosFallidos(0);
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
-        
+
+        // Si el rol es VETERINARIO, crear automáticamente el registro de Veterinario
+        if (usuarioGuardado.getRol() == RolUsuario.VETERINARIO) {
+            try {
+                // Verificar que no exista ya un veterinario asociado a este usuario
+                if (!veterinarioRepository.existsByUsuarioId(usuarioGuardado.getIdUsuario())) {
+                    // Extraer nombres y apellidos del username
+                    NameParser.NameParts nombreParts = NameParser.extractNamesAndLastNames(usuarioGuardado.getUsername());
+
+                    // Crear un veterinario básico con valores por defecto
+                    // El administrador podrá completar la información desde la gestión de veterinarios
+                    Veterinario veterinario = Veterinario.builder()
+                        .nombres(nombreParts.nombres())
+                        .apellidos(nombreParts.apellidos().isEmpty() ? "Pendiente" : nombreParts.apellidos())
+                        .documento("TEMP_" + usuarioGuardado.getIdUsuario()) // Documento temporal único
+                        .correo(usuarioGuardado.getEmail())
+                        .telefono("0000000000") // Teléfono temporal
+                        .especialidad("Medicina General") // Especialidad por defecto
+                        .registroProfesional("REG_" + usuarioGuardado.getIdUsuario()) // Registro temporal único
+                        .aniosExperiencia(0)
+                        .activo(usuarioGuardado.getEstado()) // Usar el mismo estado que el usuario
+                        .usuario(usuarioGuardado)
+                        .build();
+
+                    veterinarioRepository.save(veterinario);
+                    log.info("✅ Veterinario creado automáticamente para usuario ID: {} (username: {}, nombres: {}, apellidos: {})",
+                            usuarioGuardado.getIdUsuario(), usuarioGuardado.getUsername(), nombreParts.nombres(), nombreParts.apellidos());
+                } else {
+                    log.info("ℹ️ Usuario ID: {} ya tiene un veterinario asociado", usuarioGuardado.getIdUsuario());
+                }
+            } catch (Exception e) {
+                log.error("❌ Error al crear veterinario automáticamente para usuario ID: {} - {}",
+                        usuarioGuardado.getIdUsuario(), e.getMessage(), e);
+                // No lanzamos excepción para no interrumpir la creación del usuario
+                // El administrador podrá crear el veterinario manualmente después
+            }
+        }
+
+        // Si el rol es PROPIETARIO, crear automáticamente el registro de Propietario
+        if (usuarioGuardado.getRol() == RolUsuario.PROPIETARIO) {
+            try {
+                // Verificar que no exista ya un propietario asociado a este usuario
+                if (!propietarioRepository.existsByUsuarioId(usuarioGuardado.getIdUsuario())) {
+                    // Extraer nombres y apellidos del username
+                    NameParser.NameParts nombreParts = NameParser.extractNamesAndLastNames(usuarioGuardado.getUsername());
+
+                    // Crear un propietario básico con valores por defecto
+                    // El administrador o el propio propietario podrá completar la información después
+                    Propietario propietario = Propietario.builder()
+                        .documento("TEMP_" + usuarioGuardado.getIdUsuario()) // Documento temporal único
+                        .tipoDocumento("CC") // Tipo de documento por defecto (Cédula de Ciudadanía)
+                        .nombres(nombreParts.nombres())
+                        .apellidos(nombreParts.apellidos().isEmpty() ? "Pendiente" : nombreParts.apellidos())
+                        .email(usuarioGuardado.getEmail())
+                        .telefono("0000000000") // Teléfono temporal
+                        .activo(usuarioGuardado.getEstado()) // Usar el mismo estado que el usuario
+                        .observaciones("Propietario creado automáticamente. Complete su información desde la gestión de propietarios.")
+                        .usuario(usuarioGuardado)
+                        .build();
+
+                    propietarioRepository.save(propietario);
+                    log.info("✅ Propietario creado automáticamente para usuario ID: {} (username: {}, nombres: {}, apellidos: {})",
+                            usuarioGuardado.getIdUsuario(), usuarioGuardado.getUsername(), nombreParts.nombres(), nombreParts.apellidos());
+                } else {
+                    log.info("ℹ️ Usuario ID: {} ya tiene un propietario asociado", usuarioGuardado.getIdUsuario());
+                }
+            } catch (Exception e) {
+                log.error("❌ Error al crear propietario automáticamente para usuario ID: {} - {}",
+                        usuarioGuardado.getIdUsuario(), e.getMessage(), e);
+                // No lanzamos excepción para no interrumpir la creación del usuario
+                // El administrador podrá crear el propietario manualmente después
+            }
+        }
+
         // Enviar notificación al usuario sobre su cuenta creada
         try {
             enviarNotificacionUsuarioCreado(usuarioGuardado);
@@ -104,7 +185,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
             .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_USUARIO, "id", id));
 
         // Validar username único (si cambió)
-        if (!usuario.getUsername().equals(requestDTO.getUsername()) &&
+        if (!Objects.equals(usuario.getUsername(), requestDTO.getUsername()) &&
             usuarioRepository.existsByUsername(requestDTO.getUsername())) {
             throw new ValidationException(
                 "Ya existe otro usuario con el username: " + requestDTO.getUsername(),
@@ -114,7 +195,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
         }
 
         // Validar email único (si cambió)
-        if (!usuario.getEmail().equals(requestDTO.getEmail()) &&
+        if (!Objects.equals(usuario.getEmail(), requestDTO.getEmail()) &&
             usuarioRepository.existsByEmail(requestDTO.getEmail())) {
             throw new ValidationException(
                 "Ya existe otro usuario con el email: " + requestDTO.getEmail(),
@@ -379,4 +460,5 @@ public class UsuarioServiceImpl implements IUsuarioService {
                     usuario.getIdUsuario(), e.getMessage(), e);
         }
     }
+
 }

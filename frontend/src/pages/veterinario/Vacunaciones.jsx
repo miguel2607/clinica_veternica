@@ -43,21 +43,90 @@ export default function VacunacionesPage() {
 
   const loadVeterinario = async () => {
     try {
-      const veterinarioRes = await veterinarioService.obtenerMiPerfil();
-      setVeterinario(veterinarioRes.data);
-    } catch (error) {
-      // Fallback si el endpoint no está disponible
+      console.log('🔍 Obteniendo perfil del veterinario...');
+      console.log('👤 Usuario actual:', user);
+      
+      let vet = null;
+      
+      // Intentar obtener el perfil usando el endpoint mi-perfil
       try {
-        const todosVeterinarios = await veterinarioService.getAll();
-        const vet = todosVeterinarios.data.find(v => 
-          v.usuario?.idUsuario === user?.idUsuario ||
-          v.correo?.toLowerCase() === user?.email?.toLowerCase() ||
-          (v.nombres && user?.username && v.nombres.toLowerCase().includes(user.username.split(' ')[0]?.toLowerCase()))
-        );
-        if (vet) setVeterinario(vet);
-      } catch (error2) {
-        console.error('Error al cargar veterinario:', error2);
+        console.log('📞 Intentando obtener perfil con obtenerMiPerfil()...');
+        const veterinarioRes = await veterinarioService.obtenerMiPerfil();
+        vet = veterinarioRes.data;
+        console.log('✅ Veterinario obtenido con obtenerMiPerfil:', vet);
+      } catch (error404) {
+        console.log('⚠️ obtenerMiPerfil falló, buscando manualmente...', error404);
+        // Si no existe el endpoint, buscar manualmente
+        try {
+          const todosVeterinarios = await veterinarioService.getAll();
+          console.log('📋 Total de veterinarios encontrados:', todosVeterinarios.data?.length || 0);
+          
+          // Buscar por email (correo)
+          vet = todosVeterinarios.data.find(v => {
+            const match = v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase();
+            console.log(`🔍 Comparando email (correo): "${v.correo}" === "${user?.email}" = ${match}`);
+            return match;
+          });
+
+          // Buscar por email del usuario asociado
+          if (!vet) {
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase();
+              console.log(`🔍 Comparando email (usuario.email): "${v.usuario?.email}" === "${user?.email}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por idUsuario
+          if (!vet && user?.idUsuario) {
+            console.log(`🔍 Buscando por idUsuario: ${user.idUsuario}`);
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario && v.usuario.idUsuario === user.idUsuario;
+              console.log(`🔍 Comparando usuario: v.usuario.idUsuario=${v.usuario?.idUsuario} === ${user.idUsuario} = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por username
+          if (!vet && user?.username) {
+            console.log(`🔍 Buscando por username: ${user.username}`);
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.username && v.usuario.username === user.username;
+              console.log(`🔍 Comparando username: v.usuario.username="${v.usuario?.username}" === "${user.username}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Último recurso: buscar por similitud de nombre
+          if (!vet && (user?.nombre || user?.username)) {
+            console.log('🔍 Buscando por similitud de nombre (último recurso)...');
+            const nombreUsuario = (user.nombre || user.username || '').toLowerCase().split(' ')[0];
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.nombres && v.nombres.toLowerCase().includes(nombreUsuario);
+              console.log(`🔍 Comparando nombre: v.nombres="${v.nombres}" incluye "${nombreUsuario}" = ${match}`);
+              return match;
+            });
+          }
+          
+          if (vet) {
+            console.log('✅ Veterinario encontrado manualmente:', vet);
+          } else {
+            console.error('❌ No se encontró veterinario con ningún método');
+          }
+        } catch (error2) {
+          console.error('❌ Error al buscar veterinarios:', error2);
+        }
       }
+      
+      if (vet && vet.idPersonal) {
+        setVeterinario(vet);
+      } else {
+        console.error('❌ No se pudo encontrar el veterinario o no tiene idPersonal');
+        setError('No se encontró el perfil del veterinario');
+      }
+    } catch (error) {
+      console.error('Error al cargar veterinario:', error);
+      setError('Error al cargar el perfil del veterinario');
     }
   };
 

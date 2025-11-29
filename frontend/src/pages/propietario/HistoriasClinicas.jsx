@@ -51,6 +51,9 @@ export default function HistoriasClinicasPage() {
       setLoadingDetalle(true);
       setSelectedMascota(mascota);
       setError('');
+      setHistoriaClinica(null);
+      setEvoluciones([]);
+      setVacunaciones([]);
 
       console.log('🔍 Cargando historia clínica de:', mascota.nombre);
 
@@ -72,25 +75,38 @@ export default function HistoriasClinicasPage() {
         console.log('✅ Historia clínica:', historia);
 
         // Cargar evoluciones y vacunaciones
-        const [evolucionesRes, vacunacionesRes] = await Promise.all([
-          evolucionClinicaService.getByHistoriaClinica(historia.idHistoriaClinica),
-          vacunacionService.getByHistoriaClinica(historia.idHistoriaClinica)
-        ]);
+        try {
+          const [evolucionesRes, vacunacionesRes] = await Promise.all([
+            evolucionClinicaService.getByHistoriaClinica(historia.idHistoriaClinica),
+            vacunacionService.getByHistoriaClinica(historia.idHistoriaClinica)
+          ]);
 
-        setEvoluciones(evolucionesRes.data || []);
-        setVacunaciones(vacunacionesRes.data || []);
+          setEvoluciones(evolucionesRes.data || []);
+          setVacunaciones(vacunacionesRes.data || []);
 
-        console.log('✅ Evoluciones:', evolucionesRes.data);
-        console.log('✅ Vacunaciones:', vacunacionesRes.data);
+          console.log('✅ Evoluciones:', evolucionesRes.data);
+          console.log('✅ Vacunaciones:', vacunacionesRes.data);
+        } catch (error) {
+          console.log('⚠️ No se pudieron cargar evoluciones o vacunaciones:', error);
+          // No lanzar error, simplemente dejar vacíos
+        }
       } else {
-        setHistoriaClinica(null);
-        setEvoluciones([]);
-        setVacunaciones([]);
-        setError('Esta mascota aún no tiene una historia clínica registrada.');
+        console.log('⚠️ No se encontró historia clínica');
       }
     } catch (error) {
       console.error('❌ Error al cargar historia:', error);
-      setError(`Error al cargar la historia clínica: ${error.response?.data?.message || error.message}`);
+
+      // Si es un 404, significa que no tiene historia clínica aún
+      if (error.response?.status === 404) {
+        console.log('ℹ️ La mascota aún no tiene historia clínica registrada');
+        setHistoriaClinica(null);
+        setEvoluciones([]);
+        setVacunaciones([]);
+        // No mostrar error, ya que esto es esperado para mascotas sin historia
+      } else {
+        // Otros errores sí son problemáticos
+        setError(`Error al cargar la historia clínica: ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       setLoadingDetalle(false);
     }
@@ -201,48 +217,78 @@ export default function HistoriasClinicasPage() {
                     <h4 className="font-semibold text-lg mb-4">Historial de Evoluciones</h4>
 
                     <div className="space-y-4">
-                      {evoluciones.map((evolucion, index) => (
-                        <div key={evolucion.idEvolucionClinica || index} className="border-l-4 border-primary-500 pl-4 py-2">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="font-medium text-gray-900">
-                              {evolucion.fecha}
+                      {evoluciones.map((evolucion, index) => {
+                        const fecha = evolucion.fechaEvolucion || evolucion.fecha;
+                        const tipo = evolucion.tipoEvolucion || 'Evolución';
+                        const doctor =
+                          evolucion.veterinario?.nombreCompleto ||
+                          `${evolucion.veterinario?.nombres || ''} ${evolucion.veterinario?.apellidos || ''}`.trim();
+
+                        return (
+                          <div key={evolucion.idEvolucionClinica || index} className="border-l-4 border-primary-500 pl-4 py-2">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <div className="text-xs uppercase text-primary-600 font-semibold">{tipo}</div>
+                                <div className="font-medium text-gray-900">
+                                  {fecha ? new Date(fecha).toLocaleString('es-ES') : 'Sin fecha'}
+                                </div>
+                              </div>
+                              {doctor && (
+                                <div className="text-sm text-gray-600 text-right">
+                                  Dr(a). {doctor}
+                                </div>
+                              )}
                             </div>
-                            {evolucion.veterinario && (
-                              <div className="text-sm text-gray-600">
-                                Dr(a). {evolucion.veterinario.nombres} {evolucion.veterinario.apellidos}
+
+                            {evolucion.motivoConsulta && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700">Motivo de Consulta:</div>
+                                <div className="text-sm text-gray-600 whitespace-pre-wrap">{evolucion.motivoConsulta}</div>
+                              </div>
+                            )}
+
+                            {evolucion.hallazgosExamen && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700">Hallazgos del Examen:</div>
+                                <div className="text-sm text-gray-600 whitespace-pre-wrap">{evolucion.hallazgosExamen}</div>
+                              </div>
+                            )}
+
+                            {evolucion.diagnostico && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700">Diagnóstico:</div>
+                                <div className="text-sm text-gray-600 whitespace-pre-wrap">{evolucion.diagnostico}</div>
+                              </div>
+                            )}
+
+                            {evolucion.planTratamiento && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700">Plan de Tratamiento:</div>
+                                <div className="text-sm text-gray-600 whitespace-pre-wrap">{evolucion.planTratamiento}</div>
+                              </div>
+                            )}
+
+                            {(evolucion.peso ||
+                              evolucion.temperatura ||
+                              evolucion.frecuenciaCardiaca ||
+                              evolucion.frecuenciaRespiratoria) && (
+                              <div className="mt-3 grid grid-cols-2 gap-2 bg-gray-50 rounded p-2 text-sm">
+                                {evolucion.peso && <div><span className="font-medium">Peso:</span> {evolucion.peso} kg</div>}
+                                {evolucion.temperatura && <div><span className="font-medium">Temperatura:</span> {evolucion.temperatura} °C</div>}
+                                {evolucion.frecuenciaCardiaca && <div><span className="font-medium">FC:</span> {evolucion.frecuenciaCardiaca} bpm</div>}
+                                {evolucion.frecuenciaRespiratoria && <div><span className="font-medium">FR:</span> {evolucion.frecuenciaRespiratoria} rpm</div>}
+                              </div>
+                            )}
+
+                            {evolucion.observaciones && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700">Observaciones:</div>
+                                <div className="text-sm text-gray-600 whitespace-pre-wrap">{evolucion.observaciones}</div>
                               </div>
                             )}
                           </div>
-
-                          {evolucion.descripcion && (
-                            <div className="mt-2">
-                              <div className="text-sm font-medium text-gray-700">Descripción:</div>
-                              <div className="text-sm text-gray-600">{evolucion.descripcion}</div>
-                            </div>
-                          )}
-
-                          {evolucion.signosVitales && (
-                            <div className="mt-2">
-                              <div className="text-sm font-medium text-gray-700">Signos Vitales:</div>
-                              <div className="text-sm text-gray-600">{evolucion.signosVitales}</div>
-                            </div>
-                          )}
-
-                          {evolucion.diagnostico && (
-                            <div className="mt-2">
-                              <div className="text-sm font-medium text-gray-700">Diagnóstico:</div>
-                              <div className="text-sm text-gray-600">{evolucion.diagnostico}</div>
-                            </div>
-                          )}
-
-                          {evolucion.tratamiento && (
-                            <div className="mt-2">
-                              <div className="text-sm font-medium text-gray-700">Tratamiento:</div>
-                              <div className="text-sm text-gray-600">{evolucion.tratamiento}</div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

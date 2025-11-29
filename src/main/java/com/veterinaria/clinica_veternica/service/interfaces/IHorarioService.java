@@ -1,9 +1,11 @@
 package com.veterinaria.clinica_veternica.service.interfaces;
 
 import com.veterinaria.clinica_veternica.dto.request.agenda.HorarioRequestDTO;
+import com.veterinaria.clinica_veternica.dto.response.agenda.DisponibilidadVeterinarioDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.HorarioResponseDTO;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -34,5 +36,14 @@ public interface IHorarioService {
     HorarioResponseDTO activar(Long id);
 
     HorarioResponseDTO desactivar(Long id);
+
+    /**
+     * Obtiene la disponibilidad de un veterinario para una fecha específica.
+     *
+     * @param idVeterinario ID del veterinario
+     * @param fecha Fecha a consultar
+     * @return Disponibilidad del veterinario con horarios y slots disponibles
+     */
+    DisponibilidadVeterinarioDTO obtenerDisponibilidad(Long idVeterinario, LocalDate fecha);
 }
 

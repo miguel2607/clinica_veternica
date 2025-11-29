@@ -21,6 +21,8 @@ public interface ICitaQueryService {
 
     List<CitaResponseDTO> listarPorVeterinario(Long idVeterinario);
 
+    List<CitaResponseDTO> listarMisCitas();
+
     List<CitaResponseDTO> listarPorMascota(Long idMascota);
 
     List<CitaResponseDTO> listarProgramadas();

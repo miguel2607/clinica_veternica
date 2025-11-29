@@ -44,21 +44,90 @@ export default function HistoriasClinicasPage() {
 
   const loadVeterinario = async () => {
     try {
-      const veterinarioRes = await veterinarioService.obtenerMiPerfil();
-      setVeterinario(veterinarioRes.data);
-    } catch (error) {
-      // Fallback si el endpoint no está disponible
+      console.log('🔍 Obteniendo perfil del veterinario...');
+      console.log('👤 Usuario actual:', user);
+      
+      let vet = null;
+      
+      // Intentar obtener el perfil usando el endpoint mi-perfil
       try {
-        const todosVeterinarios = await veterinarioService.getAll();
-        const vet = todosVeterinarios.data.find(v => 
-          v.usuario?.idUsuario === user?.idUsuario ||
-          v.correo?.toLowerCase() === user?.email?.toLowerCase() ||
-          (v.nombres && user?.username && v.nombres.toLowerCase().includes(user.username.split(' ')[0]?.toLowerCase()))
-        );
-        if (vet) setVeterinario(vet);
-      } catch (error2) {
-        console.error('Error al cargar veterinario:', error2);
+        console.log('📞 Intentando obtener perfil con obtenerMiPerfil()...');
+        const veterinarioRes = await veterinarioService.obtenerMiPerfil();
+        vet = veterinarioRes.data;
+        console.log('✅ Veterinario obtenido con obtenerMiPerfil:', vet);
+      } catch (error404) {
+        console.log('⚠️ obtenerMiPerfil falló, buscando manualmente...', error404);
+        // Si no existe el endpoint, buscar manualmente
+        try {
+          const todosVeterinarios = await veterinarioService.getAll();
+          console.log('📋 Total de veterinarios encontrados:', todosVeterinarios.data?.length || 0);
+          
+          // Buscar por email (correo)
+          vet = todosVeterinarios.data.find(v => {
+            const match = v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase();
+            console.log(`🔍 Comparando email (correo): "${v.correo}" === "${user?.email}" = ${match}`);
+            return match;
+          });
+
+          // Buscar por email del usuario asociado
+          if (!vet) {
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase();
+              console.log(`🔍 Comparando email (usuario.email): "${v.usuario?.email}" === "${user?.email}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por idUsuario
+          if (!vet && user?.idUsuario) {
+            console.log(`🔍 Buscando por idUsuario: ${user.idUsuario}`);
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario && v.usuario.idUsuario === user.idUsuario;
+              console.log(`🔍 Comparando usuario: v.usuario.idUsuario=${v.usuario?.idUsuario} === ${user.idUsuario} = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por username
+          if (!vet && user?.username) {
+            console.log(`🔍 Buscando por username: ${user.username}`);
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.username && v.usuario.username === user.username;
+              console.log(`🔍 Comparando username: v.usuario.username="${v.usuario?.username}" === "${user.username}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Último recurso: buscar por similitud de nombre
+          if (!vet && (user?.nombre || user?.username)) {
+            console.log('🔍 Buscando por similitud de nombre (último recurso)...');
+            const nombreUsuario = (user.nombre || user.username || '').toLowerCase().split(' ')[0];
+            vet = todosVeterinarios.data.find(v => {
+              const match = v.nombres && v.nombres.toLowerCase().includes(nombreUsuario);
+              console.log(`🔍 Comparando nombre: v.nombres="${v.nombres}" incluye "${nombreUsuario}" = ${match}`);
+              return match;
+            });
+          }
+          
+          if (vet) {
+            console.log('✅ Veterinario encontrado manualmente:', vet);
+          } else {
+            console.error('❌ No se encontró veterinario con ningún método');
+          }
+        } catch (error2) {
+          console.error('❌ Error al buscar veterinarios:', error2);
+        }
       }
+      
+      if (vet && vet.idPersonal) {
+        setVeterinario(vet);
+      } else {
+        console.error('❌ No se pudo encontrar el veterinario o no tiene idPersonal');
+        setError('No se encontró el perfil del veterinario');
+      }
+    } catch (error) {
+      console.error('Error al cargar veterinario:', error);
+      setError('Error al cargar el perfil del veterinario');
     }
   };
 
@@ -70,15 +139,71 @@ export default function HistoriasClinicasPage() {
       // Cargar historias clínicas desde las citas del veterinario
       let veterinarioData = null;
       try {
+        console.log('📞 Intentando obtener perfil con obtenerMiPerfil()...');
         const veterinarioRes = await veterinarioService.obtenerMiPerfil();
         veterinarioData = veterinarioRes.data;
+        console.log('✅ Veterinario obtenido con obtenerMiPerfil:', veterinarioData);
       } catch (error404) {
-        const todosVeterinarios = await veterinarioService.getAll();
-        veterinarioData = todosVeterinarios.data.find(v => 
-          v.usuario?.idUsuario === user?.idUsuario ||
-          v.correo?.toLowerCase() === user?.email?.toLowerCase() ||
-          (v.nombres && user?.username && v.nombres.toLowerCase().includes(user.username.split(' ')[0]?.toLowerCase()))
-        );
+        console.log('⚠️ obtenerMiPerfil falló, buscando manualmente...', error404);
+        try {
+          const todosVeterinarios = await veterinarioService.getAll();
+          console.log('📋 Total de veterinarios encontrados:', todosVeterinarios.data?.length || 0);
+          
+          // Buscar por email (correo)
+          veterinarioData = todosVeterinarios.data.find(v => {
+            const match = v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase();
+            console.log(`🔍 Comparando email (correo): "${v.correo}" === "${user?.email}" = ${match}`);
+            return match;
+          });
+
+          // Buscar por email del usuario asociado
+          if (!veterinarioData) {
+            veterinarioData = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase();
+              console.log(`🔍 Comparando email (usuario.email): "${v.usuario?.email}" === "${user?.email}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por idUsuario
+          if (!veterinarioData && user?.idUsuario) {
+            console.log(`🔍 Buscando por idUsuario: ${user.idUsuario}`);
+            veterinarioData = todosVeterinarios.data.find(v => {
+              const match = v.usuario && v.usuario.idUsuario === user.idUsuario;
+              console.log(`🔍 Comparando usuario: v.usuario.idUsuario=${v.usuario?.idUsuario} === ${user.idUsuario} = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por username
+          if (!veterinarioData && user?.username) {
+            console.log(`🔍 Buscando por username: ${user.username}`);
+            veterinarioData = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.username && v.usuario.username === user.username;
+              console.log(`🔍 Comparando username: v.usuario.username="${v.usuario?.username}" === "${user.username}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Último recurso: buscar por similitud de nombre
+          if (!veterinarioData && (user?.nombre || user?.username)) {
+            console.log('🔍 Buscando por similitud de nombre (último recurso)...');
+            const nombreUsuario = (user.nombre || user.username || '').toLowerCase().split(' ')[0];
+            veterinarioData = todosVeterinarios.data.find(v => {
+              const match = v.nombres && v.nombres.toLowerCase().includes(nombreUsuario);
+              console.log(`🔍 Comparando nombre: v.nombres="${v.nombres}" incluye "${nombreUsuario}" = ${match}`);
+              return match;
+            });
+          }
+          
+          if (veterinarioData) {
+            console.log('✅ Veterinario encontrado manualmente:', veterinarioData);
+          } else {
+            console.error('❌ No se encontró veterinario con ningún método');
+          }
+        } catch (error2) {
+          console.error('❌ Error al buscar veterinarios:', error2);
+        }
       }
 
       if (!veterinarioData?.idPersonal) {
@@ -193,19 +318,33 @@ export default function HistoriasClinicasPage() {
         return;
       }
 
+      // Validaciones de campos requeridos
+      if (!formEvolucion.motivoConsulta || formEvolucion.motivoConsulta.trim().length < 10) {
+        setError('El motivo de consulta debe tener al menos 10 caracteres');
+        return;
+      }
+
+      if (!formEvolucion.hallazgosExamen || formEvolucion.hallazgosExamen.trim().length < 10) {
+        setError('Los hallazgos del examen deben tener al menos 10 caracteres');
+        return;
+      }
+
       const data = {
+        idHistoriaClinica: historiaSeleccionada.idHistoriaClinica,
         idVeterinario: veterinario.idPersonal,
         tipoEvolucion: formEvolucion.tipoEvolucion,
-        motivoConsulta: formEvolucion.motivoConsulta,
-        hallazgosExamen: formEvolucion.hallazgosExamen,
-        diagnostico: formEvolucion.diagnostico || null,
-        planTratamiento: formEvolucion.planTratamiento || null,
-        observaciones: formEvolucion.observaciones || null,
+        motivoConsulta: formEvolucion.motivoConsulta.trim(),
+        hallazgosExamen: formEvolucion.hallazgosExamen.trim(),
+        diagnostico: formEvolucion.diagnostico?.trim() || null,
+        planTratamiento: formEvolucion.planTratamiento?.trim() || null,
+        observaciones: formEvolucion.observaciones?.trim() || null,
         peso: formEvolucion.peso ? parseFloat(formEvolucion.peso) : null,
         temperatura: formEvolucion.temperatura ? parseFloat(formEvolucion.temperatura) : null,
         frecuenciaCardiaca: formEvolucion.frecuenciaCardiaca ? parseInt(formEvolucion.frecuenciaCardiaca) : null,
         frecuenciaRespiratoria: formEvolucion.frecuenciaRespiratoria ? parseInt(formEvolucion.frecuenciaRespiratoria) : null,
       };
+
+      console.log('📤 Enviando evolución con data:', data);
 
       await evolucionClinicaService.create(historiaSeleccionada.idHistoriaClinica, data);
       await loadEvoluciones(historiaSeleccionada.idHistoriaClinica);
@@ -214,7 +353,33 @@ export default function HistoriasClinicasPage() {
       alert('Evolución clínica creada exitosamente');
     } catch (error) {
       console.error('Error al guardar evolución:', error);
-      setError(`Error al guardar evolución: ${error.response?.data?.message || error.message}`);
+      console.error('Error response:', error.response?.data);
+
+      let errorMessage = 'Error al guardar evolución';
+
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Si hay errores de validación como lista
+        if (Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          errorMessage = `Errores de validación: ${errorData.errors.join(', ')}`;
+        }
+        // Si hay errores de validación como mapa
+        else if (errorData.validationErrors && typeof errorData.validationErrors === 'object') {
+          const validationErrors = Object.entries(errorData.validationErrors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(', ');
+          errorMessage = `Errores de validación: ${validationErrors}`;
+        }
+        // Si hay un mensaje directo
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     }
   };
 
@@ -477,11 +642,15 @@ export default function HistoriasClinicasPage() {
                         <div className="mt-2 space-y-2">
                           <div>
                             <p className="text-sm font-medium text-gray-700">Motivo de Consulta:</p>
-                            <p className="text-sm text-gray-900">{evolucion.motivoConsulta}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                              {evolucion.motivoConsulta || 'No especificado'}
+                            </p>
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-700">Hallazgos del Examen:</p>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{evolucion.hallazgosExamen}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                              {evolucion.hallazgosExamen || 'No especificado'}
+                            </p>
                           </div>
                           {evolucion.diagnostico && (
                             <div>
@@ -554,27 +723,57 @@ export default function HistoriasClinicasPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Motivo de Consulta *</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Motivo de Consulta *
+                  <span className="text-xs text-gray-500 ml-2">(mínimo 10 caracteres)</span>
+                </label>
                 <textarea
                   value={formEvolucion.motivoConsulta}
                   onChange={(e) => setFormEvolucion({ ...formEvolucion, motivoConsulta: e.target.value })}
                   rows={3}
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  placeholder="Describa el motivo de la consulta..."
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${
+                    formEvolucion.motivoConsulta && formEvolucion.motivoConsulta.trim().length < 10
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="Describa el motivo de la consulta (mínimo 10 caracteres)..."
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  {formEvolucion.motivoConsulta.length} / 2000 caracteres
+                  {formEvolucion.motivoConsulta && formEvolucion.motivoConsulta.trim().length < 10 && (
+                    <span className="text-red-600 ml-2">
+                      (faltan {10 - formEvolucion.motivoConsulta.trim().length} caracteres)
+                    </span>
+                  )}
+                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Hallazgos del Examen *</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Hallazgos del Examen *
+                  <span className="text-xs text-gray-500 ml-2">(mínimo 10 caracteres)</span>
+                </label>
                 <textarea
                   value={formEvolucion.hallazgosExamen}
                   onChange={(e) => setFormEvolucion({ ...formEvolucion, hallazgosExamen: e.target.value })}
                   rows={4}
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  placeholder="Describa los hallazgos del examen físico..."
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${
+                    formEvolucion.hallazgosExamen && formEvolucion.hallazgosExamen.trim().length < 10
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="Describa los hallazgos del examen físico (mínimo 10 caracteres)..."
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  {formEvolucion.hallazgosExamen.length} / 3000 caracteres
+                  {formEvolucion.hallazgosExamen && formEvolucion.hallazgosExamen.trim().length < 10 && (
+                    <span className="text-red-600 ml-2">
+                      (faltan {10 - formEvolucion.hallazgosExamen.trim().length} caracteres)
+                    </span>
+                  )}
+                </p>
               </div>
 
               <div>

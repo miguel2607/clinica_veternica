@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from '../components/Layout';
 import VeterinarioDashboard from '../pages/veterinario/Dashboard';
 import MisCitasPage from '../pages/veterinario/MisCitas';
+import CalendarioCitasPage from '../pages/veterinario/CalendarioCitas';
 import HistoriasClinicasPage from '../pages/veterinario/HistoriasClinicas';
 import VacunacionesPage from '../pages/veterinario/Vacunaciones';
 import HorariosPage from '../pages/veterinario/Horarios';
@@ -10,10 +11,11 @@ import EvolucionesPage from '../pages/veterinario/Evoluciones';
 import PropietariosPage from '../pages/veterinario/Propietarios';
 import InventarioPage from '../pages/veterinario/Inventario';
 import NotificacionesPage from '../pages/admin/Notificaciones';
-import { LayoutDashboard, Calendar, FileText, Bell, Syringe, Clock, PawPrint, Activity, Users, Package } from 'lucide-react';
+import { LayoutDashboard, Calendar, FileText, Bell, Syringe, Clock, PawPrint, Activity, Users, Package, CalendarDays } from 'lucide-react';
 
 const menuItems = [
   { path: '/veterinario/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { path: '/veterinario/calendario', label: 'Calendario', icon: <CalendarDays className="w-5 h-5" /> },
   { path: '/veterinario/citas', label: 'Mis Citas', icon: <Calendar className="w-5 h-5" /> },
   { path: '/veterinario/horarios', label: 'Mis Horarios', icon: <Clock className="w-5 h-5" /> },
   { path: '/veterinario/mascotas', label: 'Mis Pacientes', icon: <PawPrint className="w-5 h-5" /> },
@@ -30,6 +32,7 @@ export default function VeterinarioLayout() {
     <Layout menuItems={menuItems} title="Panel de Veterinario">
       <Routes>
         <Route path="dashboard" element={<VeterinarioDashboard />} />
+        <Route path="calendario" element={<CalendarioCitasPage />} />
         <Route path="citas" element={<MisCitasPage />} />
         <Route path="horarios" element={<HorariosPage />} />
         <Route path="mascotas" element={<MascotasPage />} />

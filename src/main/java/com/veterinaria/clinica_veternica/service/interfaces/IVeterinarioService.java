@@ -39,4 +39,8 @@ public interface IVeterinarioService {
     boolean existePorRegistroProfesional(String registroProfesional);
 
     VeterinarioResponseDTO obtenerPorUsuarioAutenticado();
+
+    VeterinarioResponseDTO crearDesdeUsuario(Long idUsuario);
+
+    int sincronizarUsuariosVeterinarios();
 }

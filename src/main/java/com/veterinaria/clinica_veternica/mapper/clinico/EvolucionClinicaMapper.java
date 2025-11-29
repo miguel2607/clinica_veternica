@@ -16,11 +16,24 @@ public interface EvolucionClinicaMapper {
     @Mapping(target = "veterinario", ignore = true)
     @Mapping(target = "fechaEvolucion", ignore = true)
     @Mapping(target = "fechaCreacion", ignore = true)
+    @Mapping(target = "fechaModificacion", ignore = true)
+    @Mapping(target = "descripcion", ignore = true)
+    @Mapping(target = "estadoPaciente", ignore = true)
+    @Mapping(target = "plan", ignore = true)
+    @Mapping(target = "nivelDolor", ignore = true)
+    @Mapping(target = "condicionCorporal", ignore = true)
+    @Mapping(target = "indicacionesPropietario", ignore = true)
+    @Mapping(target = "proximaRevision", ignore = true)
+    @Mapping(target = "esAlta", ignore = true)
+    @Mapping(target = "motivoAlta", ignore = true)
+    @Mapping(target = "archivosAdjuntos", ignore = true)
+    @Mapping(target = "activo", ignore = true)
     EvolucionClinica toEntity(EvolucionClinicaRequestDTO requestDTO);
 
     @Mapping(target = "veterinario", source = "veterinario", qualifiedByName = "mapVeterinarioSimple")
     @Mapping(target = "temperaturaEnRangoNormal", source = "evolucion", qualifiedByName = "checkTemperatura")
     @Mapping(target = "signosVitalesEstables", source = "evolucion", qualifiedByName = "checkSignosVitales")
+    @Mapping(target = "planTratamiento", source = "plan")
     EvolucionClinicaResponseDTO toResponseDTO(EvolucionClinica evolucion);
 
     List<EvolucionClinicaResponseDTO> toResponseDTOList(List<EvolucionClinica> evoluciones);

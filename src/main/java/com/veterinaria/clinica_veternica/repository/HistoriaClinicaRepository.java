@@ -32,4 +32,14 @@ public interface HistoriaClinicaRepository extends JpaRepository<HistoriaClinica
 
     @Query("SELECT COUNT(h) FROM HistoriaClinica h WHERE h.activa = true")
     long countHistoriasActivas();
+
+    /**
+     * Lista todas las historias clínicas cargando la relación mascota y propietario.
+     *
+     * @return Lista de historias clínicas con mascota y propietario cargados
+     */
+    @Query("SELECT DISTINCT h FROM HistoriaClinica h " +
+           "LEFT JOIN FETCH h.mascota m " +
+           "LEFT JOIN FETCH m.propietario")
+    List<HistoriaClinica> findAllWithMascotaAndPropietario();
 }

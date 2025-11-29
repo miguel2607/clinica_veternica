@@ -196,7 +196,7 @@ export default function HistoriasClinicasPage() {
                   <tr key={historia.idHistoriaClinica} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{historia.numeroHistoria}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{historia.mascota?.nombre || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{historia.mascota?.propietario?.nombreCompleto || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{historia.mascota?.propietarioNombre || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{historia.grupoSanguineo || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -406,7 +406,7 @@ export default function HistoriasClinicasPage() {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Propietario</h3>
-                <p className="text-lg text-gray-900">{selectedHistoria.mascota?.propietario?.nombreCompleto}</p>
+                <p className="text-lg text-gray-900">{selectedHistoria.mascota?.propietarioNombre || 'N/A'}</p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Grupo Sanguíneo</h3>

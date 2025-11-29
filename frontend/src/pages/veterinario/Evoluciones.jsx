@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { evolucionClinicaService, historiaClinicaService, mascotaService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { evolucionClinicaService, historiaClinicaService, mascotaService, citaService, veterinarioService } from '../../services/api';
+import { Eye } from 'lucide-react';
 
 export default function EvolucionesPage() {
+  const { user } = useAuth();
   const [evoluciones, setEvoluciones] = useState([]);
   const [historiasClinicas, setHistoriasClinicas] = useState([]);
   const [mascotas, setMascotas] = useState([]);
@@ -9,42 +12,134 @@ export default function EvolucionesPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalHistoriaOpen, setModalHistoriaOpen] = useState(false);
   const [selectedHistoria, setSelectedHistoria] = useState(null);
+  const [historiaDetalle, setHistoriaDetalle] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [veterinario, setVeterinario] = useState(null);
 
   const [formData, setFormData] = useState({
     idHistoriaClinica: '',
-    fecha: new Date().toISOString().split('T')[0],
-    descripcion: '',
-    signosVitales: '',
+    tipoEvolucion: 'CONSULTA',
+    motivoConsulta: '',
+    hallazgosExamen: '',
     diagnostico: '',
-    tratamiento: '',
-    observaciones: ''
+    planTratamiento: '',
+    observaciones: '',
+    peso: '',
+    temperatura: '',
+    frecuenciaCardiaca: '',
+    frecuenciaRespiratoria: ''
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadVeterinario();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (veterinario) {
+      loadData();
+    }
+  }, [veterinario]);
+
+  const loadVeterinario = async () => {
+    try {
+      let vet = null;
+      
+      try {
+        const veterinarioRes = await veterinarioService.obtenerMiPerfil();
+        vet = veterinarioRes.data;
+      } catch (error404) {
+        const todosVeterinarios = await veterinarioService.getAll();
+        vet = todosVeterinarios.data.find(v => 
+          v.correo?.toLowerCase() === user?.email?.toLowerCase() ||
+          v.usuario?.email?.toLowerCase() === user?.email?.toLowerCase() ||
+          v.usuario?.idUsuario === user?.idUsuario ||
+          v.usuario?.username === user?.username
+        );
+      }
+
+      if (vet?.idPersonal) {
+        setVeterinario(vet);
+      } else {
+        setError('No se encontró el perfil del veterinario');
+      }
+    } catch (error) {
+      console.error('Error al cargar veterinario:', error);
+      setError('Error al cargar el perfil del veterinario');
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError('');
 
-      const [historiasRes, mascotasRes] = await Promise.all([
-        historiaClinicaService.getActivas(),
-        mascotaService.getAll()
-      ]);
+      if (!veterinario?.idPersonal) {
+        setError('No se encontró el perfil del veterinario');
+        setLoading(false);
+        return;
+      }
 
-      console.log('✅ Historias clínicas:', historiasRes.data);
-      console.log('✅ Mascotas:', mascotasRes.data);
+      // Obtener citas del veterinario
+      console.log('🔍 Obteniendo citas del veterinario:', veterinario.idPersonal);
+      const citasRes = await citaService.getByVeterinario(veterinario.idPersonal);
+      const citas = citasRes.data || [];
 
-      setHistoriasClinicas(historiasRes.data || []);
-      setMascotas(mascotasRes.data || []);
+      console.log('✅ Citas encontradas:', citas.length);
+
+      // Obtener historias clínicas únicas de las mascotas de las citas
+      const historiasUnicas = new Map();
+      const mascotasUnicas = new Map();
+
+      for (const cita of citas) {
+        if (cita.mascota?.idMascota) {
+          // Guardar la mascota
+          if (!mascotasUnicas.has(cita.mascota.idMascota)) {
+            mascotasUnicas.set(cita.mascota.idMascota, cita.mascota);
+          }
+
+          try {
+            const historiaRes = await historiaClinicaService.getByMascota(cita.mascota.idMascota);
+            const historia = historiaRes.data;
+            if (historia && !historiasUnicas.has(historia.idHistoriaClinica)) {
+              // Enriquecer con información de la mascota
+              historia.mascota = cita.mascota;
+              historiasUnicas.set(historia.idHistoriaClinica, historia);
+              console.log(`✅ Historia clínica encontrada para mascota ${cita.mascota.nombre}`);
+            }
+          } catch (error) {
+            // Error 404 es esperado si la mascota no tiene historia clínica aún
+            if (error.response?.status === 404) {
+              console.log(`ℹ️ Mascota ${cita.mascota.nombre} (ID: ${cita.mascota.idMascota}) aún no tiene historia clínica`);
+            } else {
+              console.error(`❌ Error al cargar historia de mascota ${cita.mascota.idMascota}:`, error);
+            }
+          }
+        }
+      }
+
+      const historiasArray = Array.from(historiasUnicas.values());
+      const mascotasArray = Array.from(mascotasUnicas.values());
+
+      console.log('✅ Historias clínicas:', historiasArray);
+      console.log('✅ Mascotas:', mascotasArray);
+
+      setHistoriasClinicas(historiasArray);
+      setMascotas(mascotasArray);
+
+      console.log('✅ Estado actualizado - Historias:', historiasArray.length, 'Mascotas:', mascotasArray.length);
+
+      if (historiasArray.length === 0) {
+        setError('No se encontraron historias clínicas para las mascotas de tus citas. Las mascotas necesitan tener una primera consulta registrada para crear su historia clínica.');
+      }
     } catch (error) {
       console.error('❌ Error al cargar datos:', error);
       setError(`Error al cargar datos: ${error.response?.data?.message || error.message}`);
     } finally {
+      console.log('🏁 Finalizando carga - setting loading = false');
       setLoading(false);
     }
   };
@@ -67,20 +162,44 @@ export default function EvolucionesPage() {
     await loadEvolucionesByHistoria(historia.idHistoriaClinica);
   };
 
+  const handleVerHistoria = async (historia) => {
+    try {
+      const response = await historiaClinicaService.getById(historia.idHistoriaClinica);
+      setHistoriaDetalle(response.data);
+      
+      // Cargar las evoluciones de esta historia clínica
+      await loadEvolucionesByHistoria(historia.idHistoriaClinica);
+      
+      setModalHistoriaOpen(true);
+    } catch (error) {
+      console.error('Error al cargar historia clínica:', error);
+      setError('Error al cargar los detalles de la historia clínica');
+    }
+  };
+
   const handleOpenModal = () => {
     if (!selectedHistoria) {
       setError('Primero seleccione una historia clínica');
       return;
     }
 
+    if (!veterinario?.idPersonal) {
+      setError('No se encontró el perfil del veterinario');
+      return;
+    }
+
     setFormData({
       idHistoriaClinica: selectedHistoria.idHistoriaClinica,
-      fecha: new Date().toISOString().split('T')[0],
-      descripcion: '',
-      signosVitales: '',
+      tipoEvolucion: 'CONSULTA',
+      motivoConsulta: '',
+      hallazgosExamen: '',
       diagnostico: '',
-      tratamiento: '',
-      observaciones: ''
+      planTratamiento: '',
+      observaciones: '',
+      peso: '',
+      temperatura: '',
+      frecuenciaCardiaca: '',
+      frecuenciaRespiratoria: ''
     });
     setModalOpen(true);
     setError('');
@@ -92,8 +211,33 @@ export default function EvolucionesPage() {
     setError('');
     setSuccess('');
 
+    if (!formData.motivoConsulta || formData.motivoConsulta.trim().length < 10) {
+      setError('El motivo de consulta debe tener al menos 10 caracteres');
+      return;
+    }
+
+    if (!formData.hallazgosExamen || formData.hallazgosExamen.trim().length < 10) {
+      setError('Los hallazgos del examen deben tener al menos 10 caracteres');
+      return;
+    }
+
     try {
-      await evolucionClinicaService.create(formData.idHistoriaClinica, formData);
+      const data = {
+        idHistoriaClinica: formData.idHistoriaClinica,
+        idVeterinario: veterinario.idPersonal,
+        tipoEvolucion: formData.tipoEvolucion,
+        motivoConsulta: formData.motivoConsulta.trim(),
+        hallazgosExamen: formData.hallazgosExamen.trim(),
+        diagnostico: formData.diagnostico?.trim() || null,
+        planTratamiento: formData.planTratamiento?.trim() || null,
+        observaciones: formData.observaciones?.trim() || null,
+        peso: formData.peso ? parseFloat(formData.peso) : null,
+        temperatura: formData.temperatura ? parseFloat(formData.temperatura) : null,
+        frecuenciaCardiaca: formData.frecuenciaCardiaca ? parseInt(formData.frecuenciaCardiaca) : null,
+        frecuenciaRespiratoria: formData.frecuenciaRespiratoria ? parseInt(formData.frecuenciaRespiratoria) : null,
+      };
+
+      await evolucionClinicaService.create(formData.idHistoriaClinica, data);
       setSuccess('Evolución clínica registrada exitosamente');
 
       // Recargar evoluciones
@@ -113,22 +257,41 @@ export default function EvolucionesPage() {
     const historia = historiasClinicas.find(h => h.idHistoriaClinica === idHistoriaClinica);
     if (!historia) return null;
 
+    // La mascota ya está enriquecida en la historia
+    if (historia.mascota) {
+      return historia.mascota;
+    }
+
+    // Fallback: buscar en la lista de mascotas
     const mascota = mascotas.find(m => m.idMascota === historia.idMascota);
     return mascota;
   };
 
   const historiasFiltradas = historiasClinicas.filter(historia => {
     const mascota = getMascotaInfo(historia.idHistoriaClinica);
-    if (!mascota) return false;
+    console.log('🔍 Filtrando historia:', historia.idHistoriaClinica, 'Mascota encontrada:', mascota);
+    if (!mascota) {
+      console.log('⚠️ No se encontró mascota para historia:', historia.idHistoriaClinica);
+      return false;
+    }
 
-    return mascota.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matches = mascota.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            mascota.propietario?.nombres?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            mascota.propietario?.apellidos?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    console.log('🔍 Mascota', mascota.nombre, 'matches search term "' + searchTerm + '":', matches);
+    return matches;
   });
 
+  console.log('✅ Historias filtradas final:', historiasFiltradas.length, 'de', historiasClinicas.length);
+  console.log('🎨 Render - loading:', loading, 'historiasClinicas.length:', historiasClinicas.length, 'historiasFiltradas.length:', historiasFiltradas.length);
+
   if (loading) {
+    console.log('⏳ Mostrando pantalla de carga...');
     return <div className="text-center py-8">Cargando datos...</div>;
   }
+
+  console.log('🎨 Renderizando interfaz principal');
 
   return (
     <div className="space-y-6">
@@ -184,22 +347,38 @@ export default function EvolucionesPage() {
                 return (
                   <div
                     key={historia.idHistoriaClinica}
-                    onClick={() => handleSelectHistoria(historia)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`p-3 rounded-lg border transition-colors ${
                       selectedHistoria?.idHistoriaClinica === historia.idHistoriaClinica
                         ? 'bg-primary-50 border-primary-500'
                         : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="font-medium text-gray-900">{mascota.nombre}</div>
-                    <div className="text-sm text-gray-600">
-                      {mascota.propietario?.nombres} {mascota.propietario?.apellidos}
+                    <div 
+                      onClick={() => handleSelectHistoria(historia)}
+                      className="cursor-pointer"
+                    >
+                      <div className="font-medium text-gray-900">{mascota.nombre}</div>
+                      <div className="text-sm text-gray-600">
+                        {mascota.propietario?.nombres} {mascota.propietario?.apellidos}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {mascota.raza?.nombre} - {mascota.raza?.especie?.nombre}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        HC: #{historia.idHistoriaClinica}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {mascota.raza?.nombre} - {mascota.raza?.especie?.nombre}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      HC: #{historia.idHistoriaClinica}
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVerHistoria(historia);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver Historia Clínica
+                      </button>
                     </div>
                   </div>
                 );
@@ -251,20 +430,40 @@ export default function EvolucionesPage() {
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <div className="font-medium text-gray-900">
-                                {evolucion.fecha}
+                                {evolucion.tipoEvolucion || 'Evolución'}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {evolucion.fechaEvolucion 
+                                  ? new Date(evolucion.fechaEvolucion).toLocaleString('es-ES')
+                                  : evolucion.fecha}
                               </div>
                               {evolucion.veterinario && (
                                 <div className="text-sm text-gray-600">
-                                  Dr(a). {evolucion.veterinario.nombres} {evolucion.veterinario.apellidos}
+                                  Dr./Dra. {evolucion.veterinario.nombreCompleto || 
+                                    `${evolucion.veterinario.nombres || ''} ${evolucion.veterinario.apellidos || ''}`.trim()}
                                 </div>
                               )}
                             </div>
                           </div>
 
+                          {evolucion.motivoConsulta && (
+                            <div className="mt-3">
+                              <div className="text-sm font-medium text-gray-700">Motivo de Consulta:</div>
+                              <div className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{evolucion.motivoConsulta}</div>
+                            </div>
+                          )}
+
+                          {evolucion.hallazgosExamen && (
+                            <div className="mt-3">
+                              <div className="text-sm font-medium text-gray-700">Hallazgos del Examen:</div>
+                              <div className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{evolucion.hallazgosExamen}</div>
+                            </div>
+                          )}
+
                           {evolucion.descripcion && (
                             <div className="mt-3">
                               <div className="text-sm font-medium text-gray-700">Descripción:</div>
-                              <div className="text-sm text-gray-600 mt-1">{evolucion.descripcion}</div>
+                              <div className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{evolucion.descripcion}</div>
                             </div>
                           )}
 
@@ -278,14 +477,23 @@ export default function EvolucionesPage() {
                           {evolucion.diagnostico && (
                             <div className="mt-3">
                               <div className="text-sm font-medium text-gray-700">Diagnóstico:</div>
-                              <div className="text-sm text-gray-600 mt-1">{evolucion.diagnostico}</div>
+                              <div className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{evolucion.diagnostico}</div>
                             </div>
                           )}
 
-                          {evolucion.tratamiento && (
+                          {evolucion.planTratamiento && (
                             <div className="mt-3">
-                              <div className="text-sm font-medium text-gray-700">Tratamiento:</div>
-                              <div className="text-sm text-gray-600 mt-1">{evolucion.tratamiento}</div>
+                              <div className="text-sm font-medium text-gray-700">Plan de Tratamiento:</div>
+                              <div className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{evolucion.planTratamiento}</div>
+                            </div>
+                          )}
+
+                          {(evolucion.peso || evolucion.temperatura || evolucion.frecuenciaCardiaca || evolucion.frecuenciaRespiratoria) && (
+                            <div className="mt-3 grid grid-cols-2 gap-2 p-2 bg-white rounded">
+                              {evolucion.peso && <p className="text-sm"><span className="font-medium">Peso:</span> {evolucion.peso} kg</p>}
+                              {evolucion.temperatura && <p className="text-sm"><span className="font-medium">Temperatura:</span> {evolucion.temperatura} °C</p>}
+                              {evolucion.frecuenciaCardiaca && <p className="text-sm"><span className="font-medium">FC:</span> {evolucion.frecuenciaCardiaca} bpm</p>}
+                              {evolucion.frecuenciaRespiratoria && <p className="text-sm"><span className="font-medium">FR:</span> {evolucion.frecuenciaRespiratoria} rpm</p>}
                             </div>
                           )}
 
@@ -338,42 +546,63 @@ export default function EvolucionesPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fecha *
+                    Tipo de Evolución *
                   </label>
-                  <input
-                    type="date"
+                  <select
                     required
-                    value={formData.fecha}
-                    onChange={(e) => setFormData({...formData, fecha: e.target.value})}
+                    value={formData.tipoEvolucion}
+                    onChange={(e) => setFormData({...formData, tipoEvolucion: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
+                  >
+                    <option value="CONSULTA">Consulta</option>
+                    <option value="CONTROL">Control</option>
+                    <option value="EMERGENCIA">Emergencia</option>
+                    <option value="SEGUIMIENTO">Seguimiento</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Descripción *
+                    Motivo de Consulta *
                   </label>
                   <textarea
                     required
-                    value={formData.descripcion}
-                    onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                    value={formData.motivoConsulta}
+                    onChange={(e) => setFormData({...formData, motivoConsulta: e.target.value})}
                     rows="3"
-                    placeholder="Descripción del estado del paciente..."
+                    placeholder="Motivo de la consulta o razón de la evolución..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.motivoConsulta.length} / 2000 caracteres
+                    {formData.motivoConsulta && formData.motivoConsulta.trim().length < 10 && (
+                      <span className="text-red-500 ml-2">
+                        (faltan {10 - formData.motivoConsulta.trim().length} caracteres)
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Signos Vitales
+                    Hallazgos del Examen *
                   </label>
                   <textarea
-                    value={formData.signosVitales}
-                    onChange={(e) => setFormData({...formData, signosVitales: e.target.value})}
-                    rows="2"
-                    placeholder="Temperatura, frecuencia cardíaca, respiración, etc..."
+                    required
+                    value={formData.hallazgosExamen}
+                    onChange={(e) => setFormData({...formData, hallazgosExamen: e.target.value})}
+                    rows="4"
+                    placeholder="Hallazgos del examen físico o clínico realizado..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.hallazgosExamen.length} / 3000 caracteres
+                    {formData.hallazgosExamen && formData.hallazgosExamen.trim().length < 10 && (
+                      <span className="text-red-500 ml-2">
+                        (faltan {10 - formData.hallazgosExamen.trim().length} caracteres)
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div>
@@ -384,22 +613,82 @@ export default function EvolucionesPage() {
                     value={formData.diagnostico}
                     onChange={(e) => setFormData({...formData, diagnostico: e.target.value})}
                     rows="3"
-                    placeholder="Diagnóstico actual..."
+                    placeholder="Diagnóstico actual o impresión clínica..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tratamiento
+                    Plan de Tratamiento
                   </label>
                   <textarea
-                    value={formData.tratamiento}
-                    onChange={(e) => setFormData({...formData, tratamiento: e.target.value})}
+                    value={formData.planTratamiento}
+                    onChange={(e) => setFormData({...formData, planTratamiento: e.target.value})}
                     rows="3"
-                    placeholder="Tratamiento indicado..."
+                    placeholder="Plan de tratamiento o próximos pasos..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Peso (kg)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={formData.peso}
+                      onChange={(e) => setFormData({...formData, peso: e.target.value})}
+                      placeholder="Ej: 5.5"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Temperatura (°C)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="35"
+                      max="45"
+                      value={formData.temperatura}
+                      onChange={(e) => setFormData({...formData, temperatura: e.target.value})}
+                      placeholder="Ej: 38.5"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Frecuencia Cardíaca (bpm)
+                    </label>
+                    <input
+                      type="number"
+                      min="20"
+                      max="300"
+                      value={formData.frecuenciaCardiaca}
+                      onChange={(e) => setFormData({...formData, frecuenciaCardiaca: e.target.value})}
+                      placeholder="Ej: 120"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Frecuencia Respiratoria (rpm)
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="100"
+                      value={formData.frecuenciaRespiratoria}
+                      onChange={(e) => setFormData({...formData, frecuenciaRespiratoria: e.target.value})}
+                      placeholder="Ej: 20"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -437,12 +726,151 @@ export default function EvolucionesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                    disabled={!formData.motivoConsulta || !formData.hallazgosExamen}
+                    className={`px-4 py-2 rounded-lg ${
+                      formData.motivoConsulta && formData.hallazgosExamen
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
                     Guardar Evolución
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Historia Clínica */}
+      {modalHistoriaOpen && historiaDetalle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">
+                  Historia Clínica - {getMascotaInfo(historiaDetalle.idHistoriaClinica)?.nombre || 'N/A'}
+                </h3>
+                <button
+                  onClick={() => setModalHistoriaOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Alergias:</label>
+                    <p className="text-sm text-gray-900 mt-1">{historiaDetalle.alergias || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Enfermedades Crónicas:</label>
+                    <p className="text-sm text-gray-900 mt-1">{historiaDetalle.enfermedadesCronicas || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Cirugías Previas:</label>
+                    <p className="text-sm text-gray-900 mt-1">{historiaDetalle.cirugiasPrevias || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Medicamentos Actuales:</label>
+                    <p className="text-sm text-gray-900 mt-1">{historiaDetalle.medicamentosActuales || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Observaciones:</label>
+                  <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">{historiaDetalle.observaciones || 'N/A'}</p>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <h4 className="font-semibold mb-3">Evoluciones Clínicas ({evoluciones.length})</h4>
+                  {evoluciones.length > 0 ? (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {evoluciones.map((evolucion, index) => (
+                        <div key={evolucion.idEvolucionClinica || index} className="border-l-4 border-primary-500 pl-4 py-2 bg-gray-50 rounded-r-lg p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="font-medium text-sm text-gray-900">
+                                {evolucion.tipoEvolucion || 'Evolución'}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {evolucion.fechaEvolucion 
+                                  ? new Date(evolucion.fechaEvolucion).toLocaleString('es-ES')
+                                  : evolucion.fecha}
+                              </div>
+                              {evolucion.veterinario && (
+                                <div className="text-xs text-gray-600">
+                                  Dr./Dra. {evolucion.veterinario.nombreCompleto || 
+                                    `${evolucion.veterinario.nombres || ''} ${evolucion.veterinario.apellidos || ''}`.trim()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {evolucion.motivoConsulta && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-gray-700">Motivo de Consulta:</div>
+                              <div className="text-xs text-gray-900 whitespace-pre-wrap">{evolucion.motivoConsulta}</div>
+                            </div>
+                          )}
+
+                          {evolucion.hallazgosExamen && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-gray-700">Hallazgos del Examen:</div>
+                              <div className="text-xs text-gray-900 whitespace-pre-wrap">{evolucion.hallazgosExamen}</div>
+                            </div>
+                          )}
+
+                          {evolucion.diagnostico && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-gray-700">Diagnóstico:</div>
+                              <div className="text-xs text-gray-900 whitespace-pre-wrap">{evolucion.diagnostico}</div>
+                            </div>
+                          )}
+
+                          {evolucion.planTratamiento && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-gray-700">Plan de Tratamiento:</div>
+                              <div className="text-xs text-gray-900 whitespace-pre-wrap">{evolucion.planTratamiento}</div>
+                            </div>
+                          )}
+
+                          {(evolucion.peso || evolucion.temperatura || evolucion.frecuenciaCardiaca || evolucion.frecuenciaRespiratoria) && (
+                            <div className="mt-2 grid grid-cols-2 gap-2 p-2 bg-white rounded text-xs">
+                              {evolucion.peso && <p><span className="font-medium">Peso:</span> {evolucion.peso} kg</p>}
+                              {evolucion.temperatura && <p><span className="font-medium">Temperatura:</span> {evolucion.temperatura} °C</p>}
+                              {evolucion.frecuenciaCardiaca && <p><span className="font-medium">FC:</span> {evolucion.frecuenciaCardiaca} bpm</p>}
+                              {evolucion.frecuenciaRespiratoria && <p><span className="font-medium">FR:</span> {evolucion.frecuenciaRespiratoria} rpm</p>}
+                            </div>
+                          )}
+
+                          {evolucion.observaciones && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-gray-700">Observaciones:</div>
+                              <div className="text-xs text-gray-600">{evolucion.observaciones}</div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No hay evoluciones registradas</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setModalHistoriaOpen(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

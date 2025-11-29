@@ -157,6 +157,7 @@ export const citaService = {
   update: (id, data) => api.put(`/citas/${id}`, data),
   delete: (id) => api.delete(`/citas/${id}`),
   getByVeterinario: (id) => api.get(`/citas/veterinario/${id}`),
+  getMisCitas: () => api.get('/citas/mis-citas'),
   getByMascota: (id) => api.get(`/citas/mascota/${id}`),
   getProgramadas: () => api.get('/citas/programadas'),
   confirmar: (id) => api.put(`/citas/${id}/confirmar`),
@@ -298,6 +299,9 @@ export const horarioService = {
   getById: (id) => api.get(`/horarios/${id}`),
   getByVeterinario: (idVeterinario) => api.get(`/horarios/veterinario/${idVeterinario}`),
   getByDia: (diaSemana) => api.get(`/horarios/dia/${diaSemana}`),
+  getDisponibilidad: (idVeterinario, fecha) => api.get(`/horarios/veterinario/${idVeterinario}/disponibilidad`, {
+    params: { fecha }
+  }),
   create: (data) => api.post('/horarios', data),
   update: (id, data) => api.put(`/horarios/${id}`, data),
   delete: (id) => api.delete(`/horarios/${id}`),

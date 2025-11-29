@@ -27,6 +27,8 @@ export default function AgendarCitaPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [disponibilidad, setDisponibilidad] = useState(null);
+  const [loadingDisponibilidad, setLoadingDisponibilidad] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -94,6 +96,61 @@ export default function AgendarCitaPage() {
   const handleSelectVeterinario = (veterinario) => {
     setVeterinarioSeleccionado(veterinario);
     loadHorarios(veterinario.idPersonal);
+
+    // Si no hay fecha seleccionada, sugerir la fecha de hoy
+    if (!fechaSeleccionada) {
+      const hoy = new Date().toISOString().split('T')[0];
+      setFechaSeleccionada(hoy);
+      loadDisponibilidad(veterinario.idPersonal, hoy);
+    } else {
+      // Si ya hay una fecha seleccionada, cargar disponibilidad
+      loadDisponibilidad(veterinario.idPersonal, fechaSeleccionada);
+    }
+  };
+
+  const loadDisponibilidad = async (idVeterinario, fecha) => {
+    if (!idVeterinario || !fecha) {
+      setDisponibilidad(null);
+      return;
+    }
+
+    try {
+      setLoadingDisponibilidad(true);
+      const response = await horarioService.getDisponibilidad(idVeterinario, fecha);
+      setDisponibilidad(response.data);
+      console.log('✅ Disponibilidad cargada:', response.data);
+    } catch (error) {
+      console.error('Error al cargar disponibilidad:', error);
+      setDisponibilidad(null);
+    } finally {
+      setLoadingDisponibilidad(false);
+    }
+  };
+
+  // Función para obtener la fecha mínima (hoy)
+  const getFechaMinima = () => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche
+    return hoy.toISOString().split('T')[0];
+  };
+
+  const handleFechaChange = (fecha) => {
+    // Validar que la fecha no sea del pasado
+    const fechaMinima = getFechaMinima();
+    if (fecha && fecha < fechaMinima) {
+      setError('No se pueden agendar citas en fechas pasadas. Por favor selecciona una fecha de hoy en adelante.');
+      setFechaSeleccionada('');
+      setHoraSeleccionada('');
+      return;
+    }
+
+    setError(''); // Limpiar errores anteriores
+    setFechaSeleccionada(fecha);
+    setHoraSeleccionada(''); // Limpiar hora seleccionada
+    // Si hay un veterinario seleccionado, cargar disponibilidad
+    if (veterinarioSeleccionado && fecha) {
+      loadDisponibilidad(veterinarioSeleccionado.idPersonal, fecha);
+    }
   };
 
   const handleSubmit = async () => {
@@ -108,21 +165,65 @@ export default function AgendarCitaPage() {
         return;
       }
 
+      // Validar que la fecha no sea del pasado
+      const fechaMinima = getFechaMinima();
+      if (fechaSeleccionada < fechaMinima) {
+        setError('No se pueden agendar citas en fechas pasadas. Por favor selecciona una fecha de hoy en adelante.');
+        return;
+      }
+
+      // Preparar motivo (obligatorio, mínimo 5 caracteres)
+      const motivoFinal = motivo.trim() || `Cita para ${servicioSeleccionado.nombre}`;
+
+      // Validar motivo
+      if (motivoFinal.length < 5) {
+        setError('El motivo debe tener al menos 5 caracteres');
+        return;
+      }
+
+      // Formatear la hora correctamente - asegurarse de enviar como string en formato HH:mm:ss
+      let horaFormateada = horaSeleccionada;
+
+      // Si horaSeleccionada es un objeto (como {hour: 9, minute: 0, second: 0})
+      if (typeof horaSeleccionada === 'object' && horaSeleccionada.hour !== undefined) {
+        const hour = String(horaSeleccionada.hour).padStart(2, '0');
+        const minute = String(horaSeleccionada.minute || 0).padStart(2, '0');
+        const second = String(horaSeleccionada.second || 0).padStart(2, '0');
+        horaFormateada = `${hour}:${minute}:${second}`;
+      }
+      // Si es un string, normalizar el formato
+      else if (typeof horaSeleccionada === 'string') {
+        // Si ya tiene formato HH:mm:ss, usarlo directamente
+        if (horaSeleccionada.match(/^\d{1,2}:\d{2}:\d{2}$/)) {
+          horaFormateada = horaSeleccionada;
+        }
+        // Si es formato HH:mm, agregar :00
+        else if (horaSeleccionada.match(/^\d{1,2}:\d{2}$/)) {
+          horaFormateada = `${horaSeleccionada}:00`;
+        }
+        // Si es solo un número (H), convertir a HH:00:00
+        else if (horaSeleccionada.match(/^\d{1,2}$/)) {
+          horaFormateada = `${horaSeleccionada.padStart(2, '0')}:00:00`;
+        }
+      }
+
       // Crear la cita
       const citaData = {
         fechaCita: fechaSeleccionada,
-        horaCita: horaSeleccionada,
-        motivo: motivo || `Cita para ${servicioSeleccionado.nombre}`,
-        estado: 'PROGRAMADA',
+        horaCita: horaFormateada,
+        motivo: motivoFinal,
         idMascota: mascotaSeleccionada.idMascota,
         idServicio: servicioSeleccionado.idServicio,
-        idVeterinario: veterinarioSeleccionado.idPersonal,
-        idPropietario: propietario.idPropietario
+        idVeterinario: veterinarioSeleccionado.idPersonal
       };
 
       console.log('📤 Enviando cita:', citaData);
+      console.log('📤 Hora original:', horaSeleccionada);
+      console.log('📤 Hora formateada:', horaFormateada);
+      console.log('📤 Slots disponibles:', disponibilidad?.slotsDisponibles);
 
-      await citaService.create(citaData);
+      const response = await citaService.create(citaData);
+      console.log('✅ Respuesta del servidor:', response);
 
       setSuccess('¡Cita agendada exitosamente! Te enviaremos una confirmación pronto.');
       setStep(4);
@@ -140,7 +241,53 @@ export default function AgendarCitaPage() {
       }, 5000);
     } catch (error) {
       console.error('❌ Error al agendar cita:', error);
-      setError(`Error al agendar cita: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error response data:', error.response?.data);
+
+      // Extraer el mensaje de error más descriptivo
+      let mensajeError = 'Error desconocido';
+
+      if (error.response?.data) {
+        // Si hay errores de validación específicos, mostrarlos primero
+        if (error.response.data.validationErrors) {
+          const validationErrors = error.response.data.validationErrors;
+          const errorMessages = Object.entries(validationErrors)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(', ');
+          mensajeError = `Error de validación: ${errorMessages}`;
+        }
+        // Si hay errores en formato array, mostrarlos
+        else if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          mensajeError = `Error de validación: ${error.response.data.errors.join(', ')}`;
+        }
+        // Intentar obtener el mensaje del campo 'message'
+        else if (error.response.data.message) {
+          mensajeError = error.response.data.message;
+          // Si también hay validationErrors, agregarlos
+          if (error.response.data.validationErrors) {
+            const validationErrors = error.response.data.validationErrors;
+            const errorMessages = Object.entries(validationErrors)
+              .map(([field, message]) => `${field}: ${message}`)
+              .join(', ');
+            mensajeError += ` (${errorMessages})`;
+          }
+        }
+        // Si hay un campo 'error', usarlo
+        else if (error.response.data.error) {
+          mensajeError = error.response.data.error;
+        }
+        // Si es un objeto, convertirlo a string
+        else if (typeof error.response.data === 'object') {
+          mensajeError = JSON.stringify(error.response.data);
+        }
+        else {
+          mensajeError = error.response.data;
+        }
+      } else if (error.message) {
+        mensajeError = error.message;
+      }
+
+      setError(`Error al agendar cita: ${mensajeError}`);
     } finally {
       setSubmitting(false);
     }
@@ -265,7 +412,7 @@ export default function AgendarCitaPage() {
                   <p className="text-sm text-gray-600 mt-2 line-clamp-2">{servicio.descripcion}</p>
                 )}
                 <div className="flex justify-between items-center mt-3">
-                  <span className="text-sm text-gray-500">Duración: {servicio.duracionEstimada || 'N/A'} min</span>
+                  <span className="text-sm text-gray-500">⏱️ Duración: {servicio.duracionMinutos || servicio.duracionFormateada || 'N/A'} {servicio.duracionMinutos && 'min'}</span>
                   {servicio.precio && (
                     <span className="font-bold text-primary-600">${servicio.precio}</span>
                   )}
@@ -315,41 +462,262 @@ export default function AgendarCitaPage() {
               </select>
             </div>
 
+            {/* Mostrar horarios generales del veterinario */}
+            {veterinarioSeleccionado && horarios.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Horarios de Atención del Dr(a). {veterinarioSeleccionado.nombres}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {horarios.map((horario) => (
+                    <div key={horario.idHorario} className="bg-white rounded-lg p-3 border border-green-300">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-green-900">{horario.diaSemana}</p>
+                          <p className="text-sm text-green-700">
+                            {horario.horaInicio} - {horario.horaFin}
+                          </p>
+                          <p className="text-xs text-green-600 mt-1">
+                            Duración por cita: {horario.duracionCitaMinutos} min
+                          </p>
+                        </div>
+                        {horario.activo ? (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Activo
+                          </span>
+                        ) : (
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                            Inactivo
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {veterinarioSeleccionado && horarios.length === 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Este veterinario aún no tiene horarios configurados. Por favor, selecciona otro veterinario o contacta a la clínica.
+                </p>
+              </div>
+            )}
+
             {/* Selección de fecha */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de la Cita *</label>
               <input
                 type="date"
                 value={fechaSeleccionada}
-                onChange={(e) => setFechaSeleccionada(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => handleFechaChange(e.target.value)}
+                min={getFechaMinima()}
+                max="2099-12-31"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Solo se pueden agendar citas para fechas futuras o el día de hoy
+              </p>
             </div>
 
-            {/* Selección de hora */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Hora de la Cita *</label>
-              <input
-                type="time"
-                value={horaSeleccionada}
-                onChange={(e) => setHoraSeleccionada(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                required
-              />
-            </div>
+            {/* Mostrar disponibilidad */}
+            {veterinarioSeleccionado && fechaSeleccionada && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 shadow-lg">
+                <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                  <Clock className="w-6 h-6" />
+                  Horarios Disponibles para {disponibilidad?.diaSemana || 'este día'}
+                </h4>
+
+                {loadingDisponibilidad ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mx-auto"></div>
+                    <p className="text-base text-blue-700 mt-4 font-medium">Cargando disponibilidad...</p>
+                  </div>
+                ) : disponibilidad ? (
+                  <div className="space-y-4">
+                    {disponibilidad.tieneHorarios ? (
+                      <>
+                        <div className="bg-white/70 rounded-lg p-4 border border-blue-200">
+                          <p className="text-sm font-semibold text-blue-900 mb-1">
+                            📅 Horario de atención: {disponibilidad.diaSemana}
+                          </p>
+                          {disponibilidad.horarios && disponibilidad.horarios.length > 0 && (
+                            <p className="text-base text-blue-700 font-medium">
+                              ⏰ {disponibilidad.horarios.map(h =>
+                                `${h.horaInicio} - ${h.horaFin}`
+                              ).join(', ')}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Slots disponibles - MÁS GRANDES Y CLAROS */}
+                        {disponibilidad.slotsDisponibles && disponibilidad.slotsDisponibles.length > 0 ? (
+                          <div>
+                            <p className="text-base font-bold text-blue-900 mb-3">
+                              ✨ Selecciona un horario disponible:
+                            </p>
+                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
+                              {disponibilidad.slotsDisponibles.map((slot, index) => {
+                                // Normalizar la hora para comparación
+                                const slotHoraStr = typeof slot.hora === 'string'
+                                  ? slot.hora
+                                  : `${String(slot.hora.hour || 0).padStart(2, '0')}:${String(slot.hora.minute || 0).padStart(2, '0')}:${String(slot.hora.second || 0).padStart(2, '0')}`;
+
+                                const horaSeleccionadaStr = typeof horaSeleccionada === 'string'
+                                  ? horaSeleccionada
+                                  : horaSeleccionada?.hour !== undefined
+                                    ? `${String(horaSeleccionada.hour).padStart(2, '0')}:${String(horaSeleccionada.minute || 0).padStart(2, '0')}:${String(horaSeleccionada.second || 0).padStart(2, '0')}`
+                                    : '';
+
+                                const isSelected = slotHoraStr === horaSeleccionadaStr;
+
+                                // Formato de visualización (HH:mm)
+                                const horaDisplay = typeof slot.hora === 'string'
+                                  ? slot.hora.substring(0, 5) // "HH:mm:ss" -> "HH:mm"
+                                  : `${String(slot.hora.hour || 0).padStart(2, '0')}:${String(slot.hora.minute || 0).padStart(2, '0')}`;
+
+                                // Los slots solo se bloquean si están ocupados por otras citas (del backend)
+                                // Los horarios anteriores al seleccionado siempre están disponibles
+                                const estaDisponible = slot.disponible;
+
+                                return (
+                                  <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => estaDisponible && setHoraSeleccionada(slot.hora)}
+                                    disabled={!estaDisponible}
+                                    className={`px-4 py-4 text-base font-bold rounded-xl transition-all transform hover:scale-105 ${
+                                      estaDisponible
+                                        ? isSelected
+                                          ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-xl ring-4 ring-primary-300 scale-105'
+                                          : 'bg-gradient-to-br from-green-100 to-green-200 text-green-900 hover:from-green-200 hover:to-green-300 border-2 border-green-400 shadow-md'
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed border-2 border-gray-300 opacity-50'
+                                    }`}
+                                    title={estaDisponible ? '✅ Clic para seleccionar' : `❌ ${slot.motivoNoDisponible || 'No disponible (ocupado por otra cita)'}`}
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-lg">{horaDisplay}</span>
+                                      {isSelected && (
+                                        <span className="text-xs mt-1">✓ Seleccionado</span>
+                                      )}
+                                      {!estaDisponible && (
+                                        <span className="text-xs mt-1">🔒</span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Leyenda */}
+                            <div className="flex flex-wrap gap-4 mt-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-400 rounded"></div>
+                                <span className="text-gray-700">Disponible</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded"></div>
+                                <span className="text-gray-700">Seleccionado</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-gray-200 border-2 border-gray-300 rounded"></div>
+                                <span className="text-gray-700">Ocupado</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                            <p className="text-yellow-800">⚠️ No hay horarios disponibles para esta fecha. Intenta con otro día.</p>
+                          </div>
+                        )}
+
+                        {/* Citas ocupadas */}
+                        {disponibilidad.citasOcupadas && disponibilidad.citasOcupadas.length > 0 && (
+                          <div className="bg-white/70 rounded-lg p-4 border border-red-200">
+                            <p className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
+                              🔴 Horarios ya ocupados:
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {disponibilidad.citasOcupadas.map((cita) => (
+                                <div key={cita.idCita} className="text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                                  <span className="font-bold">{cita.hora}</span> - {cita.nombreMascota} ({cita.nombreServicio})
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 text-center">
+                        <p className="text-orange-800 font-semibold text-lg">⚠️ El veterinario no trabaja este día</p>
+                        <p className="text-orange-700 text-sm mt-2">Por favor, selecciona otro día de la semana.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-700">❌ No se pudo cargar la disponibilidad. Intenta de nuevo.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mostrar hora seleccionada */}
+            {horaSeleccionada && (
+              <div className="bg-gradient-to-r from-primary-50 to-primary-100 border-2 border-primary-400 rounded-xl p-5 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary-600 text-white rounded-full p-3">
+                      <Clock className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary-900">Hora seleccionada:</p>
+                      <p className="text-2xl font-bold text-primary-700">
+                        {typeof horaSeleccionada === 'string'
+                          ? horaSeleccionada
+                          : `${String(horaSeleccionada.hour || 0).padStart(2, '0')}:${String(horaSeleccionada.minute || 0).padStart(2, '0')}`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHoraSeleccionada('')}
+                    className="text-primary-600 hover:text-primary-800 font-medium text-sm underline"
+                  >
+                    Cambiar hora
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Motivo (opcional) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Motivo (opcional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Motivo <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-500 ml-2">(mínimo 5 caracteres)</span>
+              </label>
               <textarea
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
                 rows="3"
-                placeholder="Describe brevemente el motivo de la consulta..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Describe el motivo de la consulta (ej: Vacunación antirrábica, Control de rutina, Revisión de salud general...)"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  motivo.trim().length > 0 && motivo.trim().length < 5
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+                minLength={5}
+                maxLength={500}
               />
+              {motivo.trim().length > 0 && motivo.trim().length < 5 && (
+                <p className="text-xs text-red-600 mt-1">⚠️ El motivo debe tener al menos 5 caracteres</p>
+              )}
+              {motivo.trim().length === 0 && servicioSeleccionado && (
+                <p className="text-xs text-blue-600 mt-1">ℹ️ Si lo dejas vacío, se usará: "Cita para {servicioSeleccionado.nombre}"</p>
+              )}
             </div>
           </div>
 

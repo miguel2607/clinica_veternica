@@ -110,6 +110,15 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
      */
     boolean existsByEmail(String email);
 
+    /**
+     * Verifica si existe un propietario asociado a un usuario específico.
+     *
+     * @param idUsuario ID del usuario a verificar
+     * @return true si existe
+     */
+    @Query("SELECT COUNT(p) > 0 FROM Propietario p WHERE p.usuario.idUsuario = :idUsuario")
+    boolean existsByUsuarioId(@Param("idUsuario") Long idUsuario);
+
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
     // ===================================================================

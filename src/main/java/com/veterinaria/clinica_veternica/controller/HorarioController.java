@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.controller;
 
 import com.veterinaria.clinica_veternica.dto.request.agenda.HorarioRequestDTO;
+import com.veterinaria.clinica_veternica.dto.response.agenda.DisponibilidadVeterinarioDTO;
 import com.veterinaria.clinica_veternica.dto.response.agenda.HorarioResponseDTO;
 import com.veterinaria.clinica_veternica.service.interfaces.IHorarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,11 +9,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -97,6 +100,15 @@ public class HorarioController {
     public ResponseEntity<HorarioResponseDTO> desactivar(
             @Parameter(description = "ID del horario") @PathVariable Long id) {
         return ResponseEntity.ok(horarioService.desactivar(id));
+    }
+
+    @Operation(summary = "Obtener disponibilidad de un veterinario para una fecha específica")
+    @GetMapping("/veterinario/{idVeterinario}/disponibilidad")
+    public ResponseEntity<DisponibilidadVeterinarioDTO> obtenerDisponibilidad(
+            @Parameter(description = "ID del veterinario") @PathVariable Long idVeterinario,
+            @Parameter(description = "Fecha a consultar (formato: yyyy-MM-dd)") 
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        return ResponseEntity.ok(horarioService.obtenerDisponibilidad(idVeterinario, fecha));
     }
 }
 

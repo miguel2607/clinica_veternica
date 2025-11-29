@@ -116,4 +116,32 @@ public class PropietarioController {
     public ResponseEntity<PropietarioResponseDTO> activar(@PathVariable Long id) {
         return ResponseEntity.ok(propietarioService.activar(id));
     }
+
+    @Operation(summary = "Sincronizar usuarios con rol PROPIETARIO",
+               description = "Crea registros de propietarios para usuarios con rol PROPIETARIO que no tienen uno asociado. " +
+                             "Útil para migración de datos y corrección de inconsistencias.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/sincronizar")
+    public ResponseEntity<SincronizacionResponse> sincronizarUsuariosPropietarios() {
+        int propietariosCreados = propietarioService.sincronizarUsuariosPropietarios();
+
+        SincronizacionResponse response = new SincronizacionResponse(
+            "Sincronización completada exitosamente",
+            propietariosCreados,
+            propietariosCreados > 0
+                ? "Se crearon " + propietariosCreados + " registros de propietarios"
+                : "No se encontraron usuarios sin propietario asociado"
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * DTO para la respuesta de sincronización.
+     */
+    private record SincronizacionResponse(
+        String mensaje,
+        int propietariosCreados,
+        String detalle
+    ) {}
 }

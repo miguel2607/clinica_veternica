@@ -31,31 +31,85 @@ export default function HorariosPage() {
       setError('');
 
       console.log('🔍 Obteniendo perfil del veterinario...');
+      console.log('👤 Usuario actual:', user);
 
       let veterinario = null;
 
       // Intentar obtener el perfil usando el endpoint mi-perfil
       try {
+        console.log('📞 Intentando obtener perfil con obtenerMiPerfil()...');
         const veterinarioRes = await veterinarioService.obtenerMiPerfil();
         veterinario = veterinarioRes.data;
-        console.log('✅ Veterinario obtenido:', veterinario);
+        console.log('✅ Veterinario obtenido con obtenerMiPerfil:', veterinario);
       } catch (error404) {
-        // Si el endpoint no existe, buscar por email o usuario
-        if (error404.response?.status === 404) {
-          console.warn('⚠️ Endpoint mi-perfil no disponible, buscando por email...');
+        console.log('⚠️ obtenerMiPerfil falló, buscando manualmente...', error404);
+        // Si no existe el endpoint, buscar manualmente
+        try {
+          const todosVeterinarios = await veterinarioService.getAll();
+          console.log('📋 Total de veterinarios encontrados:', todosVeterinarios.data?.length || 0);
+          
+          // Buscar por email (correo)
+          veterinario = todosVeterinarios.data.find(v => {
+            const match = v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase();
+            console.log(`🔍 Comparando email (correo): "${v.correo}" === "${user?.email}" = ${match}`);
+            return match;
+          });
+
+          // Buscar por email del usuario asociado
+          if (!veterinario) {
+            veterinario = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase();
+              console.log(`🔍 Comparando email (usuario.email): "${v.usuario?.email}" === "${user?.email}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por idUsuario
+          if (!veterinario && user?.idUsuario) {
+            console.log(`🔍 Buscando por idUsuario: ${user.idUsuario}`);
+            veterinario = todosVeterinarios.data.find(v => {
+              const match = v.usuario && v.usuario.idUsuario === user.idUsuario;
+              console.log(`🔍 Comparando usuario: v.usuario.idUsuario=${v.usuario?.idUsuario} === ${user.idUsuario} = ${match}`);
+              return match;
+            });
+          }
+
+          // Buscar por username
+          if (!veterinario && user?.username) {
+            console.log(`🔍 Buscando por username: ${user.username}`);
+            veterinario = todosVeterinarios.data.find(v => {
+              const match = v.usuario?.username && v.usuario.username === user.username;
+              console.log(`🔍 Comparando username: v.usuario.username="${v.usuario?.username}" === "${user.username}" = ${match}`);
+              return match;
+            });
+          }
+
+          // Último recurso: buscar por similitud de nombre
+          if (!veterinario && (user?.nombre || user?.username)) {
+            console.log('🔍 Buscando por similitud de nombre (último recurso)...');
+            const nombreUsuario = (user.nombre || user.username || '').toLowerCase().split(' ')[0];
+            veterinario = todosVeterinarios.data.find(v => {
+              const match = v.nombres && v.nombres.toLowerCase().includes(nombreUsuario);
+              console.log(`🔍 Comparando nombre: v.nombres="${v.nombres}" incluye "${nombreUsuario}" = ${match}`);
+              return match;
+            });
+          }
+          
+          if (veterinario) {
+            console.log('✅ Veterinario encontrado manualmente:', veterinario);
+          } else {
+            console.error('❌ No se encontró veterinario con ningún método');
+          }
+        } catch (error2) {
+          console.error('❌ Error al buscar veterinarios:', error2);
+          setError('Error al buscar el perfil del veterinario');
+          setHorarios([]);
+          return;
         }
-
-        const todosVeterinarios = await veterinarioService.getAll();
-        veterinario = todosVeterinarios.data.find(v =>
-          (v.correo && v.correo.toLowerCase() === user?.email?.toLowerCase()) ||
-          (v.usuario?.email && v.usuario.email.toLowerCase() === user?.email?.toLowerCase()) ||
-          (v.usuario && v.usuario.idUsuario === user?.idUsuario)
-        );
-
-        console.log('✅ Veterinario encontrado:', veterinario);
       }
 
       if (!veterinario || !veterinario.idPersonal) {
+        console.error('❌ No se pudo encontrar el veterinario o no tiene idPersonal');
         setError('No se encontró un perfil de veterinario asociado a tu usuario. Por favor, contacta al administrador.');
         setHorarios([]);
         return;

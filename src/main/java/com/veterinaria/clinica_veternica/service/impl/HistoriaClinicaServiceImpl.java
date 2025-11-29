@@ -163,7 +163,7 @@ public class HistoriaClinicaServiceImpl implements IHistoriaClinicaService {
     @Override
     @Transactional(readOnly = true)
     public List<HistoriaClinicaResponseDTO> listarTodos() {
-        List<HistoriaClinica> historias = historiaClinicaRepository.findAll();
+        List<HistoriaClinica> historias = historiaClinicaRepository.findAllWithMascotaAndPropietario();
         return historiaClinicaMapper.toResponseDTOList(historias);
     }
 

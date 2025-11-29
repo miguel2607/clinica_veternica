@@ -158,12 +158,15 @@ public class HistoriaClinicaProxy {
         String usuario = auth.getName();
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
 
-        // Solo ADMIN y VETERINARIO pueden modificar
+        // ADMIN, VETERINARIO y AUXILIAR pueden modificar
+        // AUXILIAR puede modificar observaciones y campos no críticos
         boolean tienePermiso = authorities.stream()
                 .anyMatch(a -> {
                     String role = a.getAuthority();
                     return role.equals(Constants.ROLE_ADMIN_STRING) ||
-                           role.equals(Constants.ROLE_VETERINARIO_STRING);
+                           role.equals(Constants.ROLE_VETERINARIO_STRING) ||
+                           role.equals("ROLE_" + Constants.ROLE_AUXILIAR) ||
+                           role.equals(Constants.ROLE_AUXILIAR_VETERINARIO_STRING);
                 });
 
         if (tienePermiso) {

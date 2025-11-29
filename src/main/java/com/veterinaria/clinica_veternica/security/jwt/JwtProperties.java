@@ -17,9 +17,9 @@ public class JwtProperties {
 
     /**
      * Clave secreta para firmar los tokens JWT.
-     * En producción debe ser más compleja y almacenarse en variables de entorno.
+     * Se carga automáticamente desde el archivo .env (variable JWT_SECRET).
      */
-    private String secret = "VeterinariaClave2025SecretKeyParaGenerarTokensJWTDebeSerLargaYSegura123456789";
+    private String secret;
 
     /**
      * Tiempo de expiración del token en milisegundos.

@@ -257,8 +257,8 @@ public class Cita {
      * Marca la cita como atendida y registra tiempos de atención.
      */
     public void marcarComoAtendida() {
-        if (this.estado != EstadoCita.CONFIRMADA && this.estado != EstadoCita.PROGRAMADA) {
-            throw new IllegalStateException("Solo se pueden atender citas confirmadas o programadas");
+        if (this.estado != EstadoCita.CONFIRMADA && this.estado != EstadoCita.PROGRAMADA && this.estado != EstadoCita.EN_ATENCION) {
+            throw new IllegalStateException("Solo se pueden atender citas confirmadas, programadas o en atención. Estado actual: " + this.estado);
         }
 
         this.estado = EstadoCita.ATENDIDA;
@@ -272,8 +272,13 @@ public class Cita {
 
     /**
      * Registra el inicio de la atención.
+     * Cambia el estado a EN_ATENCION y registra la fecha/hora de inicio.
      */
     public void iniciarAtencion() {
+        if (this.estado != EstadoCita.CONFIRMADA && this.estado != EstadoCita.PROGRAMADA) {
+            throw new IllegalStateException("Solo se pueden iniciar citas confirmadas o programadas. Estado actual: " + this.estado);
+        }
+        this.estado = EstadoCita.EN_ATENCION;
         this.fechaHoraInicioAtencion = LocalDateTime.now();
     }
 

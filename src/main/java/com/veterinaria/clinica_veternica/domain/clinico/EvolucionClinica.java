@@ -114,6 +114,20 @@ public class EvolucionClinica {
     private String descripcion;
 
     /**
+     * Motivo de la consulta o razón por la que se realiza la evolución.
+     */
+    @Size(max = 2000, message = "El motivo de consulta no puede exceder 2000 caracteres")
+    @Column(length = 2000)
+    private String motivoConsulta;
+
+    /**
+     * Hallazgos del examen físico o clínico realizado.
+     */
+    @Size(max = 3000, message = "Los hallazgos del examen no pueden exceder 3000 caracteres")
+    @Column(length = 3000)
+    private String hallazgosExamen;
+
+    /**
      * Diagnóstico actualizado o impresión clínica.
      */
     @Size(max = 1000, message = "El diagnóstico no puede exceder 1000 caracteres")

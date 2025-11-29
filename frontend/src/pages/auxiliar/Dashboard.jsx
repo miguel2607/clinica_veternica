@@ -160,7 +160,7 @@ export default function AuxiliarDashboard() {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {stockAgotado.map((item) => (
                 <div key={item.idInventario} className="bg-white rounded-lg p-3 border border-red-200">
-                  <p className="font-semibold text-gray-900">{item.insumo?.nombre || 'Sin nombre'}</p>
+                  <p className="font-semibold text-gray-900">{item.nombreInsumo || item.insumo?.nombre || 'Sin nombre'}</p>
                   <p className="text-sm text-gray-600">
                     Stock actual: <span className="font-bold text-red-600">{item.cantidadActual}</span> |
                     Mínimo: {item.stockMinimo || item.insumo?.stockMinimo || 0}
@@ -183,7 +183,7 @@ export default function AuxiliarDashboard() {
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {stockBajo.map((item) => {
-                const nombreInsumo = item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
+                const nombreInsumo = item.nombreInsumo || item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
                 const cantidadActual = item.cantidadActual || 0;
                 const stockMinimo = item.stockMinimo || item.insumo?.stockMinimo || 0;
                 
@@ -226,7 +226,7 @@ export default function AuxiliarDashboard() {
               <div key={item.idInventario || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{item.insumo?.nombre || 'Sin nombre'}</h4>
+                    <h4 className="font-semibold text-gray-900">{item.nombreInsumo || item.insumo?.nombre || 'Sin nombre'}</h4>
                     <p className="text-sm text-gray-600 mt-1">
                       Stock actual: {item.cantidadActual} unidades
                     </p>

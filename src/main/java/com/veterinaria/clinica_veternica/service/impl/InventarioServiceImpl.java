@@ -67,6 +67,14 @@ public class InventarioServiceImpl implements IInventarioService {
                 .map(this::obtenerOcrearInventario)
                 .toList();
         
+        // Asegurar que todos los insumos estén cargados antes de mapear
+        inventarios.forEach(inv -> {
+            if (inv.getInsumo() != null) {
+                // Forzar la carga del insumo accediendo a una propiedad
+                inv.getInsumo().getNombre();
+            }
+        });
+        
         return inventarioMapper.toResponseDTOList(inventarios);
     }
 
@@ -78,13 +86,22 @@ public class InventarioServiceImpl implements IInventarioService {
      * @return Registro de inventario sincronizado
      */
     private Inventario obtenerOcrearInventario(Insumo insumo) {
-        Inventario inventario = inventarioRepository.findByInsumo(insumo)
+        // Intentar obtener el inventario con el insumo cargado
+        Inventario inventario = inventarioRepository.findByInsumoWithFetch(insumo)
                 .orElse(null);
 
         if (inventario == null) {
             inventario = crearNuevoInventario(insumo);
         } else {
             inventario = sincronizarInventarioExistente(inventario, insumo);
+        }
+        
+        // Asegurar que el insumo esté cargado y asociado (por si acaso)
+        if (inventario.getInsumo() == null) {
+            inventario.setInsumo(insumo);
+        } else {
+            // Forzar la carga del insumo accediendo a una propiedad
+            inventario.getInsumo().getNombre();
         }
 
         return inventario;
@@ -112,6 +129,8 @@ public class InventarioServiceImpl implements IInventarioService {
         calcularValorTotal(inventario, insumo, stockInicial);
         
         inventario = inventarioRepository.save(inventario);
+        // Asegurar que el insumo esté asociado después de guardar
+        inventario.setInsumo(insumo);
         log.debug("Registro de inventario creado para insumo ID: {} - {}", insumo.getIdInsumo(), insumo.getNombre());
         
         return inventario;
@@ -137,6 +156,9 @@ public class InventarioServiceImpl implements IInventarioService {
             
             inventario = inventarioRepository.save(inventario);
         }
+        
+        // Asegurar que el insumo esté asociado
+        inventario.setInsumo(insumo);
         
         return inventario;
     }

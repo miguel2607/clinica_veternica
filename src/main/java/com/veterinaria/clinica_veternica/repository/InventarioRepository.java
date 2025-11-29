@@ -23,16 +23,22 @@ import java.util.Optional;
 public interface InventarioRepository extends JpaRepository<Inventario, Long> {
 
     Optional<Inventario> findByInsumo(Insumo insumo);
+    
+    @Query("SELECT i FROM Inventario i JOIN FETCH i.insumo WHERE i.insumo = :insumo")
+    Optional<Inventario> findByInsumoWithFetch(@Param("insumo") Insumo insumo);
 
-    @Query("SELECT i FROM Inventario i WHERE i.cantidadActual <= i.insumo.stockMinimo")
+    @Query("SELECT i FROM Inventario i JOIN FETCH i.insumo WHERE i.cantidadActual <= i.insumo.stockMinimo")
     List<Inventario> findInventariosConStockBajo();
 
-    @Query("SELECT i FROM Inventario i WHERE i.cantidadActual = 0")
+    @Query("SELECT i FROM Inventario i JOIN FETCH i.insumo WHERE i.cantidadActual = 0")
     List<Inventario> findInventariosAgotados();
 
     @Query("SELECT i FROM Inventario i WHERE i.fechaActualizacion BETWEEN :inicio AND :fin")
     List<Inventario> findInventariosConMovimientosEnRango(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
-    @Query("SELECT i FROM Inventario i ORDER BY i.valorTotal DESC")
+    @Query("SELECT i FROM Inventario i JOIN FETCH i.insumo ORDER BY i.valorTotal DESC")
     List<Inventario> findInventariosOrdenadosPorValor();
+    
+    @Query("SELECT i FROM Inventario i JOIN FETCH i.insumo")
+    List<Inventario> findAllWithInsumo();
 }

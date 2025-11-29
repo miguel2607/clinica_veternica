@@ -42,7 +42,7 @@ export default function InventarioPage() {
           </div>
           <div className="mt-2 space-y-1">
             {stockBajo.map((item) => {
-              const nombreInsumo = item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
+              const nombreInsumo = item.nombreInsumo || item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
               const cantidadActual = item.cantidadActual || 0;
               const stockMinimo = item.stockMinimo || item.insumo?.stockMinimo || 0;
               
@@ -69,7 +69,7 @@ export default function InventarioPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {inventario.map((item) => {
-                const nombreInsumo = item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
+                const nombreInsumo = item.nombreInsumo || item.insumo?.nombre || item.nombre || 'Insumo sin nombre';
                 const cantidadActual = item.cantidadActual || 0;
                 const stockMinimo = item.stockMinimo || item.insumo?.stockMinimo || 0;
                 const esStockBajo = cantidadActual > 0 && cantidadActual <= stockMinimo;

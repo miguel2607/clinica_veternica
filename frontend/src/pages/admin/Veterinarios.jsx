@@ -97,7 +97,7 @@ export default function VeterinariosPage() {
       };
 
       if (editingVeterinario) {
-        await veterinarioService.update(editingVeterinario.idVeterinario, data);
+        await veterinarioService.update(editingVeterinario.idPersonal, data);
         setSuccess('Veterinario actualizado exitosamente');
       } else {
         await veterinarioService.create(data);
@@ -199,7 +199,7 @@ export default function VeterinariosPage() {
                 </tr>
               ) : (
                 filteredVeterinarios.map((veterinario) => (
-                  <tr key={veterinario.idVeterinario} className="hover:bg-gray-50 transition-colors">
+                  <tr key={veterinario.idPersonal} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {veterinario.nombreCompleto || `${veterinario.personal?.nombres || ''} ${veterinario.personal?.apellidos || ''}`}
@@ -225,7 +225,7 @@ export default function VeterinariosPage() {
                           <Edit className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(veterinario.idVeterinario)}
+                          onClick={() => handleDelete(veterinario.idPersonal)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           title="Eliminar"
                         >

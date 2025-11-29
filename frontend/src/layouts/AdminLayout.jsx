@@ -5,6 +5,7 @@ import UsuariosPage from '../pages/admin/Usuarios';
 import MascotasPage from '../pages/admin/Mascotas';
 import PropietariosPage from '../pages/admin/Propietarios';
 import CitasPage from '../pages/admin/Citas';
+import AgendarCitaPage from '../pages/admin/AgendarCita';
 import InventarioPage from '../pages/admin/Inventario';
 import InsumosPage from '../pages/admin/Insumos';
 import ReportesPage from '../pages/admin/Reportes';
@@ -17,11 +18,11 @@ import HistoriasClinicasPage from '../pages/admin/HistoriasClinicas';
 import ServiciosPage from '../pages/admin/Servicios';
 import TiposInsumoPage from '../pages/admin/TiposInsumo';
 import VacunacionesPage from '../pages/admin/Vacunaciones';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  Package, 
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Package,
   FileText,
   Bell,
   PawPrint,
@@ -29,7 +30,8 @@ import {
   Clock,
   FileCheck,
   Scissors,
-  Syringe
+  Syringe,
+  CalendarPlus
 } from 'lucide-react';
 
 const menuItems = [
@@ -43,6 +45,7 @@ const menuItems = [
   { path: '/admin/horarios', label: 'Horarios', icon: <Clock className="w-5 h-5" /> },
   { path: '/admin/servicios', label: 'Servicios', icon: <Scissors className="w-5 h-5" /> },
   { path: '/admin/citas', label: 'Citas', icon: <Calendar className="w-5 h-5" /> },
+  { path: '/admin/agendar-cita', label: 'Agendar Cita', icon: <CalendarPlus className="w-5 h-5" /> },
   { path: '/admin/historias-clinicas', label: 'Historias Clínicas', icon: <FileCheck className="w-5 h-5" /> },
   { path: '/admin/vacunaciones', label: 'Vacunaciones', icon: <Syringe className="w-5 h-5" /> },
   { path: '/admin/notificaciones', label: 'Notificaciones', icon: <Bell className="w-5 h-5" /> },
@@ -66,6 +69,7 @@ export default function AdminLayout() {
         <Route path="horarios" element={<HorariosPage />} />
         <Route path="servicios" element={<ServiciosPage />} />
         <Route path="citas" element={<CitasPage />} />
+        <Route path="agendar-cita" element={<AgendarCitaPage />} />
         <Route path="historias-clinicas" element={<HistoriasClinicasPage />} />
         <Route path="vacunaciones" element={<VacunacionesPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />

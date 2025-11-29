@@ -121,7 +121,9 @@ public class CitaMediatorImpl implements CitaMediator {
 
     private void validarDisponibilidadHorario() {
         log.debug("Mediador: Validando disponibilidad del horario");
-        // Aquí se validaría contra otras citas del veterinario en ese horario
+        // La validación completa de horarios se realiza en ValidacionDisponibilidadHandler
+        // antes de llegar al mediator. Este método se mantiene por compatibilidad
+        // y para futuras validaciones adicionales si fueran necesarias.
     }
 
     private void validarServicioDisponible(Cita cita) {

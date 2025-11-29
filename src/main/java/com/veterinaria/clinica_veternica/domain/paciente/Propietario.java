@@ -1,5 +1,6 @@
 package com.veterinaria.clinica_veternica.domain.paciente;
 
+import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -117,6 +118,15 @@ public class Propietario {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
+
+    /**
+     * Usuario asociado al propietario (si existe).
+     * Permite que un propietario tenga credenciales de acceso al sistema.
+     * Relación One-to-One con Usuario.
+     */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", unique = true)
+    private Usuario usuario;
 
     /**
      * Mascotas del propietario.

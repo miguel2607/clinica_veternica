@@ -1,6 +1,7 @@
 package com.veterinaria.clinica_veternica.service.impl;
 
 import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
+import com.veterinaria.clinica_veternica.domain.usuario.RolUsuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
@@ -13,13 +14,16 @@ import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.service.interfaces.IPropietarioService;
 import com.veterinaria.clinica_veternica.util.Constants;
+import com.veterinaria.clinica_veternica.util.NameParser;
 import com.veterinaria.clinica_veternica.util.ValidationHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -83,7 +87,7 @@ public class PropietarioServiceImpl implements IPropietarioService {
             .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_PROPIETARIO, "id", id));
 
         // Validar documento único (si cambió)
-        if (!propietario.getDocumento().equals(requestDTO.getDocumento())) {
+        if (!Objects.equals(propietario.getDocumento(), requestDTO.getDocumento())) {
             validationHelper.validateDocumentUnique(
                 () -> propietarioRepository.existsByTipoDocumentoAndNumeroDocumento(
                     requestDTO.getTipoDocumento(), requestDTO.getDocumento()),
@@ -361,8 +365,73 @@ public class PropietarioServiceImpl implements IPropietarioService {
                         propietario.getIdPropietario(), propietario.getEmail());
             }
         } catch (Exception e) {
-            log.error("Error al enviar notificación de creación de propietario {}: {}", 
+            log.error("Error al enviar notificación de creación de propietario {}: {}",
                     propietario.getIdPropietario(), e.getMessage(), e);
         }
     }
+
+    /**
+     * Sincroniza usuarios con rol PROPIETARIO creando automáticamente registros de propietarios
+     * para aquellos usuarios que no tienen uno asociado.
+     *
+     * Útil para:
+     * - Migración de datos
+     * - Corrección de inconsistencias
+     * - Usuarios creados antes de implementar la creación automática
+     *
+     * @return Número de propietarios creados en la sincronización
+     */
+    @Override
+    @Transactional
+    public int sincronizarUsuariosPropietarios() {
+        log.info("Iniciando sincronización de usuarios con rol PROPIETARIO");
+
+        // Obtener todos los usuarios con rol PROPIETARIO
+        List<Usuario> usuariosPropietarios = usuarioRepository.findByRol(RolUsuario.PROPIETARIO);
+        int propietariosCreados = 0;
+
+        for (Usuario usuario : usuariosPropietarios) {
+            try {
+                // Verificar si ya tiene un propietario asociado
+                if (!propietarioRepository.existsByUsuarioId(usuario.getIdUsuario())) {
+                    // Extraer nombres y apellidos del username
+                    NameParser.NameParts nombreParts = NameParser.extractNamesAndLastNames(usuario.getUsername());
+
+                    // Crear propietario básico
+                    Propietario propietario = Propietario.builder()
+                        .documento("TEMP_" + usuario.getIdUsuario()) // Documento temporal único
+                        .tipoDocumento("CC") // Tipo de documento por defecto (Cédula de Ciudadanía)
+                        .nombres(nombreParts.nombres())
+                        .apellidos(nombreParts.apellidos().isEmpty() ? "Pendiente" : nombreParts.apellidos())
+                        .email(usuario.getEmail())
+                        .telefono("0000000000") // Teléfono temporal
+                        .activo(usuario.getEstado()) // Usar el mismo estado que el usuario
+                        .observaciones("Propietario creado automáticamente mediante sincronización. Complete su información desde la gestión de propietarios.")
+                        .usuario(usuario)
+                        .build();
+
+                    propietarioRepository.save(propietario);
+                    propietariosCreados++;
+
+                    log.info("✅ Propietario creado en sincronización para usuario ID: {} (username: {})",
+                            usuario.getIdUsuario(), usuario.getUsername());
+                }
+            } catch (Exception e) {
+                log.error("❌ Error al sincronizar propietario para usuario ID: {} - {}",
+                        usuario.getIdUsuario(), e.getMessage(), e);
+                // Continuar con el siguiente usuario
+            }
+        }
+
+        // Invalidar caché después de la sincronización
+        if (propietariosCreados > 0) {
+            cachedServiceProxy.evictPattern(CACHE_PATTERN_PROPIETARIOS);
+        }
+
+        log.info("Sincronización completada: {} propietarios creados de {} usuarios PROPIETARIO",
+                propietariosCreados, usuariosPropietarios.size());
+
+        return propietariosCreados;
+    }
+
 }

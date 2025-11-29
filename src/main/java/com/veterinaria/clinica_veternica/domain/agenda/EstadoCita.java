@@ -35,6 +35,12 @@ public enum EstadoCita {
     CONFIRMADA("Confirmada", "El propietario ha confirmado su asistencia"),
 
     /**
+     * Cita en proceso de atención.
+     * El veterinario ha iniciado la atención de la cita.
+     */
+    EN_ATENCION("En Atención", "La cita está siendo atendida actualmente"),
+
+    /**
      * Cita completada y atendida.
      * La mascota fue atendida y se generó historia clínica.
      * Estado final exitoso.
@@ -105,7 +111,8 @@ public enum EstadoCita {
     public boolean canTransitionTo(EstadoCita newState) {
         return switch (this) {
             case PROGRAMADA -> newState == CONFIRMADA || newState == CANCELADA || newState == NO_ASISTIO;
-            case CONFIRMADA -> newState == ATENDIDA || newState == CANCELADA || newState == NO_ASISTIO;
+            case CONFIRMADA -> newState == EN_ATENCION || newState == ATENDIDA || newState == CANCELADA || newState == NO_ASISTIO;
+            case EN_ATENCION -> newState == ATENDIDA || newState == CANCELADA;
             case ATENDIDA, CANCELADA, NO_ASISTIO -> false; // Estados finales, no permiten transiciones
         };
     }

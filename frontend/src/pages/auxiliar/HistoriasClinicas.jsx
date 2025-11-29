@@ -67,8 +67,21 @@ export default function HistoriasClinicasPage() {
   };
 
   const handleOpenModal = (historia) => {
-    const mascota = getMascotaInfo(historia.idHistoriaClinica);
-    setSelectedHistoria({...historia, mascota});
+    console.log('📋 Historia seleccionada:', historia);
+    console.log('📋 Historia.mascota:', historia.mascota);
+    
+    // Obtener la información de la mascota
+    const mascota = getMascotaInfo(historia);
+    
+    // Preservar el idMascota original de la historia si existe
+    const idMascota = historia.mascota?.idMascota || mascota?.idMascota;
+    
+    setSelectedHistoria({
+      ...historia,
+      mascota: mascota || historia.mascota,
+      idMascota: idMascota // Asegurar que idMascota esté disponible directamente
+    });
+    
     setFormData({
       observaciones: historia.observaciones || ''
     });
@@ -83,12 +96,37 @@ export default function HistoriasClinicasPage() {
     setSuccess('');
 
     try {
+      console.log('📤 selectedHistoria completa:', selectedHistoria);
+      console.log('📤 selectedHistoria.mascota:', selectedHistoria.mascota);
+      console.log('📤 selectedHistoria.idMascota:', selectedHistoria.idMascota);
+      
+      // Obtener idMascota de diferentes fuentes posibles (en orden de prioridad)
+      const idMascota = selectedHistoria.idMascota || 
+                       selectedHistoria.mascota?.idMascota ||
+                       (selectedHistoria.mascota && typeof selectedHistoria.mascota === 'object' ? selectedHistoria.mascota.idMascota : null);
+      
+      console.log('📤 idMascota obtenido:', idMascota);
+      
+      if (!idMascota) {
+        console.error('❌ No se pudo obtener idMascota. selectedHistoria:', selectedHistoria);
+        setError('Error: No se pudo obtener el ID de la mascota. Por favor, recarga la página e intenta nuevamente.');
+        return;
+      }
+
+      // Construir el objeto de actualización solo con los campos válidos del DTO
       const updateData = {
-        ...selectedHistoria,
-        observaciones: formData.observaciones,
-        idMascota: selectedHistoria.idMascota
+        idMascota: idMascota,
+        numeroHistoria: selectedHistoria.numeroHistoria || `HC-${selectedHistoria.idHistoriaClinica}`,
+        grupoSanguineo: selectedHistoria.grupoSanguineo || null,
+        alergias: selectedHistoria.alergias || null,
+        enfermedadesCronicas: selectedHistoria.enfermedadesCronicas || null,
+        cirugiasPrevias: selectedHistoria.cirugiasPrevias || null,
+        medicamentosActuales: selectedHistoria.medicamentosActuales || null,
+        observaciones: formData.observaciones || null,
+        activo: selectedHistoria.activo !== undefined ? selectedHistoria.activo : true
       };
 
+      console.log('📤 Datos a enviar:', updateData);
       await historiaClinicaService.update(selectedHistoria.idHistoriaClinica, updateData);
       setSuccess('Historia clínica actualizada exitosamente');
 
@@ -99,7 +137,9 @@ export default function HistoriasClinicasPage() {
       }, 1500);
     } catch (error) {
       console.error('Error al actualizar:', error);
-      setError(`Error: ${error.response?.data?.message || error.message}`);
+      const errorMessage = error.response?.data?.message || error.message;
+      setError(`Error: ${errorMessage}`);
+      console.error('Error completo:', error.response?.data);
     }
   };
 

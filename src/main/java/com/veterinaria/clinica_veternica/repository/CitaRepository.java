@@ -192,4 +192,51 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     List<Cita> findCitasAtendidasPorVeterinario(@Param("veterinario") Veterinario veterinario,
                                                   @Param("inicio") LocalDateTime inicio,
                                                   @Param("fin") LocalDateTime fin);
+
+    /**
+     * Cuenta citas activas (no canceladas ni no asistidas) para un veterinario en una hora específica.
+     * Se considera el tiempo estimado de duración de las citas para detectar solapamientos.
+     *
+     * @param veterinario Veterinario
+     * @param fechaCita Fecha de la cita
+     * @param horaCita Hora de la cita
+     * @param duracionMinutos Duración estimada en minutos
+     * @param idCitaExcluir ID de cita a excluir (para actualizaciones, puede ser null)
+     * @return Cantidad de citas que se solapan
+     */
+    @Query("SELECT COUNT(c) FROM Cita c WHERE c.veterinario = :veterinario " +
+           "AND c.fechaCita = :fechaCita " +
+           "AND c.estado NOT IN ('CANCELADA', 'NO_ASISTIO') " +
+           "AND (:idCitaExcluir IS NULL OR c.idCita != :idCitaExcluir) " +
+           "AND (" +
+           "  (c.horaCita <= :horaCita AND FUNCTION('ADDTIME', c.horaCita, FUNCTION('SEC_TO_TIME', COALESCE(c.duracionEstimadaMinutos, 30) * 60)) > :horaCita) " +
+           "  OR (c.horaCita < FUNCTION('ADDTIME', :horaCita, FUNCTION('SEC_TO_TIME', :duracionMinutos * 60)) AND c.horaCita >= :horaCita)" +
+           ")")
+    long countCitasConflictivas(@Param("veterinario") Veterinario veterinario,
+                                 @Param("fechaCita") java.time.LocalDate fechaCita,
+                                 @Param("horaCita") java.time.LocalTime horaCita,
+                                 @Param("duracionMinutos") Integer duracionMinutos,
+                                 @Param("idCitaExcluir") Long idCitaExcluir);
+
+    /**
+     * Busca citas activas (no canceladas ni no asistidas) que se solapan con el rango de tiempo especificado.
+     *
+     * @param veterinario Veterinario
+     * @param fechaCita Fecha de la cita
+     * @param horaInicio Hora de inicio del rango
+     * @param horaFin Hora de fin del rango
+     * @param idCitaExcluir ID de cita a excluir (puede ser null)
+     * @return Lista de citas que se solapan
+     */
+    @Query("SELECT c FROM Cita c WHERE c.veterinario = :veterinario " +
+           "AND c.fechaCita = :fechaCita " +
+           "AND c.estado NOT IN ('CANCELADA', 'NO_ASISTIO') " +
+           "AND (:idCitaExcluir IS NULL OR c.idCita != :idCitaExcluir) " +
+           "AND c.horaCita < :horaFin " +
+           "AND FUNCTION('ADDTIME', c.horaCita, FUNCTION('SEC_TO_TIME', COALESCE(c.duracionEstimadaMinutos, 30) * 60)) > :horaInicio")
+    List<Cita> findCitasSolapadas(@Param("veterinario") Veterinario veterinario,
+                                   @Param("fechaCita") java.time.LocalDate fechaCita,
+                                   @Param("horaInicio") java.time.LocalTime horaInicio,
+                                   @Param("horaFin") java.time.LocalTime horaFin,
+                                   @Param("idCitaExcluir") Long idCitaExcluir);
 }

@@ -53,32 +53,72 @@ public class EvolucionClinicaServiceImpl implements IEvolucionClinicaService {
         Veterinario veterinario = veterinarioRepository.findById(requestDTO.getIdVeterinario())
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_VETERINARIO, "id", requestDTO.getIdVeterinario()));
 
-        // Mapear DTO a entidad
+        // Mapear DTO a entidad (solo campos básicos)
         EvolucionClinica evolucion = evolucionClinicaMapper.toEntity(requestDTO);
-        
+
         // Establecer relaciones
         evolucion.setHistoriaClinica(historiaClinica);
         evolucion.setVeterinario(veterinario);
+
+        // Guardar motivoConsulta y hallazgosExamen por separado
+        if (requestDTO.getMotivoConsulta() != null && !requestDTO.getMotivoConsulta().isBlank()) {
+            evolucion.setMotivoConsulta(requestDTO.getMotivoConsulta().trim());
+        }
         
-        // Combinar motivoConsulta y hallazgosExamen en descripcion
-        String descripcion = String.format("Motivo de consulta: %s. Hallazgos del examen: %s",
-                requestDTO.getMotivoConsulta(), requestDTO.getHallazgosExamen());
+        if (requestDTO.getHallazgosExamen() != null && !requestDTO.getHallazgosExamen().isBlank()) {
+            evolucion.setHallazgosExamen(requestDTO.getHallazgosExamen().trim());
+        }
+
+        // Combinar motivoConsulta y hallazgosExamen en descripcion para compatibilidad
+        String motivo = requestDTO.getMotivoConsulta() != null ? requestDTO.getMotivoConsulta() : "";
+        String hallazgos = requestDTO.getHallazgosExamen() != null ? requestDTO.getHallazgosExamen() : "";
+        String descripcion = String.format("Motivo de consulta: %s. Hallazgos del examen: %s", motivo, hallazgos);
         evolucion.setDescripcion(descripcion);
-        
+
+        // Establecer tipo de evolución
+        evolucion.setTipoEvolucion(requestDTO.getTipoEvolucion());
+
         // Establecer plan de tratamiento si existe
         if (requestDTO.getPlanTratamiento() != null && !requestDTO.getPlanTratamiento().isBlank()) {
             evolucion.setPlan(requestDTO.getPlanTratamiento());
         }
-        
+
+        // Establecer observaciones si existen
+        if (requestDTO.getObservaciones() != null && !requestDTO.getObservaciones().isBlank()) {
+            evolucion.setObservaciones(requestDTO.getObservaciones());
+        }
+
+        // Establecer diagnóstico si existe
+        if (requestDTO.getDiagnostico() != null && !requestDTO.getDiagnostico().isBlank()) {
+            evolucion.setDiagnostico(requestDTO.getDiagnostico());
+        }
+
+        // Establecer signos vitales solo si tienen valores válidos
+        if (requestDTO.getPeso() != null && requestDTO.getPeso() > 0) {
+            evolucion.setPeso(requestDTO.getPeso());
+        }
+
+        if (requestDTO.getTemperatura() != null && requestDTO.getTemperatura() >= 35.0) {
+            evolucion.setTemperatura(requestDTO.getTemperatura());
+        }
+
+        if (requestDTO.getFrecuenciaCardiaca() != null && requestDTO.getFrecuenciaCardiaca() >= 20) {
+            evolucion.setFrecuenciaCardiaca(requestDTO.getFrecuenciaCardiaca());
+        }
+
+        if (requestDTO.getFrecuenciaRespiratoria() != null && requestDTO.getFrecuenciaRespiratoria() >= 5) {
+            evolucion.setFrecuenciaRespiratoria(requestDTO.getFrecuenciaRespiratoria());
+        }
+
         // Establecer fecha de evolución (por defecto ahora)
-        if (evolucion.getFechaEvolucion() == null) {
-            evolucion.setFechaEvolucion(LocalDateTime.now());
-        }
-        
-        // Establecer estado del paciente por defecto si no se proporciona
-        if (evolucion.getEstadoPaciente() == null || evolucion.getEstadoPaciente().isBlank()) {
-            evolucion.setEstadoPaciente("ESTABLE");
-        }
+        evolucion.setFechaEvolucion(LocalDateTime.now());
+
+        // Establecer estado del paciente por defecto
+        evolucion.setEstadoPaciente("ESTABLE");
+
+        // Establecer valores por defecto
+        evolucion.setActivo(true);
+        evolucion.setEsAlta(false);
 
         EvolucionClinica evolucionGuardada = evolucionClinicaRepository.save(evolucion);
         log.info("Evolución clínica creada exitosamente con ID: {}", evolucionGuardada.getIdEvolucion());

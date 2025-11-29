@@ -48,7 +48,7 @@ export default function InventarioPage() {
   };
 
   const inventarioFiltrado = inventario.filter(item => {
-    const matchSearch = item.insumo?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = (item.nombreInsumo || item.insumo?.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                        item.insumo?.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchTipo = tipoFilter === 'TODOS' ||
@@ -214,7 +214,7 @@ export default function InventarioPage() {
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-gray-900">{item.insumo?.nombre || 'Sin nombre'}</h3>
+                    <h3 className="font-semibold text-lg text-gray-900">{item.nombreInsumo || item.insumo?.nombre || 'Sin nombre'}</h3>
                     {item.insumo?.tipoInsumo && (
                       <div className="flex items-center gap-1 mt-1">
                         <Layers className="w-3 h-3 text-gray-400" />

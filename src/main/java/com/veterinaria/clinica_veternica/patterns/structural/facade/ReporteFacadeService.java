@@ -74,17 +74,24 @@ public class ReporteFacadeService {
         long citasAtendidas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA);
         long citasProgramadas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA);
         long citasCanceladas = contarCitasPorEstado(citas, com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_CANCELADA);
+        long citasEnAtencion = contarCitasPorEstado(citas, "EN_ATENCION");
+        long citasFinalizadas = contarCitasPorEstado(citas, "FINALIZADA");
+        long citasConfirmadas = contarCitasPorEstado(citas, "CONFIRMADA");
+        
+        // Las citas en atención, finalizadas y confirmadas también se cuentan como atendidas/programadas para el reporte
+        long totalCitasAtendidas = citasAtendidas + citasEnAtencion + citasFinalizadas;
+        long totalCitasProgramadas = citasProgramadas + citasConfirmadas;
 
-        log.info("Reporte generado: {} citas totales ({} atendidas, {} programadas, {} canceladas)",
-                citas != null ? citas.size() : 0, citasAtendidas, citasProgramadas, citasCanceladas);
+        log.info("Reporte generado: {} citas totales ({} atendidas, {} en atención, {} programadas, {} canceladas)",
+                citas != null ? citas.size() : 0, citasAtendidas, citasEnAtencion, citasProgramadas, citasCanceladas);
 
         return ReporteCitasDTO.builder()
                 .fechaInicio(fechaInicio)
                 .fechaFin(fechaFin)
                 .citas(citas)
-                .totalCitas(citas.size())
-                .citasAtendidas(citasAtendidas)
-                .citasProgramadas(citasProgramadas)
+                .totalCitas(citas != null ? citas.size() : 0)
+                .citasAtendidas(totalCitasAtendidas)
+                .citasProgramadas(totalCitasProgramadas)
                 .citasCanceladas(citasCanceladas)
                 .build();
     }
@@ -155,13 +162,17 @@ public class ReporteFacadeService {
         List<ReporteVeterinariosDTO.EstadisticaVeterinarioDTO> estadisticas = new ArrayList<>();
 
         citasPorVeterinario.forEach((idVet, citasVet) -> {
+            // Contar citas atendidas: incluye ATENDIDA, EN_ATENCION, y FINALIZADA
             long atendidas = citasVet.stream()
                     .filter(c -> c != null && c.getEstado() != null && 
-                            com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA.equalsIgnoreCase(c.getEstado()))
+                            (com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_ATENDIDA.equalsIgnoreCase(c.getEstado()) ||
+                             "EN_ATENCION".equalsIgnoreCase(c.getEstado()) ||
+                             "FINALIZADA".equalsIgnoreCase(c.getEstado())))
                     .count();
             long programadas = citasVet.stream()
                     .filter(c -> c != null && c.getEstado() != null && 
-                            com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA.equalsIgnoreCase(c.getEstado()))
+                            (com.veterinaria.clinica_veternica.util.Constants.ESTADO_CITA_PROGRAMADA.equalsIgnoreCase(c.getEstado()) ||
+                             "CONFIRMADA".equalsIgnoreCase(c.getEstado())))
                     .count();
 
             // Obtener nombre del veterinario de la primera cita
