@@ -414,6 +414,11 @@ export default function AgendarCitaPage() {
 
   // Función para formatear la hora seleccionada
   const formatearHora = (hora) => {
+    // Validar que hora no sea null o undefined
+    if (!hora) {
+      return '';
+    }
+    
     // Si horaSeleccionada es un objeto (como {hour: 9, minute: 0, second: 0})
     if (typeof hora === 'object' && hora?.hour !== undefined) {
       const hour = String(hora.hour).padStart(2, '0');
@@ -474,6 +479,10 @@ export default function AgendarCitaPage() {
       }
 
       // Formatear la hora correctamente - asegurarse de enviar como string en formato HH:mm:ss
+      if (!horaSeleccionada) {
+        setError('Por favor selecciona una hora para la cita');
+        return;
+      }
       const horaFormateada = formatearHora(horaSeleccionada);
 
       // Crear la cita
@@ -522,6 +531,19 @@ export default function AgendarCitaPage() {
     }
   };
 
+  // Funciones auxiliares para el indicador de pasos
+  const getStepCircleClassName = (stepNum) => {
+    return step >= stepNum ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600';
+  };
+
+  const getStepConnectorClassName = (stepNum) => {
+    return step > stepNum ? 'bg-primary-600' : 'bg-gray-200';
+  };
+
+  const getStepLabelClassName = (stepNum) => {
+    return step >= stepNum ? 'text-primary-600 font-medium' : 'text-gray-500';
+  };
+
   if (loading && misMascotas.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -541,25 +563,21 @@ export default function AgendarCitaPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                step >= s ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
+            <div key={`step-${s}`} className="flex items-center">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${getStepCircleClassName(s)}`}>
                 {step > s ? <CheckCircle className="w-6 h-6" /> : s}
               </div>
               {s < 4 && (
-                <div className={`w-16 md:w-24 h-1 mx-2 ${
-                  step > s ? 'bg-primary-600' : 'bg-gray-200'
-                }`} />
+                <div className={`w-16 md:w-24 h-1 mx-2 ${getStepConnectorClassName(s)}`} />
               )}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-4 gap-2 mt-3 text-center text-xs md:text-sm">
-          <div className={step >= 1 ? 'text-primary-600 font-medium' : 'text-gray-500'}>Mascota</div>
-          <div className={step >= 2 ? 'text-primary-600 font-medium' : 'text-gray-500'}>Servicio</div>
-          <div className={step >= 3 ? 'text-primary-600 font-medium' : 'text-gray-500'}>Fecha y Hora</div>
-          <div className={step >= 4 ? 'text-primary-600 font-medium' : 'text-gray-500'}>Confirmación</div>
+          <div className={getStepLabelClassName(1)}>Mascota</div>
+          <div className={getStepLabelClassName(2)}>Servicio</div>
+          <div className={getStepLabelClassName(3)}>Fecha y Hora</div>
+          <div className={getStepLabelClassName(4)}>Confirmación</div>
         </div>
       </div>
 
@@ -779,9 +797,11 @@ export default function AgendarCitaPage() {
                     <div>
                       <p className="text-sm font-medium text-primary-900">Hora seleccionada:</p>
                       <p className="text-2xl font-bold text-primary-700">
-                        {typeof horaSeleccionada === 'string'
-                          ? horaSeleccionada
-                          : `${String(horaSeleccionada.hour || 0).padStart(2, '0')}:${String(horaSeleccionada.minute || 0).padStart(2, '0')}`}
+                        {horaSeleccionada ? (
+                          typeof horaSeleccionada === 'string'
+                            ? horaSeleccionada.substring(0, 5)
+                            : `${String(horaSeleccionada.hour || 0).padStart(2, '0')}:${String(horaSeleccionada.minute || 0).padStart(2, '0')}`
+                        ) : ''}
                       </p>
                     </div>
                   </div>
