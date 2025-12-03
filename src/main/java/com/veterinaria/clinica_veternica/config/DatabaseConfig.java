@@ -38,16 +38,24 @@ public class DatabaseConfig {
         String dbPassword = password;
 
         // Si DATABASE_URL está presente (formato de Render: postgresql://user:pass@host:port/db)
-        // y spring.datasource.url no está configurado o es el valor por defecto
-        if ((databaseUrl != null && !databaseUrl.isEmpty()) && 
-            (datasourceUrl == null || datasourceUrl.isEmpty() || 
-             datasourceUrl.contains("localhost") || datasourceUrl.contains("change_this"))) {
+        // Parsear y convertir a formato JDBC
+        // También verificar si spring.datasource.url ya tiene formato postgresql:// (no parseado)
+        boolean shouldParseDatabaseUrl = (databaseUrl != null && !databaseUrl.isEmpty());
+        boolean datasourceUrlNeedsParsing = (datasourceUrl != null && datasourceUrl.startsWith("postgresql://"));
+        boolean isDefaultUrl = (datasourceUrl == null || datasourceUrl.isEmpty() || 
+                                datasourceUrl.contains("localhost") || datasourceUrl.contains("change_this"));
+        
+        if (shouldParseDatabaseUrl || datasourceUrlNeedsParsing || isDefaultUrl) {
+            // Si DATABASE_URL está presente, usarla. Si no, usar datasourceUrl si necesita parseo
+            String urlToParse = shouldParseDatabaseUrl ? databaseUrl : 
+                               (datasourceUrlNeedsParsing ? datasourceUrl : null);
             
+            if (urlToParse != null && urlToParse.startsWith("postgresql://")) {
             try {
                 // Parsear DATABASE_URL de Render (formato: postgresql://user:pass@host:port/db)
                 // Ejemplo: postgresql://user:pass@host:5432/dbname
                 // Remover el prefijo postgresql:// y parsear como URI
-                String urlWithoutPrefix = databaseUrl.replaceFirst("^postgresql://", "");
+                String urlWithoutPrefix = urlToParse.replaceFirst("^postgresql://", "");
                 
                 // Manejar URLs con y sin puerto
                 // Si no tiene puerto, agregar :5432 antes de parsear
@@ -83,9 +91,10 @@ public class DatabaseConfig {
                 System.out.println("   Database: " + dbName);
             } catch (Exception e) {
                 System.err.println("⚠️ Error al parsear DATABASE_URL: " + e.getMessage());
-                System.err.println("   DATABASE_URL recibido: " + (databaseUrl != null ? databaseUrl.replaceAll(":[^:@]+@", ":***@") : "null"));
+                System.err.println("   URL recibida: " + (urlToParse != null ? urlToParse.replaceAll(":[^:@]+@", ":***@") : "null"));
                 System.err.println("   Usando configuración por defecto");
                 e.printStackTrace();
+            }
             }
         }
 
