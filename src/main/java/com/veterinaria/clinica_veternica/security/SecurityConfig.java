@@ -52,20 +52,20 @@ public class SecurityConfig {
      * Configura el AuthenticationProvider con el UserDetailsService y PasswordEncoder.
      */
     @Bean
-    @SuppressWarnings("deprecation")
     public AuthenticationProvider authenticationProvider() {
-        // Using deprecated methods for compatibility with Spring Security 6.x
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setPasswordEncoder(passwordEncoder());
         authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 
     /**
-     * Configura el AuthenticationManager.
+     * Configura el AuthenticationManager para usar el AuthenticationProvider configurado.
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        // El AuthenticationManager usará automáticamente el AuthenticationProvider bean
+        // configurado arriba, que incluye el UserDetailsService
         return config.getAuthenticationManager();
     }
 
@@ -137,10 +137,10 @@ public class SecurityConfig {
 
                         // ⚙️ Cualquier otra petición requiere autenticación
                         .anyRequest().authenticated()
-                );
+                )
 
-        // 🧩 Agregar el proveedor de autenticación
-        http.authenticationProvider(authenticationProvider());
+                // 🧩 Configurar el proveedor de autenticación ANTES de agregar filtros
+                .authenticationProvider(authenticationProvider());
 
         // 🧱 Agregar el filtro JWT antes del filtro de autenticación de Spring Security
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
