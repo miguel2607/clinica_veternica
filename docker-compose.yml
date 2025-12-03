@@ -1,23 +1,20 @@
-version: '3.8'
-
 services:
-  # Base de datos MySQL
-  mysql:
-    image: mysql:8.0
-    container_name: clinica-mysql
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: clinica-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-clinica_veterinaria}
-      MYSQL_USER: ${MYSQL_USER:-clinica_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-clinica_password}
+      POSTGRES_DB: ${POSTGRES_DB:-clinica_veterinaria}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kepler2607}
     ports:
-      - "3307:3306"  # Puerto externo 3307 para evitar conflicto con MySQL local en 3306
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,26 +25,28 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile
     container_name: clinica-backend
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-clinica_veterinaria}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      DB_USERNAME: ${MYSQL_USER:-clinica_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-clinica_password}
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-clinica_veterinaria}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-kepler2607}
       JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       # Email configuration (Gmail)
+      # ⚠️ IMPORTANTE: Configurar estas variables en un archivo .env
+      # NO incluir credenciales reales en este archivo
       MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:-miguelitorodriguezaranzazu@gmail.com}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-asjkgbztsxkosydo}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Clínica Veterinaria}
     ports:
       - "8080:8080"
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     networks:
       - clinica-network
@@ -84,6 +83,6 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
+  postgres_data:
     driver: local
 

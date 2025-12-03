@@ -49,5 +49,14 @@ public interface CitaObserver {
      * @param motivo Motivo de cancelación
      */
     void onCitaCancelled(Cita cita, String motivo);
+
+    /**
+     * Se invoca cuando se actualiza una cita (cambio de fecha/hora).
+     *
+     * @param cita Cita actualizada
+     * @param fechaOriginal Fecha original de la cita
+     * @param horaOriginal Hora original de la cita
+     */
+    void onCitaUpdated(Cita cita, java.time.LocalDate fechaOriginal, java.time.LocalTime horaOriginal);
 }
 

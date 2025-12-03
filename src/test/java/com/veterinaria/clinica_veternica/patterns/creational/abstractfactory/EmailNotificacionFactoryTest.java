@@ -1,8 +1,11 @@
 package com.veterinaria.clinica_veternica.patterns.creational.abstractfactory;
+
+import com.veterinaria.clinica_veternica.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,11 +13,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class EmailNotificacionFactoryTest {
 
+    @Mock
+    private EmailService emailService;
+
     private EmailNotificacionFactory factory;
 
     @BeforeEach
     void setUp() {
-        factory = new EmailNotificacionFactory();
+        factory = new EmailNotificacionFactory(emailService);
     }
 
     @Test

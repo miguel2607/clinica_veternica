@@ -64,6 +64,18 @@ public class NotificacionObserver implements CitaObserver {
         }
     }
 
+    @Override
+    public void onCitaUpdated(Cita cita, java.time.LocalDate fechaOriginal, java.time.LocalTime horaOriginal) {
+        log.info("NotificacionObserver: Recibida notificación de actualización de cita {}", cita.getIdCita());
+        try {
+            enviarNotificacionActualizacion(cita, fechaOriginal, horaOriginal);
+            log.info("NotificacionObserver: Notificación de actualización enviada exitosamente para cita {}", cita.getIdCita());
+        } catch (Exception e) {
+            log.error("NotificacionObserver: Error al enviar notificación de actualización para cita {}: {}", 
+                    cita.getIdCita(), e.getMessage(), e);
+        }
+    }
+
     private void enviarNotificacionConfirmacion(Cita cita) {
         try {
             String emailPropietario = cita.getMascota().getPropietario().getEmail();
@@ -605,6 +617,138 @@ public class NotificacionObserver implements CitaObserver {
         }
     }
     
+    /**
+     * Envía notificación al veterinario cuando se actualiza una cita.
+     * 
+     * @param cita Cita actualizada
+     * @param fechaOriginal Fecha original de la cita
+     * @param horaOriginal Hora original de la cita
+     */
+    private void enviarNotificacionActualizacion(Cita cita, java.time.LocalDate fechaOriginal, java.time.LocalTime horaOriginal) {
+        try {
+            String emailVeterinario = cita.getVeterinario().getCorreo();
+            if (emailVeterinario == null || emailVeterinario.isBlank()) {
+                log.warn("No se puede enviar notificación de actualización de cita {}: el veterinario no tiene email", 
+                        cita.getIdCita());
+                return;
+            }
+            
+            String asunto = "📅 Cita Reprogramada - " + cita.getMascota().getNombre();
+            
+            // Construir mensaje con los cambios
+            StringBuilder cambiosBuilder = new StringBuilder();
+            if (fechaOriginal != null && !fechaOriginal.equals(cita.getFechaCita())) {
+                cambiosBuilder.append(String.format("📅 <strong>Fecha:</strong> %s → %s<br>", 
+                    fechaOriginal.format(DATE_FORMATTER), 
+                    cita.getFechaCita().format(DATE_FORMATTER)));
+            }
+            if (horaOriginal != null && !horaOriginal.equals(cita.getHoraCita())) {
+                cambiosBuilder.append(String.format("🕐 <strong>Hora:</strong> %s → %s<br>", 
+                    horaOriginal.format(TIME_FORMATTER), 
+                    cita.getHoraCita().format(TIME_FORMATTER)));
+            }
+            
+            String contenido = String.format("""
+                <p style="margin: 0 0 20px 0; font-size: 18px; color: #1f2937;">
+                    Estimado/a <strong style="color: #3b82f6;">Dr./Dra. %s</strong>,
+                </p>
+                
+                <p style="margin: 0 0 24px 0;">
+                    Le informamos que una cita ha sido <strong>reprogramada</strong> por el propietario.
+                </p>
+                
+                <table style="width: 100%%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 24px 0;">
+                    <tr style="background: linear-gradient(135deg, #3b82f6 0%%, #2563eb 100%%);">
+                        <td colspan="2" style="padding: 16px 20px; color: #ffffff; font-weight: 700; font-size: 16px;">
+                            📋 Detalles de la Cita Reprogramada
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600; width: 140px; border-bottom: 1px solid #e5e7eb;">🐾 Mascota:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500; border-bottom: 1px solid #e5e7eb;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb;">👤 Propietario:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500; border-bottom: 1px solid #e5e7eb;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb;">🏥 Servicio:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500; border-bottom: 1px solid #e5e7eb;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb;">📝 Motivo:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500; border-bottom: 1px solid #e5e7eb;">%s</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding: 14px 20px; color: #6b7280; font-weight: 600; background-color: #eff6ff; border-top: 2px solid #3b82f6;">
+                            🔄 Cambios Realizados:
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding: 14px 20px; color: #1f2937; font-weight: 500;">
+                            %s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600; border-top: 1px solid #e5e7eb;">📅 Nueva Fecha:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500; border-top: 1px solid #e5e7eb;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 20px; color: #6b7280; font-weight: 600;">🕐 Nueva Hora:</td>
+                        <td style="padding: 14px 20px; color: #1f2937; font-weight: 500;">%s</td>
+                    </tr>
+                </table>
+                
+                <div style="background: linear-gradient(135deg, #dbeafe 0%%, #bfdbfe 100%%); padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 24px 0;">
+                    <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 14px;">
+                        ⏰ Por favor, revise su agenda y confirme su disponibilidad para la nueva fecha y hora.
+                    </p>
+                </div>
+                
+                <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 14px;">
+                    Puede ver todos los detalles de esta cita y gestionar su agenda desde el sistema.
+                </p>
+                """,
+                cita.getVeterinario().getNombreCompleto(),
+                cita.getMascota().getNombre(),
+                cita.getMascota().getPropietario().getNombreCompleto(),
+                cita.getServicio() != null ? cita.getServicio().getNombre() : "No especificado",
+                cita.getMotivoConsulta() != null && !cita.getMotivoConsulta().isBlank() ? cita.getMotivoConsulta() : "No especificado",
+                cambiosBuilder.length() > 0 ? cambiosBuilder.toString() : "No se especificaron cambios",
+                cita.getFechaCita().format(DATE_FORMATTER),
+                cita.getHoraCita().format(TIME_FORMATTER)
+            );
+            
+            String htmlFinal = emailService.generarTemplateHtml(asunto, contenido, "info");
+            var mensajeNotificacion = emailFactory.crearMensaje(emailVeterinario, asunto, htmlFinal);
+            var enviador = emailFactory.crearEnviador();
+            boolean enviado = enviador.enviar(mensajeNotificacion);
+            
+            // Guardar notificación en la base de datos
+            guardarNotificacionEnBD(
+                cita.getVeterinario().getNombreCompleto(),
+                emailVeterinario,
+                null,
+                asunto,
+                contenido,
+                cita,
+                enviado,
+                enviado ? enviador.getIdExterno() : null
+            );
+            
+            if (enviado) {
+                log.info("Notificación de actualización de cita {} enviada al veterinario: {}", 
+                        cita.getIdCita(), emailVeterinario);
+            } else {
+                log.warn("Error al enviar notificación de actualización de cita {} al veterinario: {}", 
+                        cita.getIdCita(), emailVeterinario);
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de actualización de cita {}: {}", 
+                    cita.getIdCita(), e.getMessage(), e);
+        }
+    }
+
     /**
      * Guarda una notificación en la base de datos.
      * 

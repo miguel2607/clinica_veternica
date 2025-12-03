@@ -112,6 +112,26 @@ public class RecordatorioObserver implements CitaObserver {
     }
 
     /**
+     * Se invoca cuando se actualiza una cita (cambio de fecha/hora).
+     * Reprograma los recordatorios con la nueva fecha/hora.
+     *
+     * PROPÓSITO: Asegura que los recordatorios se envíen con la información correcta.
+     */
+    @Override
+    public void onCitaUpdated(Cita cita, java.time.LocalDate fechaOriginal, java.time.LocalTime horaOriginal) {
+        log.info("RecordatorioObserver: Cita actualizada {}. Reprogramando recordatorios", 
+                cita.getIdCita());
+        
+        // Cancelar recordatorios antiguos
+        cancelarRecordatoriosPendientes(cita);
+        
+        // Reprogramar recordatorios con la nueva fecha/hora si la cita está confirmada
+        if (cita.getEstado() == EstadoCita.CONFIRMADA) {
+            self.programarRecordatorios(cita);
+        }
+    }
+
+    /**
      * Programa recordatorios automáticos para una cita.
      *
      * PROPÓSITO: Crea recordatorios programados para diferentes momentos antes de la cita.

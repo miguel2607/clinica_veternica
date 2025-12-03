@@ -2,9 +2,12 @@ package com.veterinaria.clinica_veternica.patterns.behavioral.chain;
 
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
+import com.veterinaria.clinica_veternica.domain.agenda.Horario;
 import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.domain.agenda.Servicio;
+import com.veterinaria.clinica_veternica.repository.CitaRepository;
+import com.veterinaria.clinica_veternica.repository.HorarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,10 +15,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests para el patrón Chain of Responsibility - ValidacionHandler
@@ -31,6 +39,12 @@ class ValidacionHandlerTest {
 
     @Mock
     private Servicio servicio;
+
+    @Mock
+    private HorarioRepository horarioRepository;
+
+    @Mock
+    private CitaRepository citaRepository;
 
     private Cita citaValida;
     private ValidacionDatosHandler validacionDatosHandler;
@@ -143,17 +157,32 @@ class ValidacionHandlerTest {
     @Test
     @DisplayName("Chain - Debe encadenar múltiples handlers")
     void debeEncadenarMultiplesHandlers() {
-        ValidacionDisponibilidadHandler disponibilidadHandler = new ValidacionDisponibilidadHandler();
+        ValidacionDisponibilidadHandler disponibilidadHandler = new ValidacionDisponibilidadHandler(horarioRepository, citaRepository);
         
         // Configurar cadena
         validacionDatosHandler.setSiguiente(disponibilidadHandler);
 
+        // Crear un horario válido para el día de la cita
+        DayOfWeek diaCita = citaValida.getFechaCita().getDayOfWeek();
+        Horario horario = Horario.builder()
+                .idHorario(1L)
+                .veterinario(veterinario)
+                .diaSemana(diaCita)
+                .horaInicio(LocalTime.of(8, 0))
+                .horaFin(LocalTime.of(18, 0))
+                .duracionCitaMinutos(30)
+                .maxCitasSimultaneas(1)
+                .activo(true)
+                .build();
+        
+        when(horarioRepository.findByVeterinario(any())).thenReturn(List.of(horario));
+        when(citaRepository.findCitasSolapadas(any(), any(), any(), any(), any())).thenReturn(Collections.emptyList());
+
         // La validación debe pasar por ambos handlers
-        // Verificar que la cadena funciona correctamente
         boolean resultado = validacionDatosHandler.validar(citaValida);
         
-        // Verificar que el resultado es válido (puede ser true o false dependiendo de disponibilidad)
-        assertNotNull(Boolean.valueOf(resultado), "El resultado debe ser un boolean válido");
+        // Verificar que el resultado es válido
+        assertTrue(resultado, "El resultado debe ser true cuando la validación pasa");
     }
 
     @Test
@@ -164,7 +193,7 @@ class ValidacionHandlerTest {
         citaInvalida.setMascota(null); // Esto hará fallar ValidacionDatosHandler
 
         // Configurar cadena con múltiples handlers
-        ValidacionDisponibilidadHandler disponibilidadHandler = new ValidacionDisponibilidadHandler();
+        ValidacionDisponibilidadHandler disponibilidadHandler = new ValidacionDisponibilidadHandler(horarioRepository, citaRepository);
         validacionDatosHandler.setSiguiente(disponibilidadHandler);
 
         // Aunque haya más handlers en la cadena, debe detenerse en el primero que falla

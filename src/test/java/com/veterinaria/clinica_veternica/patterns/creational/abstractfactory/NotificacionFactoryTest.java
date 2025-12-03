@@ -2,8 +2,11 @@ package com.veterinaria.clinica_veternica.patterns.creational.abstractfactory;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import com.veterinaria.clinica_veternica.config.TestMailConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,6 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests para el patrón Abstract Factory - NotificacionFactory
  */
 @SpringBootTest
+@Import(TestMailConfig.class)
+@TestPropertySource(properties = {
+    "spring.dotenv.enabled=false",
+    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
+    "JWT_EXPIRATION=86400000"
+})
 class NotificacionFactoryTest {
 
     @Autowired

@@ -122,6 +122,31 @@ public class AuditoriaObserver implements CitaObserver {
     }
 
     /**
+     * Se invoca cuando se actualiza una cita (cambio de fecha/hora).
+     * Registra la actualización para auditoría.
+     *
+     * PROPÓSITO: Registra cambios en citas para trazabilidad.
+     */
+    @Override
+    public void onCitaUpdated(Cita cita, java.time.LocalDate fechaOriginal, java.time.LocalTime horaOriginal) {
+        String usuario = obtenerUsuarioActual();
+        
+        String cambios = String.format(
+                "Cita actualizada - Fecha: %s → %s, Hora: %s → %s, Mascota: %s",
+                fechaOriginal != null ? fechaOriginal.toString() : "N/A",
+                cita.getFechaCita() != null ? cita.getFechaCita().toString() : "N/A",
+                horaOriginal != null ? horaOriginal.toString() : "N/A",
+                cita.getHoraCita() != null ? cita.getHoraCita().toString() : "N/A",
+                cita.getMascota() != null ? cita.getMascota().getNombre() : "N/A"
+        );
+
+        registrarActualizacion("Cita", cita.getIdCita(), cambios);
+
+        log.debug("Auditoría: Actualización de cita {} registrada por usuario {} - Cambios: {}", 
+                cita.getIdCita(), usuario, cambios);
+    }
+
+    /**
      * Registra una operación de creación de entidad.
      *
      * PROPÓSITO: Método genérico para registrar creaciones de cualquier entidad.

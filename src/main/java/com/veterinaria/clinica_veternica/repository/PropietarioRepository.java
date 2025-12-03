@@ -119,6 +119,15 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     @Query("SELECT COUNT(p) > 0 FROM Propietario p WHERE p.usuario.idUsuario = :idUsuario")
     boolean existsByUsuarioId(@Param("idUsuario") Long idUsuario);
 
+    /**
+     * Busca un propietario por ID de usuario.
+     *
+     * @param idUsuario ID del usuario
+     * @return Optional con el propietario si existe
+     */
+    @Query("SELECT p FROM Propietario p WHERE p.usuario.idUsuario = :idUsuario")
+    Optional<Propietario> findByUsuarioId(@Param("idUsuario") Long idUsuario);
+
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
     // ===================================================================

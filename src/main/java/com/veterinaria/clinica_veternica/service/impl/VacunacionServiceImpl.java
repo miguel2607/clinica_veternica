@@ -15,6 +15,8 @@ import com.veterinaria.clinica_veternica.repository.InsumoRepository;
 import com.veterinaria.clinica_veternica.repository.InventarioRepository;
 import com.veterinaria.clinica_veternica.repository.VacunacionRepository;
 import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
+import com.veterinaria.clinica_veternica.dto.request.clinico.EvolucionClinicaRequestDTO;
+import com.veterinaria.clinica_veternica.service.interfaces.IEvolucionClinicaService;
 import com.veterinaria.clinica_veternica.service.interfaces.IInsumoService;
 import com.veterinaria.clinica_veternica.service.interfaces.IVacunacionService;
 import com.veterinaria.clinica_veternica.util.Constants;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -49,6 +52,7 @@ public class VacunacionServiceImpl implements IVacunacionService {
     private final InventarioRepository inventarioRepository;
     private final IInsumoService insumoService;
     private final VacunacionMapper vacunacionMapper;
+    private final IEvolucionClinicaService evolucionClinicaService;
 
     @Override
     public VacunacionResponseDTO crear(Long idHistoriaClinica, VacunacionRequestDTO requestDTO) {
@@ -119,7 +123,91 @@ public class VacunacionServiceImpl implements IVacunacionService {
         Vacunacion vacunacionGuardada = vacunacionRepository.save(vacunacion);
         log.info("Vacunación creada exitosamente con ID: {}", vacunacionGuardada.getIdVacunacion());
         
+        // Crear evolución clínica automáticamente después de la vacunación
+        crearEvolucionClinicaPorVacunacion(vacunacionGuardada, historiaClinica, veterinario);
+        
         return vacunacionMapper.toResponseDTO(vacunacionGuardada);
+    }
+    
+    /**
+     * Crea una evolución clínica automáticamente después de registrar una vacunación.
+     * 
+     * @param vacunacion Vacunación realizada
+     * @param historiaClinica Historia clínica asociada
+     * @param veterinario Veterinario que realizó la vacunación
+     */
+    private void crearEvolucionClinicaPorVacunacion(Vacunacion vacunacion, HistoriaClinica historiaClinica, Veterinario veterinario) {
+        try {
+            log.info("Creando evolución clínica automática por vacunación ID: {}", vacunacion.getIdVacunacion());
+            
+            // Construir el motivo de consulta
+            String motivoConsulta = String.format("Aplicación de vacuna: %s", vacunacion.getNombreVacuna());
+            
+            // Construir los hallazgos del examen
+            StringBuilder hallazgosBuilder = new StringBuilder();
+            hallazgosBuilder.append(String.format("Vacunación aplicada exitosamente. "));
+            hallazgosBuilder.append(String.format("Tipo de vacuna: %s. ", vacunacion.getTipoVacuna() != null ? vacunacion.getTipoVacuna() : "No especificado"));
+            
+            if (vacunacion.getLaboratorio() != null && !vacunacion.getLaboratorio().isBlank()) {
+                hallazgosBuilder.append(String.format("Laboratorio: %s. ", vacunacion.getLaboratorio()));
+            }
+            
+            if (vacunacion.getLote() != null && !vacunacion.getLote().isBlank()) {
+                hallazgosBuilder.append(String.format("Lote: %s. ", vacunacion.getLote()));
+            }
+            
+            if (vacunacion.getViaAdministracion() != null && !vacunacion.getViaAdministracion().isBlank()) {
+                hallazgosBuilder.append(String.format("Vía de administración: %s. ", vacunacion.getViaAdministracion()));
+            }
+            
+            if (vacunacion.getSitioAplicacion() != null && !vacunacion.getSitioAplicacion().isBlank()) {
+                hallazgosBuilder.append(String.format("Sitio de aplicación: %s. ", vacunacion.getSitioAplicacion()));
+            }
+            
+            if (vacunacion.getEnfermedadesPrevenidas() != null && !vacunacion.getEnfermedadesPrevenidas().isBlank()) {
+                hallazgosBuilder.append(String.format("Enfermedades prevenidas: %s. ", vacunacion.getEnfermedadesPrevenidas()));
+            }
+            
+            if (vacunacion.getNumeroDosis() != null && vacunacion.getTotalDosisEsquema() != null) {
+                hallazgosBuilder.append(String.format("Dosis %d de %d del esquema. ", vacunacion.getNumeroDosis(), vacunacion.getTotalDosisEsquema()));
+            }
+            
+            if (vacunacion.getFechaProximaDosis() != null) {
+                hallazgosBuilder.append(String.format("Próxima dosis programada para: %s. ", vacunacion.getFechaProximaDosis()));
+            }
+            
+            if (vacunacion.getObservaciones() != null && !vacunacion.getObservaciones().isBlank()) {
+                hallazgosBuilder.append(String.format("Observaciones: %s. ", vacunacion.getObservaciones()));
+            }
+            
+            String hallazgosExamen = hallazgosBuilder.toString().trim();
+            
+            // Construir observaciones adicionales
+            String observaciones = String.format("Vacunación registrada el %s. ", LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            if (vacunacion.getEsquemaCompleto() != null && vacunacion.getEsquemaCompleto()) {
+                observaciones += "Esquema de vacunación completado. ";
+            }
+            
+            // Crear el DTO para la evolución clínica
+            EvolucionClinicaRequestDTO evolucionDTO = EvolucionClinicaRequestDTO.builder()
+                    .idHistoriaClinica(historiaClinica.getIdHistoriaClinica())
+                    .idVeterinario(veterinario.getIdPersonal())
+                    .tipoEvolucion("VACUNACION")
+                    .motivoConsulta(motivoConsulta)
+                    .hallazgosExamen(hallazgosExamen)
+                    .observaciones(observaciones)
+                    .build();
+            
+            // Crear la evolución clínica
+            evolucionClinicaService.crear(historiaClinica.getIdHistoriaClinica(), evolucionDTO);
+            log.info("Evolución clínica creada exitosamente para vacunación ID: {}", vacunacion.getIdVacunacion());
+            
+        } catch (Exception e) {
+            // No lanzar excepción para no afectar el proceso de vacunación
+            // Solo registrar el error en el log
+            log.error("Error al crear evolución clínica automática por vacunación ID: {}: {}", 
+                    vacunacion.getIdVacunacion(), e.getMessage(), e);
+        }
     }
 
     @Override

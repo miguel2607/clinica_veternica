@@ -192,7 +192,7 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
      * @param mes Mes del año (1-12)
      * @return Lista de mascotas
      */
-    @Query("SELECT m FROM Mascota m WHERE MONTH(m.fechaNacimiento) = :mes AND m.activo = true")
+    @Query(value = "SELECT * FROM mascotas m WHERE EXTRACT(MONTH FROM m.fecha_nacimiento) = :mes AND m.activo = true", nativeQuery = true)
     List<Mascota> findMascotasPorMesCumpleanios(@Param("mes") int mes);
 
     /**

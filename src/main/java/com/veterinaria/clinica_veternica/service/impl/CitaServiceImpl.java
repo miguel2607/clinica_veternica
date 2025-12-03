@@ -3,6 +3,7 @@ package com.veterinaria.clinica_veternica.service.impl;
 import com.veterinaria.clinica_veternica.domain.agenda.Cita;
 import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
 import com.veterinaria.clinica_veternica.domain.paciente.Mascota;
+import com.veterinaria.clinica_veternica.domain.paciente.Propietario;
 import com.veterinaria.clinica_veternica.domain.usuario.Usuario;
 import com.veterinaria.clinica_veternica.domain.usuario.Veterinario;
 import com.veterinaria.clinica_veternica.dto.request.agenda.CitaRequestDTO;
@@ -17,8 +18,11 @@ import com.veterinaria.clinica_veternica.patterns.behavioral.template.AtencionCo
 import com.veterinaria.clinica_veternica.patterns.behavioral.template.AtencionCirugia;
 import com.veterinaria.clinica_veternica.patterns.behavioral.template.AtencionEmergencia;
 import com.veterinaria.clinica_veternica.patterns.creational.builder.CitaBuilder;
+import com.veterinaria.clinica_veternica.patterns.behavioral.observer.CitaObserver;
+import com.veterinaria.clinica_veternica.patterns.behavioral.observer.NotificacionObserver;
 import com.veterinaria.clinica_veternica.repository.CitaRepository;
 import com.veterinaria.clinica_veternica.repository.MascotaRepository;
+import com.veterinaria.clinica_veternica.repository.PropietarioRepository;
 import com.veterinaria.clinica_veternica.repository.ServicioRepository;
 import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.repository.VeterinarioRepository;
@@ -60,11 +64,13 @@ public class CitaServiceImpl implements ICitaService {
     private final MascotaRepository mascotaRepository;
     private final VeterinarioRepository veterinarioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PropietarioRepository propietarioRepository;
     private final ServicioRepository servicioRepository;
     private final CitaMapper citaMapper;
     private final CitaMediator citaMediator;
     private final CitaValidationService citaValidationService;
     private final CitaPriceCalculationService citaPriceCalculationService;
+    private final NotificacionObserver notificacionObserver;
     
     // Templates de atención
     private final AtencionConsultaGeneral atencionConsultaGeneral;
@@ -124,6 +130,31 @@ public class CitaServiceImpl implements ICitaService {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(Constants.ENTIDAD_CITA, "id", id));
 
+        // Validar permisos: si el usuario es propietario, solo puede editar sus propias citas
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isPropietario = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(auth -> auth.equals("ROLE_PROPIETARIO"));
+            
+            if (isPropietario) {
+                // Obtener el usuario autenticado
+                String username = authentication.getName();
+                Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
+                
+                // Buscar el propietario asociado al usuario autenticado
+                Propietario propietarioAutenticado = propietarioRepository.findByUsuarioId(usuario.getIdUsuario())
+                    .orElseThrow(() -> new UnauthorizedException("No se encontró un perfil de propietario asociado a tu usuario"));
+                
+                // Verificar que la cita pertenece a una mascota del propietario autenticado
+                if (cita.getMascota() == null || cita.getMascota().getPropietario() == null ||
+                    !cita.getMascota().getPropietario().getIdPropietario().equals(propietarioAutenticado.getIdPropietario())) {
+                    throw new UnauthorizedException("No tiene permisos para editar esta cita. Solo puede editar citas de sus propias mascotas.");
+                }
+            }
+        }
+
         // Validar que la cita pueda ser modificada
         if (!cita.puedeReprogramarse()) {
             throw new ValidationException(
@@ -133,9 +164,11 @@ public class CitaServiceImpl implements ICitaService {
             );
         }
 
-        // Guardar valores originales para validación
+        // Guardar valores originales para validación y notificación
         LocalDate fechaOriginal = cita.getFechaCita();
         java.time.LocalTime horaOriginal = cita.getHoraCita();
+        boolean fechaCambio = false;
+        boolean horaCambio = false;
         
         // Validar que la nueva fecha y hora sean diferentes a las actuales
         // Si se proporciona una nueva fecha, debe ser diferente a la actual
@@ -147,6 +180,7 @@ public class CitaServiceImpl implements ICitaService {
                         "Para actualizar la cita, debe cambiar la fecha"
                 );
             }
+            fechaCambio = true;
         }
         
         // Si se proporciona una nueva hora, debe ser diferente a la actual
@@ -158,6 +192,7 @@ public class CitaServiceImpl implements ICitaService {
                         "Para actualizar la cita, debe cambiar la hora"
                 );
             }
+            horaCambio = true;
         }
 
         // Actualizar campos permitidos
@@ -178,6 +213,18 @@ public class CitaServiceImpl implements ICitaService {
 
         Cita citaActualizada = citaRepository.save(cita);
         log.info("Cita actualizada exitosamente");
+        
+        // Enviar notificación al veterinario si hubo cambios en fecha u hora
+        if (fechaCambio || horaCambio) {
+            try {
+                notificacionObserver.onCitaUpdated(citaActualizada, fechaOriginal, horaOriginal);
+                log.info("Notificación de actualización de cita enviada al veterinario");
+            } catch (Exception e) {
+                // No lanzar excepción para no afectar la actualización de la cita
+                log.error("Error al enviar notificación de actualización de cita: {}", e.getMessage(), e);
+            }
+        }
+        
         return citaMapper.toResponseDTO(citaActualizada);
     }
 

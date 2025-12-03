@@ -194,13 +194,20 @@ class CitaServiceTest {
     void testActualizarCitaExitoso() {
         when(citaRepository.findById(1L)).thenReturn(Optional.of(cita));
         
+        // Crear un requestDTO con fecha y hora diferentes a la cita original
+        CitaRequestDTO updateRequestDTO = CitaRequestDTO.builder()
+                .fechaCita(LocalDate.now().plusDays(2)) // Diferente a la fecha original
+                .horaCita(LocalTime.of(14, 0)) // Diferente a la hora original
+                .motivo("Consulta de seguimiento")
+                .build();
+        
         // Mock de la validación (no lanza excepción)
         doNothing().when(citaValidationService).validarCita(any(Cita.class));
         
         when(citaRepository.save(any(Cita.class))).thenReturn(cita);
         when(citaMapper.toResponseDTO(cita)).thenReturn(responseDTO);
 
-        CitaResponseDTO resultado = citaService.actualizar(1L, requestDTO);
+        CitaResponseDTO resultado = citaService.actualizar(1L, updateRequestDTO);
 
         assertNotNull(resultado);
         assertEquals(1L, resultado.getIdCita());

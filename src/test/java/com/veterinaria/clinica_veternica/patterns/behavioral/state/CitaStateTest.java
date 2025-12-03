@@ -5,8 +5,11 @@ import com.veterinaria.clinica_veternica.domain.agenda.EstadoCita;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import com.veterinaria.clinica_veternica.config.TestMailConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,6 +20,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests para el patrón State - CitaState
  */
 @SpringBootTest
+@Import(TestMailConfig.class)
+@TestPropertySource(properties = {
+    "spring.dotenv.enabled=false",
+    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
+    "JWT_EXPIRATION=86400000"
+})
 class CitaStateTest {
 
     @Autowired

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { citaService, mascotaService, veterinarioService, servicioService, propietarioService } from '../../services/api';
+import { citaService, mascotaService, veterinarioService, servicioService, propietarioService, horarioService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Search, CheckCircle, XCircle, Clock, Eye, Edit } from 'lucide-react';
 import Modal from '../../components/Modal';
@@ -31,6 +31,8 @@ export default function MisCitasPage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [disponibilidad, setDisponibilidad] = useState(null);
+  const [loadingDisponibilidad, setLoadingDisponibilidad] = useState(false);
 
   useEffect(() => {
     console.log('Usuario actual:', user);
@@ -210,6 +212,18 @@ export default function MisCitasPage() {
     setModalOpen(true);
     setError('');
     setSuccess('');
+    setDisponibilidad(null);
+    
+    // Si es edición y hay veterinario y fecha, cargar disponibilidad
+    if (cita && cita.veterinario?.idPersonal && cita.fechaCita) {
+      // Formatear fecha si viene en formato dd/MM/yyyy
+      let fechaParaCargar = cita.fechaCita;
+      if (fechaParaCargar && fechaParaCargar.includes('/')) {
+        const [dia, mes, anio] = fechaParaCargar.split('/');
+        fechaParaCargar = `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      }
+      loadDisponibilidad(cita.veterinario.idPersonal, fechaParaCargar);
+    }
   };
 
   const handleCloseModal = () => {
@@ -217,6 +231,7 @@ export default function MisCitasPage() {
     setEditingCita(null);
     setError('');
     setSuccess('');
+    setDisponibilidad(null);
   };
 
   const handleCancelCita = (cita) => {
@@ -257,6 +272,48 @@ export default function MisCitasPage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    
+    // Si cambia el veterinario, cargar disponibilidad si hay fecha
+    if (name === 'idVeterinario' && value && formData.fechaCita) {
+      loadDisponibilidad(parseInt(value), formData.fechaCita);
+    }
+    
+    // Si cambia la fecha, cargar disponibilidad si hay veterinario
+    if (name === 'fechaCita' && value && formData.idVeterinario) {
+      loadDisponibilidad(parseInt(formData.idVeterinario), value);
+    }
+  };
+  
+  const loadDisponibilidad = async (idVeterinario, fecha) => {
+    if (!idVeterinario || !fecha) {
+      setDisponibilidad(null);
+      return;
+    }
+
+    try {
+      setLoadingDisponibilidad(true);
+      const response = await horarioService.getDisponibilidad(idVeterinario, fecha);
+      setDisponibilidad(response.data);
+      console.log('✅ Disponibilidad cargada:', response.data);
+    } catch (error) {
+      console.error('Error al cargar disponibilidad:', error);
+      setDisponibilidad(null);
+    } finally {
+      setLoadingDisponibilidad(false);
+    }
+  };
+  
+  const formatearHora = (hora) => {
+    if (!hora) return '';
+    if (typeof hora === 'string') {
+      return hora.substring(0, 5); // HH:MM
+    }
+    if (typeof hora === 'object' && hora?.hour !== undefined) {
+      const hour = String(hora.hour).padStart(2, '0');
+      const minute = String(hora.minute || 0).padStart(2, '0');
+      return `${hour}:${minute}`;
+    }
+    return hora;
   };
 
   const handleSubmit = async (e) => {
@@ -670,7 +727,15 @@ export default function MisCitasPage() {
                 required
                 name="idVeterinario"
                 value={formData.idVeterinario}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  // Cargar disponibilidad si hay fecha seleccionada
+                  if (e.target.value && formData.fechaCita) {
+                    loadDisponibilidad(parseInt(e.target.value), formData.fechaCita);
+                  } else {
+                    setDisponibilidad(null);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Seleccione un veterinario</option>
@@ -712,8 +777,17 @@ export default function MisCitasPage() {
               <input
                 type="date"
                 required
+                name="fechaCita"
                 value={formData.fechaCita}
-                onChange={(e) => setFormData({ ...formData, fechaCita: e.target.value })}
+                onChange={(e) => {
+                  handleChange(e);
+                  // Cargar disponibilidad si hay veterinario seleccionado
+                  if (e.target.value && formData.idVeterinario) {
+                    loadDisponibilidad(parseInt(formData.idVeterinario), e.target.value);
+                  } else {
+                    setDisponibilidad(null);
+                  }
+                }}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -726,11 +800,68 @@ export default function MisCitasPage() {
               <input
                 type="time"
                 required
+                name="horaCita"
                 value={formData.horaCita}
-                onChange={(e) => setFormData({ ...formData, horaCita: e.target.value })}
+                onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
+            
+            {/* Mostrar disponibilidad si hay veterinario y fecha seleccionados */}
+            {formData.idVeterinario && formData.fechaCita && (
+              <div className="md:col-span-2">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
+                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-sm">
+                    <Clock className="w-5 h-5" />
+                    Horarios Disponibles
+                  </h4>
+
+                  {loadingDisponibilidad ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-blue-700 mt-2 font-medium">Cargando disponibilidad...</p>
+                    </div>
+                  ) : disponibilidad && disponibilidad.slotsDisponibles && disponibilidad.slotsDisponibles.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-bold text-blue-900 mb-2">Selecciona un horario:</p>
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2">
+                        {disponibilidad.slotsDisponibles.map((slot, index) => {
+                          const horaStr = typeof slot.hora === 'string' ? slot.hora : `${String(slot.hora.hour || 0).padStart(2, '0')}:${String(slot.hora.minute || 0).padStart(2, '0')}`;
+                          const horaDisplay = horaStr.substring(0, 5);
+                          const isSelected = formData.horaCita === slot.hora || (typeof formData.horaCita === 'string' && formData.horaCita.substring(0, 5) === horaDisplay);
+                          
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => {
+                                if (slot.disponible) {
+                                  setFormData({ ...formData, horaCita: slot.hora });
+                                }
+                              }}
+                              disabled={!slot.disponible}
+                              className={`px-3 py-2 text-sm font-bold rounded-lg transition-all ${
+                                !slot.disponible
+                                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-50'
+                                  : isSelected
+                                  ? 'bg-primary-600 text-white shadow-lg ring-2 ring-primary-300'
+                                  : 'bg-green-100 text-green-900 hover:bg-green-200 border-2 border-green-400'
+                              }`}
+                            >
+                              {horaDisplay}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">⚠️ No hay horarios disponibles para esta fecha. Intenta con otro día.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center">
               <input

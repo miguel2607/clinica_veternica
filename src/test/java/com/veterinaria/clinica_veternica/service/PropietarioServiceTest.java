@@ -82,9 +82,6 @@ class PropietarioServiceTest {
     @Test
     @DisplayName("CREATE - Debe crear un propietario exitosamente")
     void testCrearPropietarioExitoso() {
-        // ValidationHelper no lanza excepciones (validación exitosa)
-        doNothing().when(validationHelper).validateDocumentUnique(any(), any(), any());
-
         when(propietarioRepository.existsByEmail("juan@example.com")).thenReturn(false);
         when(propietarioMapper.toEntity(requestDTO)).thenReturn(propietario);
         when(propietarioRepository.save(any(Propietario.class))).thenReturn(propietario);

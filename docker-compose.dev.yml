@@ -1,26 +1,22 @@
-version: '3.8'
-
 # Docker Compose para desarrollo
 # Uso: docker-compose -f docker-compose.dev.yml up
 
 services:
-  # Base de datos MySQL para desarrollo
-  mysql:
-    image: mysql:8.0
-    container_name: clinica-mysql-dev
+  # Base de datos PostgreSQL para desarrollo
+  postgres:
+    image: postgres:15-alpine
+    container_name: clinica-postgres-dev
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: clinica_veterinaria_dev
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 
+      POSTGRES_DB: clinica_veterinaria_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: kepler2607
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - mysql_dev_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
+      - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,14 +27,14 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile
     container_name: clinica-backend-dev
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_URL: jdbc:mysql://mysql:3306/clinica_veterinaria_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-      DB_USERNAME: root
-      DB_PASSWORD: 
+      DB_URL: jdbc:postgresql://postgres:5432/clinica_veterinaria_dev
+      DB_USERNAME: postgres
+      DB_PASSWORD: kepler2607
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
       JWT_EXPIRATION: 86400000
     ports:
@@ -48,7 +44,7 @@ services:
       - ./src:/app/src:ro
       - ./target:/app/target
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     networks:
       - clinica-network-dev
@@ -72,6 +68,6 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_dev_data:
+  postgres_dev_data:
     driver: local
 

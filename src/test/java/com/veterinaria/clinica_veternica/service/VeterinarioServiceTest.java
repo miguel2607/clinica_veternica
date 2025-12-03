@@ -124,7 +124,8 @@ class VeterinarioServiceTest {
     void testListarTodosLosVeterinarios() {
         List<Veterinario> veterinarios = Arrays.asList(veterinario);
         List<VeterinarioResponseDTO> responseDTOs = Arrays.asList(responseDTO);
-        when(veterinarioRepository.findAll()).thenReturn(veterinarios);
+        // El servicio usa findAllWithUsuario() en lugar de findAll()
+        when(veterinarioRepository.findAllWithUsuario()).thenReturn(veterinarios);
         when(veterinarioMapper.toResponseDTOList(veterinarios)).thenReturn(responseDTOs);
 
         List<VeterinarioResponseDTO> resultado = veterinarioService.listarTodos();

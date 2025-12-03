@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
 })
 @AutoConfigureMockMvc(addFilters = false)
+@TestPropertySource(properties = {
+    "spring.dotenv.enabled=false",
+    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
+    "JWT_EXPIRATION=86400000"
+})
 class EspecieControllerTest {
 
     @Autowired

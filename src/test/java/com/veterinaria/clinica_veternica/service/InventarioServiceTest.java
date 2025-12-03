@@ -89,7 +89,10 @@ class InventarioServiceTest {
     @DisplayName("READ - Debe buscar inventario por insumo exitosamente")
     void testBuscarInventarioPorInsumoExitoso() {
         when(insumoRepository.findById(1L)).thenReturn(Optional.of(insumo));
-        when(inventarioRepository.findByInsumo(insumo)).thenReturn(Optional.of(inventario));
+        // El servicio usa findByInsumoWithFetch
+        when(inventarioRepository.findByInsumoWithFetch(insumo)).thenReturn(Optional.of(inventario));
+        // El servicio puede llamar a save si crea un nuevo inventario, pero en este caso ya existe
+        when(inventarioRepository.save(any(Inventario.class))).thenReturn(inventario);
         when(inventarioMapper.toResponseDTO(inventario)).thenReturn(responseDTO);
 
         InventarioResponseDTO resultado = inventarioService.buscarPorInsumo(1L);
@@ -109,10 +112,17 @@ class InventarioServiceTest {
     @Test
     @DisplayName("READ - Debe listar todos los inventarios")
     void testListarTodosLosInventarios() {
+        List<Insumo> insumos = Arrays.asList(insumo);
         List<Inventario> inventarios = Arrays.asList(inventario);
         List<InventarioResponseDTO> responseDTOs = Arrays.asList(responseDTO);
-        when(inventarioRepository.findAll()).thenReturn(inventarios);
-        when(inventarioMapper.toResponseDTOList(inventarios)).thenReturn(responseDTOs);
+        
+        // El servicio llama a findInsumosActivos() y luego crea/obtiene inventarios
+        when(insumoRepository.findInsumosActivos()).thenReturn(insumos);
+        // El servicio usa findByInsumoWithFetch dentro de obtenerOcrearInventario
+        when(inventarioRepository.findByInsumoWithFetch(insumo)).thenReturn(Optional.of(inventario));
+        // El servicio puede llamar a save para sincronizar
+        when(inventarioRepository.save(any(Inventario.class))).thenReturn(inventario);
+        when(inventarioMapper.toResponseDTOList(anyList())).thenReturn(responseDTOs);
 
         List<InventarioResponseDTO> resultado = inventarioService.listarTodos();
 

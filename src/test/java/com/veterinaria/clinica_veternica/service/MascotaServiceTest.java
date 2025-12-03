@@ -50,6 +50,16 @@ class MascotaServiceTest {
     @Mock
     private com.veterinaria.clinica_veternica.patterns.structural.proxy.CachedServiceProxy cachedServiceProxy;
 
+    @Mock
+    private HistoriaClinicaRepository historiaClinicaRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private com.veterinaria.clinica_veternica.patterns.creational.abstractfactory.EmailNotificacionFactory emailFactory;
+
+
     @InjectMocks
     private MascotaServiceImpl mascotaService;
 
@@ -116,11 +126,26 @@ class MascotaServiceTest {
     @Test
     @DisplayName("CREATE - Debe crear una mascota exitosamente")
     void testCrearMascotaExitoso() {
+        // Limpiar SecurityContext antes del test
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        
         when(propietarioRepository.findById(1L)).thenReturn(Optional.of(propietario));
         when(especieRepository.findById(1L)).thenReturn(Optional.of(especie));
         when(razaRepository.findById(1L)).thenReturn(Optional.of(raza));
         when(mascotaMapper.toEntity(requestDTO)).thenReturn(mascota);
         when(mascotaRepository.save(any(Mascota.class))).thenReturn(mascota);
+        
+        // Mock de HistoriaClinica - el builder se crea dentro del servicio, solo mockeamos el repositorio
+        com.veterinaria.clinica_veternica.domain.clinico.HistoriaClinica historiaClinica = 
+            com.veterinaria.clinica_veternica.domain.clinico.HistoriaClinica.builder()
+                .idHistoriaClinica(1L)
+                .mascota(mascota)
+                .activa(true)
+                .build();
+        
+        when(historiaClinicaRepository.save(any(com.veterinaria.clinica_veternica.domain.clinico.HistoriaClinica.class)))
+            .thenReturn(historiaClinica);
+        
         when(mascotaMapper.toResponseDTO(mascota)).thenReturn(responseDTO);
 
         MascotaResponseDTO resultado = mascotaService.crear(requestDTO);

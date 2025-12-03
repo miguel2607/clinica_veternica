@@ -3,6 +3,7 @@ package com.veterinaria.clinica_veternica.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.veterinaria.clinica_veternica.dto.request.paciente.PropietarioRequestDTO;
 import com.veterinaria.clinica_veternica.dto.response.paciente.PropietarioResponseDTO;
+import com.veterinaria.clinica_veternica.repository.UsuarioRepository;
 import com.veterinaria.clinica_veternica.security.jwt.JwtAuthenticationFilter;
 import com.veterinaria.clinica_veternica.security.jwt.JwtProperties;
 import com.veterinaria.clinica_veternica.security.jwt.JwtUtils;
@@ -18,6 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +38,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
 })
 @AutoConfigureMockMvc(addFilters = false)
+@TestPropertySource(properties = {
+    "spring.dotenv.enabled=false",
+    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
+    "JWT_EXPIRATION=86400000"
+})
 class PropietarioControllerTest {
 
     @Autowired
@@ -58,6 +65,9 @@ class PropietarioControllerTest {
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
 
     private PropietarioRequestDTO propietarioRequestDTO;
     private PropietarioResponseDTO propietarioResponseDTO;
