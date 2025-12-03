@@ -2,8 +2,31 @@ import axios from 'axios';
 
 // Usar variable de entorno si está disponible, sino usar localhost
 // En Docker, usar /api ya que Nginx hace proxy al backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:8080/api' : '/api');
+// En producción (Render), usar la URL completa del backend
+const getApiBaseUrl = () => {
+  // Si VITE_API_URL está definida, usarla (debe incluir /api al final)
+  if (import.meta.env.VITE_API_URL) {
+    const url = import.meta.env.VITE_API_URL.trim();
+    // Asegurar que termine con /api
+    return url.endsWith('/api') ? url : url + (url.endsWith('/') ? 'api' : '/api');
+  }
+  
+  // En localhost, usar el puerto 8080
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8080/api';
+  }
+  
+  // En producción sin variable, usar /api (asume mismo dominio o proxy)
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Log para debugging (solo en desarrollo)
+if (import.meta.env.DEV) {
+  console.log('🔧 API Base URL configurada:', API_BASE_URL);
+  console.log('🔧 VITE_API_URL:', import.meta.env.VITE_API_URL);
+}
 
 // Crear instancia de axios
 const api = axios.create({
