@@ -53,12 +53,14 @@ public class DataInitializer {
                     log.info("✅ Usuario admin creado exitosamente: {} (email: {})", USERNAME, EMAIL);
                 } else {
                     log.info("👤 Usuario admin ya existe, verificando estado...");
-                    // Solo actualizar contraseña si se proporciona una nueva
+                    // Actualizar contraseña si se proporciona ADMIN_PASSWORD o usar la contraseña por defecto
                     String newPassword = environment.getProperty("app.admin.password", 
-                        environment.getProperty("ADMIN_PASSWORD"));
-                    if (newPassword != null && !newPassword.isEmpty() && !newPassword.equals("Admin123!")) {
+                        environment.getProperty("ADMIN_PASSWORD", RAW_PASS));
+                    // Si se proporciona ADMIN_PASSWORD explícitamente, actualizar la contraseña
+                    // Si no, usar la contraseña por defecto (RAW_PASS que ya tiene el valor correcto)
+                    if (newPassword != null && !newPassword.isEmpty()) {
                         u.setPassword(passwordEncoder.encode(newPassword));
-                        log.info("🔑 Contraseña del admin actualizada");
+                        log.info("🔑 Contraseña del admin actualizada/verificada");
                     }
                     u.setBloqueado(false);
                     u.setIntentosFallidos(0);
