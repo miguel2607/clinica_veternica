@@ -285,9 +285,14 @@ public class AuthServiceImpl implements IAuthService {
             .build();
 
         Propietario propietario = propietarioMapper.toEntity(propietarioRequestDTO);
+        // Establecer la relación con el usuario
+        propietario.setUsuario(usuarioGuardado);
         Propietario propietarioGuardado = propietarioRepository.save(propietario);
 
-        log.info("Propietario registrado: {} {}", propietarioGuardado.getNombres(), propietarioGuardado.getApellidos());
+        log.info("Propietario registrado: {} {} (usuario: {})", 
+                propietarioGuardado.getNombres(), 
+                propietarioGuardado.getApellidos(),
+                usuarioGuardado.getUsername());
 
         return propietarioMapper.toResponseDTO(propietarioGuardado);
     }

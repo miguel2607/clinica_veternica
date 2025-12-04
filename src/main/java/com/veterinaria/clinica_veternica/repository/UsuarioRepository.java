@@ -29,20 +29,22 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // ===================================================================
 
     /**
-     * Busca un usuario por su username.
+     * Busca un usuario por su username (case-insensitive).
      *
      * @param username Username del usuario
      * @return Optional con el usuario si existe
      */
-    Optional<Usuario> findByUsername(String username);
+    @Query("SELECT u FROM Usuario u WHERE LOWER(u.username) = LOWER(:username)")
+    Optional<Usuario> findByUsername(@Param("username") String username);
 
     /**
-     * Busca un usuario por su email.
+     * Busca un usuario por su email (case-insensitive).
      *
      * @param email Email del usuario
      * @return Optional con el usuario si existe
      */
-    Optional<Usuario> findByEmail(String email);
+    @Query("SELECT u FROM Usuario u WHERE LOWER(u.email) = LOWER(:email)")
+    Optional<Usuario> findByEmail(@Param("email") String email);
 
     /**
      * Busca usuarios por rol.
@@ -78,20 +80,22 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByBloqueado(Boolean bloqueado);
 
     /**
-     * Verifica si existe un usuario con el username dado.
+     * Verifica si existe un usuario con el username dado (case-insensitive).
      *
      * @param username Username a verificar
      * @return true si existe
      */
-    boolean existsByUsername(String username);
+    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE LOWER(u.username) = LOWER(:username)")
+    boolean existsByUsername(@Param("username") String username);
 
     /**
-     * Verifica si existe un usuario con el email dado.
+     * Verifica si existe un usuario con el email dado (case-insensitive).
      *
      * @param email Email a verificar
      * @return true si existe
      */
-    boolean existsByEmail(String email);
+    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE LOWER(u.email) = LOWER(:email)")
+    boolean existsByEmail(@Param("email") String email);
 
     // ===================================================================
     // CONSULTAS PERSONALIZADAS CON @Query
