@@ -132,11 +132,29 @@ public class EmailService {
                 return false;
             }
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            log.error("Error HTTP al enviar correo HTML a {}: Status {} - {}", 
-                    to, e.getStatusCode(), e.getResponseBodyAsString(), e);
+            String errorBody = e.getResponseBodyAsString();
+            log.error("Error HTTP al enviar correo HTML a {}: Status {} - Response: {}", 
+                    to, e.getStatusCode(), errorBody, e);
+            
+            // Log específico para errores comunes de SendGrid
+            if (errorBody != null) {
+                if (errorBody.contains("The from address does not match a verified Sender Identity")) {
+                    log.error("⚠️ El correo remitente '{}' no está verificado en SendGrid. " +
+                            "Ve a SendGrid → Settings → Sender Authentication y verifica el correo.", fromEmail);
+                } else if (errorBody.contains("Invalid API key")) {
+                    log.error("⚠️ API Key de SendGrid inválida. Verifica la variable SENDGRID_API_KEY en Render.");
+                } else if (errorBody.contains("Forbidden")) {
+                    log.error("⚠️ Acceso denegado. Verifica que la API Key tenga permisos de envío de emails.");
+                }
+            }
+            return false;
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            log.error("Error de conexión al enviar correo HTML a {}: {}. Verifica la conectividad a internet.", 
+                    to, e.getMessage(), e);
             return false;
         } catch (Exception e) {
-            log.error("Error inesperado al enviar correo HTML a {}: {}", to, e.getMessage(), e);
+            log.error("Error inesperado al enviar correo HTML a {}: {} - Tipo: {}", 
+                    to, e.getMessage(), e.getClass().getSimpleName(), e);
             return false;
         }
     }
@@ -215,11 +233,25 @@ public class EmailService {
                 return false;
             }
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            log.error("Error HTTP al enviar correo a múltiples destinatarios: Status {} - {}", 
-                    e.getStatusCode(), e.getResponseBodyAsString(), e);
+            String errorBody = e.getResponseBodyAsString();
+            log.error("Error HTTP al enviar correo a múltiples destinatarios: Status {} - Response: {}", 
+                    e.getStatusCode(), errorBody, e);
+            
+            // Log específico para errores comunes de SendGrid
+            if (errorBody != null) {
+                if (errorBody.contains("The from address does not match a verified Sender Identity")) {
+                    log.error("⚠️ El correo remitente '{}' no está verificado en SendGrid.", fromEmail);
+                } else if (errorBody.contains("Invalid API key")) {
+                    log.error("⚠️ API Key de SendGrid inválida. Verifica la variable SENDGRID_API_KEY.");
+                }
+            }
+            return false;
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            log.error("Error de conexión al enviar correo a múltiples destinatarios: {}", e.getMessage(), e);
             return false;
         } catch (Exception e) {
-            log.error("Error al enviar correo a múltiples destinatarios: {}", e.getMessage(), e);
+            log.error("Error al enviar correo a múltiples destinatarios: {} - Tipo: {}", 
+                    e.getMessage(), e.getClass().getSimpleName(), e);
             return false;
         }
     }
