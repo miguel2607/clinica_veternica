@@ -296,27 +296,60 @@ public class HorarioServiceImpl implements IHorarioService {
             return slots;
         }
 
+        // Límite máximo de slots para evitar OutOfMemoryError (ej: 1000 slots por día)
+        final int MAX_SLOTS = 1000;
+        int totalSlotsGenerados = 0;
+
         // Para cada horario, generar slots
         for (Horario horario : horarios) {
-            LocalTime horaActual = horario.getHoraInicio();
-            int duracionMinutos = horario.getDuracionCitaMinutos();
+            // Validar que el horario tenga valores válidos
+            if (horario.getHoraInicio() == null || horario.getHoraFin() == null) {
+                log.warn("Horario ID {} tiene hora inicio o fin nula, se omite", horario.getIdHorario());
+                continue;
+            }
 
-            while (horaActual.plusMinutes(duracionMinutos).isBefore(horario.getHoraFin()) ||
-                   horaActual.plusMinutes(duracionMinutos).equals(horario.getHoraFin())) {
+            LocalTime horaActual = horario.getHoraInicio();
+            Integer duracionMinutos = horario.getDuracionCitaMinutos();
+            
+            // Validar duración mínima (evitar bucles infinitos)
+            if (duracionMinutos == null || duracionMinutos <= 0) {
+                log.warn("Horario ID {} tiene duración inválida ({}), usando 30 minutos por defecto", 
+                        horario.getIdHorario(), duracionMinutos);
+                duracionMinutos = 30;
+            }
+
+            // Validar que horaInicio < horaFin
+            if (!horaActual.isBefore(horario.getHoraFin())) {
+                log.warn("Horario ID {} tiene hora inicio ({}) >= hora fin ({}), se omite", 
+                        horario.getIdHorario(), horaActual, horario.getHoraFin());
+                continue;
+            }
+
+            // Contador de seguridad para evitar bucles infinitos
+            int iteraciones = 0;
+            final int MAX_ITERACIONES = 10000; // Máximo razonable: 24 horas * 60 minutos / 1 minuto = 1440
+
+            while (horaActual.isBefore(horario.getHoraFin()) && 
+                   totalSlotsGenerados < MAX_SLOTS && 
+                   iteraciones < MAX_ITERACIONES) {
+
+                // Verificar que el slot no exceda el horario de fin
+                LocalTime horaFinSlot = horaActual.plusMinutes(duracionMinutos);
+                if (!horaFinSlot.isBefore(horario.getHoraFin()) && !horaFinSlot.equals(horario.getHoraFin())) {
+                    break; // El slot excedería el horario de fin
+                }
 
                 // Crear variables finales para usar en lambda
                 final LocalTime horaActualFinal = horaActual;
-                final int duracionMinutosFinal = duracionMinutos;
 
                 // Verificar si este slot está ocupado
-                // Solo se bloquea el slot exacto donde comienza la cita, no los anteriores
                 boolean ocupado = citasOcupadas.stream()
                         .anyMatch(cita -> {
-                            LocalTime horaCita = cita.getHoraCita();
-                            
+                            if (cita.getHoraCita() == null) {
+                                return false;
+                            }
                             // Solo bloquear el slot si la cita comienza exactamente en este slot
-                            // No bloquear slots anteriores
-                            return horaCita.equals(horaActualFinal);
+                            return cita.getHoraCita().equals(horaActualFinal);
                         });
 
                 slots.add(DisponibilidadVeterinarioDTO.SlotDisponibleDTO.builder()
@@ -326,9 +359,24 @@ public class HorarioServiceImpl implements IHorarioService {
                         .build());
 
                 horaActual = horaActual.plusMinutes(duracionMinutos);
+                totalSlotsGenerados++;
+                iteraciones++;
+            }
+
+            // Advertencia si se alcanzó el límite
+            if (iteraciones >= MAX_ITERACIONES) {
+                log.warn("Se alcanzó el límite de iteraciones para horario ID {}. Posible bucle infinito detectado.", 
+                        horario.getIdHorario());
+            }
+
+            if (totalSlotsGenerados >= MAX_SLOTS) {
+                log.warn("Se alcanzó el límite máximo de slots ({}). Se detuvo la generación para evitar OutOfMemoryError.", 
+                        MAX_SLOTS);
+                break;
             }
         }
 
+        log.debug("Total de slots generados: {}", totalSlotsGenerados);
         return slots;
     }
 }
