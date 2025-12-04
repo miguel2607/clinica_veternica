@@ -32,6 +32,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * Implementación del servicio de autenticación.
  */
@@ -50,7 +53,67 @@ public class AuthServiceImpl implements IAuthService {
     private final PropietarioMapper propietarioMapper;
 
     /**
+     * Busca el username real de un usuario basado en username, email o nombre del propietario.
+     * 
+     * @param identificador Puede ser username, email o nombre del propietario
+     * @return El username real del usuario, o null si no se encuentra
+     */
+    private String obtenerUsernameReal(String identificador) {
+        if (identificador == null || identificador.trim().isEmpty()) {
+            return null;
+        }
+        
+        String busqueda = identificador.trim();
+        
+        // 1. Intentar buscar por username
+        Optional<Usuario> usuarioPorUsername = usuarioRepository.findByUsername(busqueda);
+        if (usuarioPorUsername.isPresent()) {
+            log.debug("Usuario encontrado por username: {}", busqueda);
+            return usuarioPorUsername.get().getUsername();
+        }
+        
+        // 2. Intentar buscar por email
+        Optional<Usuario> usuarioPorEmail = usuarioRepository.findByEmail(busqueda);
+        if (usuarioPorEmail.isPresent()) {
+            log.debug("Usuario encontrado por email: {}", busqueda);
+            return usuarioPorEmail.get().getUsername();
+        }
+        
+        // 3. Intentar buscar por nombre del propietario
+        List<Propietario> propietarios = propietarioRepository.buscarPropietarios(busqueda);
+        if (!propietarios.isEmpty()) {
+            // Buscar el propietario que coincida exactamente con el nombre completo
+            Propietario propietarioEncontrado = null;
+            String nombreCompletoBusqueda = busqueda.toLowerCase().trim();
+            
+            for (Propietario prop : propietarios) {
+                String nombreCompleto = (prop.getNombres() + " " + prop.getApellidos()).toLowerCase().trim();
+                if (nombreCompleto.equals(nombreCompletoBusqueda)) {
+                    propietarioEncontrado = prop;
+                    break;
+                }
+            }
+            
+            // Si no hay coincidencia exacta, usar el primero encontrado si solo hay uno
+            if (propietarioEncontrado == null && propietarios.size() == 1) {
+                propietarioEncontrado = propietarios.get(0);
+            }
+            
+            if (propietarioEncontrado != null && propietarioEncontrado.getUsuario() != null) {
+                log.debug("Usuario encontrado por nombre del propietario: {} -> {}", busqueda, propietarioEncontrado.getUsuario().getUsername());
+                return propietarioEncontrado.getUsuario().getUsername();
+            } else if (propietarioEncontrado != null) {
+                log.warn("Propietario encontrado '{}' pero no tiene usuario asociado", busqueda);
+            }
+        }
+        
+        log.debug("No se encontró usuario con identificador: {}", busqueda);
+        return null;
+    }
+
+    /**
      * Autentica un usuario y genera un token JWT.
+     * Permite iniciar sesión con username, email o nombre del propietario.
      *
      * @param loginRequest Datos de inicio de sesión
      * @return LoginResponseDTO con el token y datos del usuario
@@ -58,11 +121,24 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+        // Obtener el username real basado en lo que el usuario ingresó
+        String usernameReal = obtenerUsernameReal(loginRequest.getUsername());
+        
+        if (usernameReal == null) {
+            String mensaje = String.format(
+                "Usuario no encontrado con: '%s'. " +
+                "Por favor verifica que estés usando tu nombre de usuario, email o nombre completo correcto.",
+                loginRequest.getUsername()
+            );
+            log.warn("Intento de login fallido - usuario no encontrado: {}", loginRequest.getUsername());
+            throw new UnauthorizedException(mensaje);
+        }
+        
         try {
-            // Autenticar al usuario
+            // Autenticar al usuario usando el username real
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    loginRequest.getUsername(),
+                    usernameReal,
                     loginRequest.getPassword()
                 )
             );
@@ -74,7 +150,7 @@ public class AuthServiceImpl implements IAuthService {
             String jwt = jwtUtils.generateJwtToken(authentication);
 
             // Obtener los datos del usuario desde la base de datos
-            Usuario usuario = usuarioRepository.findByUsername(loginRequest.getUsername())
+            Usuario usuario = usuarioRepository.findByUsername(usernameReal)
                 .orElseThrow(() -> new UnauthorizedException("Usuario no encontrado"));
 
             // Verificar si el usuario está activo y no bloqueado
@@ -92,7 +168,7 @@ public class AuthServiceImpl implements IAuthService {
                 usuarioRepository.save(usuario);
             }
 
-            log.info("Usuario autenticado exitosamente: {}", usuario.getUsername());
+            log.info("Usuario autenticado exitosamente: {} (identificador usado: {})", usuario.getUsername(), loginRequest.getUsername());
 
             // Construir la respuesta
             return LoginResponseDTO.builder()
@@ -107,21 +183,23 @@ public class AuthServiceImpl implements IAuthService {
 
         } catch (AuthenticationException e) {
             // Manejar intentos fallidos de login
-            usuarioRepository.findByUsername(loginRequest.getUsername()).ifPresent(usuario -> {
-                int intentos = usuario.getIntentosFallidos() + 1;
-                usuario.setIntentosFallidos(intentos);
+            if (usernameReal != null) {
+                usuarioRepository.findByUsername(usernameReal).ifPresent(usuario -> {
+                    int intentos = usuario.getIntentosFallidos() + 1;
+                    usuario.setIntentosFallidos(intentos);
 
-                // Bloquear usuario después de 5 intentos fallidos
-                if (intentos >= 5) {
-                    usuario.setBloqueado(true);
-                    usuario.setMotivoBloqueo("Bloqueado automáticamente por múltiples intentos fallidos de inicio de sesión");
-                    log.warn("Usuario bloqueado por intentos fallidos: {}", usuario.getUsername());
-                }
+                    // Bloquear usuario después de 5 intentos fallidos
+                    if (intentos >= 5) {
+                        usuario.setBloqueado(true);
+                        usuario.setMotivoBloqueo("Bloqueado automáticamente por múltiples intentos fallidos de inicio de sesión");
+                        log.warn("Usuario bloqueado por intentos fallidos: {}", usuario.getUsername());
+                    }
 
-                usuarioRepository.save(usuario);
-            });
+                    usuarioRepository.save(usuario);
+                });
+            }
 
-            log.error("Error de autenticación para usuario: {}", loginRequest.getUsername());
+            log.error("Error de autenticación para identificador: {} (username real: {})", loginRequest.getUsername(), usernameReal);
             throw new UnauthorizedException("Credenciales inválidas");
         }
     }
@@ -188,15 +266,32 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     /**
-     * Resetea la contraseña de un usuario usando su nombre de usuario (público).
+     * Resetea la contraseña de un usuario usando su nombre de usuario, email o nombre del propietario (público).
+     * 
+     * Busca el usuario en el siguiente orden:
+     * 1. Por username
+     * 2. Por email
+     * 3. Por nombre del propietario (si es un propietario)
      *
-     * @param requestDTO Datos con username y nueva contraseña
+     * @param requestDTO Datos con username/email/nombre y nueva contraseña
      */
     @Override
     @Transactional
     public void resetPasswordByUsername(ResetPasswordByUsernameRequestDTO requestDTO) {
-        Usuario usuario = usuarioRepository.findByUsername(requestDTO.getUsername())
-            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "username", requestDTO.getUsername()));
+        // Obtener el username real basado en lo que el usuario ingresó
+        String usernameReal = obtenerUsernameReal(requestDTO.getUsername());
+        
+        if (usernameReal == null) {
+            String mensaje = String.format(
+                "Usuario no encontrado con: '%s'. " +
+                "Por favor verifica que estés usando tu nombre de usuario, email o nombre completo correcto.",
+                requestDTO.getUsername()
+            );
+            throw new ResourceNotFoundException(mensaje);
+        }
+        
+        Usuario usuario = usuarioRepository.findByUsername(usernameReal)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "username", usernameReal));
 
         // Validar que la nueva password sea diferente a la actual
         if (passwordEncoder.matches(requestDTO.getNuevaPassword(), usuario.getPassword())) {
@@ -209,7 +304,7 @@ public class AuthServiceImpl implements IAuthService {
         usuario.setBloqueado(false);
         usuarioRepository.save(usuario);
 
-        log.info("Contraseña reseteada para usuario: {}", usuario.getUsername());
+        log.info("Contraseña reseteada para usuario: {} (identificador usado: {})", usuario.getUsername(), requestDTO.getUsername());
     }
 
     /**
