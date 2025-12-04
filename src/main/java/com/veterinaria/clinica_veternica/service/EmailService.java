@@ -1,38 +1,49 @@
 package com.veterinaria.clinica_veternica.service;
 
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import jakarta.mail.AuthenticationFailedException;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Servicio para envío de correos electrónicos usando Spring Mail.
+ * Servicio para envío de correos electrónicos usando SendGrid API.
  *
  * @author Clínica Veterinaria Team
- * @version 1.0
+ * @version 2.0
  * @since 2025-11-21
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    @Value("${spring.mail.username}")
+    @Value("${sendgrid.api.key:}")
+    private String sendgridApiKey;
+
+    @Value("${spring.mail.username:${MAIL_USERNAME:miguelitorodriguezaranzazu@gmail.com}}")
     private String fromEmail;
 
     @Value("${app.email.from-name:Clínica Veterinaria}")
     private String fromName;
+
+    private static final String SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send";
+
+    public EmailService() {
+        this.restTemplate = new RestTemplate();
+        this.objectMapper = new ObjectMapper();
+    }
 
     /**
      * Envía un correo electrónico simple (texto plano convertido a HTML con template profesional).
@@ -48,49 +59,16 @@ public class EmailService {
             String htmlContent = text.replace("\n", "<br/>");
             String htmlFinal = generarTemplateHtml(subject, "<p>" + htmlContent + "</p>", "info");
             
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlFinal, true); // true para indicar que es HTML
-
-            mailSender.send(message);
-            log.info("Correo enviado exitosamente a: {} - Asunto: {}", to, subject);
-            return true;
-        } catch (MailSendException e) {
-            // Verificar si la causa es un error de autenticación
-            Throwable cause = e.getCause();
-            if (cause instanceof AuthenticationFailedException || 
-                (cause != null && cause.getMessage() != null && 
-                 (cause.getMessage().contains("authentication") || 
-                  cause.getMessage().contains("Authentication failed") ||
-                  cause.getMessage().contains("535")))) {
-                log.error("Error de autenticación al enviar correo a {}: {}. " +
-                        "Verifique que esté usando una 'App Password' de Gmail, no la contraseña normal.", 
-                        to, e.getMessage(), e);
-            } else {
-                log.error("Error al enviar correo a {}: {}. Verifique la configuración SMTP y la conexión a internet.", 
-                        to, e.getMessage(), e);
-                if (cause != null) {
-                    log.error("Causa raíz: {}", cause.getMessage());
-                }
-            }
-            return false;
-        } catch (MailException e) {
-            log.error("Error de Spring Mail al enviar correo a {}: {} - Tipo: {}", 
-                    to, e.getMessage(), e.getClass().getSimpleName(), e);
-            return false;
+            return enviarEmailHtml(to, subject, htmlFinal);
         } catch (Exception e) {
-            log.error("Error inesperado al enviar correo a {}: {} - Tipo: {}", 
+            log.error("Error inesperado al enviar correo simple a {}: {} - Tipo: {}", 
                     to, e.getMessage(), e.getClass().getSimpleName(), e);
             return false;
         }
     }
 
     /**
-     * Envía un correo electrónico HTML.
+     * Envía un correo electrónico HTML usando SendGrid API.
      *
      * @param to      Dirección de correo del destinatario
      * @param subject Asunto del correo
@@ -98,20 +76,64 @@ public class EmailService {
      * @return true si se envió correctamente, false en caso contrario
      */
     public boolean enviarEmailHtml(String to, String subject, String htmlContent) {
+        if (sendgridApiKey == null || sendgridApiKey.trim().isEmpty()) {
+            log.error("SendGrid API Key no configurada. Configure la variable de entorno SENDGRID_API_KEY");
+            return false;
+        }
+
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            // Construir el payload para SendGrid API
+            Map<String, Object> payload = new HashMap<>();
+            
+            // From
+            Map<String, String> from = new HashMap<>();
+            from.put("email", fromEmail);
+            from.put("name", fromName);
+            payload.put("from", from);
+            
+            // To
+            Map<String, String> toEmail = new HashMap<>();
+            toEmail.put("email", to);
+            Map<String, Object> personalization = new HashMap<>();
+            personalization.put("to", List.of(toEmail));
+            payload.put("personalizations", List.of(personalization));
+            
+            // Subject
+            payload.put("subject", subject);
+            
+            // Content
+            Map<String, String> content = new HashMap<>();
+            content.put("type", "text/html");
+            content.put("value", htmlContent);
+            payload.put("content", List.of(content));
 
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
+            // Headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(sendgridApiKey);
 
-            mailSender.send(message);
-            log.info("Correo HTML enviado exitosamente a: {} - Asunto: {}", to, subject);
-            return true;
-        } catch (MessagingException e) {
-            log.error("Error al enviar correo HTML a {}: {}", to, e.getMessage(), e);
+            // Request
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+            // Enviar
+            ResponseEntity<String> response = restTemplate.exchange(
+                    SENDGRID_API_URL,
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Correo HTML enviado exitosamente a: {} - Asunto: {}", to, subject);
+                return true;
+            } else {
+                log.error("Error al enviar correo HTML a {}: Status {} - {}", 
+                        to, response.getStatusCode(), response.getBody());
+                return false;
+            }
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("Error HTTP al enviar correo HTML a {}: Status {} - {}", 
+                    to, e.getStatusCode(), e.getResponseBodyAsString(), e);
             return false;
         } catch (Exception e) {
             log.error("Error inesperado al enviar correo HTML a {}: {}", to, e.getMessage(), e);
@@ -120,7 +142,7 @@ public class EmailService {
     }
 
     /**
-     * Envía un correo a múltiples destinatarios.
+     * Envía un correo a múltiples destinatarios usando SendGrid API.
      *
      * @param to      Array de direcciones de correo
      * @param subject Asunto del correo
@@ -128,16 +150,74 @@ public class EmailService {
      * @return true si se envió correctamente, false en caso contrario
      */
     public boolean enviarEmailMultiple(String[] to, String subject, String text) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
+        if (sendgridApiKey == null || sendgridApiKey.trim().isEmpty()) {
+            log.error("SendGrid API Key no configurada. Configure la variable de entorno SENDGRID_API_KEY");
+            return false;
+        }
 
-            mailSender.send(message);
-            log.info("Correo enviado exitosamente a {} destinatarios - Asunto: {}", to.length, subject);
-            return true;
+        try {
+            // Convertir texto a HTML
+            String htmlContent = text.replace("\n", "<br/>");
+            String htmlFinal = generarTemplateHtml(subject, "<p>" + htmlContent + "</p>", "info");
+
+            // Construir el payload para SendGrid API
+            Map<String, Object> payload = new HashMap<>();
+            
+            // From
+            Map<String, String> from = new HashMap<>();
+            from.put("email", fromEmail);
+            from.put("name", fromName);
+            payload.put("from", from);
+            
+            // To - múltiples destinatarios
+            List<Map<String, String>> toList = java.util.Arrays.stream(to)
+                    .map(email -> {
+                        Map<String, String> emailMap = new HashMap<>();
+                        emailMap.put("email", email);
+                        return emailMap;
+                    })
+                    .toList();
+            Map<String, Object> personalization = new HashMap<>();
+            personalization.put("to", toList);
+            payload.put("personalizations", List.of(personalization));
+            
+            // Subject
+            payload.put("subject", subject);
+            
+            // Content
+            Map<String, String> content = new HashMap<>();
+            content.put("type", "text/html");
+            content.put("value", htmlFinal);
+            payload.put("content", List.of(content));
+
+            // Headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(sendgridApiKey);
+
+            // Request
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+            // Enviar
+            ResponseEntity<String> response = restTemplate.exchange(
+                    SENDGRID_API_URL,
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Correo enviado exitosamente a {} destinatarios - Asunto: {}", to.length, subject);
+                return true;
+            } else {
+                log.error("Error al enviar correo a múltiples destinatarios: Status {} - {}", 
+                        response.getStatusCode(), response.getBody());
+                return false;
+            }
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("Error HTTP al enviar correo a múltiples destinatarios: Status {} - {}", 
+                    e.getStatusCode(), e.getResponseBodyAsString(), e);
+            return false;
         } catch (Exception e) {
             log.error("Error al enviar correo a múltiples destinatarios: {}", e.getMessage(), e);
             return false;
